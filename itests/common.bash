@@ -215,7 +215,7 @@ _profile() {
 
   if [ "$memory_leak" = true ] || [ "$cpu_hot" = true ]; then
     log "Failed due to potential performance regression"
-    exit 1
+    return 1
   fi
 }
 
