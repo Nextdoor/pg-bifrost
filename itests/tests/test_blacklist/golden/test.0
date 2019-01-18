@@ -1,0 +1,2 @@
+{"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"Hello"}},"id":{"new":{"q":"false","t":"integer","v":"1"}},"last_name":{"new":{"q":"true","t":"text","v":"World"}}}}
+{"table":"public.inventory","operation":"INSERT","columns":{"id":{"new":{"q":"false","t":"integer","v":"1"}},"name":{"new":{"q":"true","t":"text","v":"Thingy"}}}}

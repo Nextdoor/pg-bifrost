@@ -1,0 +1,56 @@
+version: '3'
+services:
+  postgres:
+    container_name: postgres
+    build: containers/postgres
+    volumes:
+      - "./tests/${TEST_NAME}/input:/input"
+    environment:
+      - POSTGRES_PASSWORD=pgbifrost
+    networks:
+      - net
+
+  kinesis:
+    container_name: kinesis
+    image: localstack/localstack:0.8.7
+    env_file:
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
+    environment:
+      - SERVICES=kinesis
+    ports:
+     - 4568:4568
+    restart: always
+    networks:
+      - net
+
+  bifrost:
+    container_name: bifrost
+    build: containers/pg-bifrost
+    env_file:
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
+    volumes:
+      - "./tests/${TEST_NAME}/perf_output:/perf"
+    networks:
+      net:
+        aliases:
+          - kinesis
+          - postgres
+    command: /app/pg-bifrost replicate kinesis
+
+  kinesis-poller:
+    container_name: kinesis-poller
+    build: containers/kinesis-poller
+    env_file:
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
+    volumes:
+    - "./tests/${TEST_NAME}/output:/output"
+    networks:
+      net:
+        aliases:
+          - kinesis
+
+networks:
+  net:

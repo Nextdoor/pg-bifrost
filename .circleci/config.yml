@@ -1,0 +1,157 @@
+version: 2
+
+defaults: &defaults
+  docker:
+  - image: circleci/golang:1.11.4-stretch
+  working_directory: /go/src/github.com/Nextdoor/pg-bifrost.git
+
+defaults_itests: &defaults_itests
+  machine:
+    enabled: true
+    docker_layer_caching: true
+
+step_library:
+- &step_restore_vendor_cache
+  restore_cache:
+    keys:
+    - vendor-{{ checksum "Gopkg.lock" }}
+
+- &step_save_vendor_cache
+  save_cache:
+    key: vendor-{{ checksum "Gopkg.lock" }}
+    paths:
+    - vendor
+
+- &step_test
+  run:
+    name: Run go vet and tests
+    command: |
+      CI=true make test
+
+- &step_itests
+  run:
+    name: Run integration tests in docker
+    command: |
+      git submodule sync
+      git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
+      CI=true make itests-circleci
+
+- &step_build_artifact
+  run:
+    name: Run make build
+    command: |
+      make build
+      /usr/bin/md5sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.md5
+      cat target/pg-bifrost.md5
+      /usr/bin/sha1sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha1
+      cat target/pg-bifrost.sha1
+      /usr/bin/sha256sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha256
+      cat target/pg-bifrost.sha256
+
+- &step_build_docker_containers
+  run:
+    name: Building integration test docker containers
+    command: |
+      make docker
+
+
+jobs:
+  build: &build
+    <<: *defaults
+    steps:
+    - checkout
+
+    - *step_restore_vendor_cache
+    - *step_build_artifact
+    - *step_test
+    - *step_save_vendor_cache
+    - persist_to_workspace:
+        root: /go/src/github.com/Nextdoor
+        paths:
+          - pg-bifrost.git
+
+  itests: &itests
+    <<: *defaults_itests
+    parallelism: 2
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+    - run: cp -r /tmp/workspace/pg-bifrost.git/. .
+    - run: |
+        sudo rm -rf /usr/local/go || true
+        sudo curl -L https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
+        sudo tar -xf go1.11.4.linux-amd64.tar.gz
+        sudo mv go /usr/local
+    - *step_build_docker_containers
+    - *step_itests
+    - store_test_results:
+        path: ./itests/test_output/
+
+  publish_github_release:
+    docker:
+      - image: circleci/golang:1.8
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            GIT_CMD="git --git-dir /tmp/workspace/pg-bifrost.git/.git"
+            go get github.com/tcnksm/ghr
+
+            # Create tarball and compute hashes
+            export ARTIFACT="pg-bifrost.linux-amd64.tar.gz"
+            tar -czvf ${ARTIFACT} /tmp/workspace/pg-bifrost.git/target/*
+            SHA256_HASH=$(/usr/bin/sha256sum -b ${ARTIFACT} | cut -d' ' -f1)
+            SHA1_HASH=$(/usr/bin/sha1sum -b ${ARTIFACT} | cut -d' ' -f1)
+            MD5_HASH=$(/usr/bin/md5sum -b ${ARTIFACT} | cut -d' ' -f1)
+
+            # Get commit history between the previous tag and this tag
+            PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | tail -n2 | head -1 | cut -d' ' -f1)
+            LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..${CIRCLE_TAG})
+
+            # Create changelog
+            cat << EOF > CHANGELOG.txt
+            Commits:
+
+            ${LOG}
+
+            Hashes:
+
+            ${ARTIFACT} sha256 ${SHA256_HASH}
+            ${ARTIFACT} sha1 ${SHA1_HASH}
+            ${ARTIFACT} md5 ${MD5_HASH}
+            EOF
+
+            CHANGELOG=$(cat CHANGELOG.txt)
+
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -name ${CIRCLE_TAG} -b "${CHANGELOG}" ${CIRCLE_TAG} ${ARTIFACT}
+
+workflows:
+  version: 2
+  default:
+    jobs:
+    - build:
+        filters:
+          branches:
+            only: /.*/
+          tags:
+            only: /.*/
+
+    - itests:
+        requires: [build]
+        filters:
+          branches:
+            only: /.*/
+          tags:
+            only: /.*/
+
+    - publish_github_release:
+        requires: [itests]
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /[0-9\.]+/

@@ -1,0 +1,15 @@
+# goland / intellij project data
+.idea/
+
+# exclude vendor deps
+vendor/
+_vendor-*/
+
+# exclude build files
+target/
+itests/containers/pg-bifrost/app/pg-bifrost
+
+# exclude itest outputs
+itests/tests/*/output/*
+itests/test_output/*
+itests/perf_output/*

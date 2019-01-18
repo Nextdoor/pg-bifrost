@@ -1,0 +1,3 @@
+[submodule "itests/bats-core"]
+	path = itests/bats-core
+	url = https://github.com/bats-core/bats-core.git
