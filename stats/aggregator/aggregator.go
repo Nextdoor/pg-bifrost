@@ -284,7 +284,6 @@ func (a *Aggregator) isBtimeExpired(bucketTime int64) bool {
 }
 
 // logStatDropped makes sure we know via logging and/or metrics of dropped stats
-// TODO(nehalrp) How to log? How to report to stdout?
 func logStatDropped(s stats.Stat, localLog *logrus.Entry) {
 	out, err := json.Marshal(s)
 	if err != nil {

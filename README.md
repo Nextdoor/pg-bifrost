@@ -1,10 +1,12 @@
 # pg-bifrost
 
+[![CircleCI](https://circleci.com/gh/Nextdoor/pg-bifrost/tree/master.svg?style=svg)](https://circleci.com/gh/Nextdoor/pg-bifrost/tree/master)
+
 pg-bifrost is a [logical decoding](https://www.postgresql.org/docs/9.6/logicaldecoding.html) tool for PostgresSQL that writes the database's stream of events (creates, inserts, and deletes) to [Amazon Kinesis Data Streams](https://aws.amazon.com/kinesis/data-streams/). It is written in a modular manner that allows adding additional sinks such as S3, DynamoDB, and non-AWS destinations as well.
 
 ## Installation
 
-A precompiled binary for Linux AMD 64 of the latest version of pg-kinesis can be obtained under the Releases tab.
+A precompiled binary for Linux AMD 64 of the latest version of pg-kinesis can be obtained under the [Releases](https://github.com/Nextdoor/pg-bifrost/releases) tab.
 
 ## Example
 
@@ -144,6 +146,7 @@ Help us improve this project by:
 - Reporting bugs
 - Improving documentation
 - Adding new features
+- Increasing test coverage
 
 ### Running integration tests
 The integration tests require [docker](https://docs.docker.com/get-started/) and [docker-compose](https://docs.docker.com/compose/install/).

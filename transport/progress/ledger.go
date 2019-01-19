@@ -156,6 +156,6 @@ func (l *Ledger) remove(timeBasedKey string) {
 
 // ledgerChanIter returns a simple iterator for our ledger
 func (l *Ledger) ledgerChanIter() <-chan *ordered_map.KVPair {
-	// TODO: Iter() method is deprecated!. Use IterFunc() instead.
+	// TODO(#4): Iter() method is deprecated!. Use IterFunc() instead.
 	return l.items.Iter()
 }

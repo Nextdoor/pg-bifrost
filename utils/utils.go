@@ -39,7 +39,6 @@ func PgCreateReplicationSlot(sourceConfig pgx.ConnConfig, slot string) error {
 	}
 	defer rplConn.Close()
 
-	// TODO are we always going to be using "test_decoding"
 	err = rplConn.CreateReplicationSlot(slot, "test_decoding")
 	if err != nil {
 		return errors.Wrapf(err, "unable to create slot %s", slot)
