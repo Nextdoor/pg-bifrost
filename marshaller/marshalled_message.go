@@ -20,7 +20,7 @@ import "fmt"
 
 type MarshalledMessage struct {
 	Operation    string // SQL operation
-	Json         []byte // Serialized JSON blob TODO(research) why is byte array better than string?
+	Json         []byte // Serialized JSON blob
 	TimeBasedKey string // Used in BatchTransactions to seperate temporally different but same messages
 	WalStart     uint64 // id or offset of the wal message
 	Transaction  string // id of the transaction

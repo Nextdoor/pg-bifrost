@@ -290,7 +290,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 				continue
 			}
 
-			// TODO what about other types of errors?
+			// TODO(#8): what about other types of errors?
 			if !conn.IsAlive() {
 				log.Warn("connection was closed")
 				continue
@@ -309,7 +309,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 				log.Error(err)
 				return
 			}
-			// TODO: check if a message can contain both WalMessage and ServerHeartbeat
+			// TODO(#7): check if a message can contain both WalMessage and ServerHeartbeat
 		}
 
 		// Handle WalMessage

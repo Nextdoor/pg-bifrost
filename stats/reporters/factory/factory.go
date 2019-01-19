@@ -20,7 +20,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		r = stdout.New(shutdownHandler, inputChan)
 		break
 	case reporters.DATADOG:
-		// TODO: make this configurable
+		// TODO(#3): make this configurable
 		c, err := statsd.New("127.0.0.1:8125")
 		if err != nil {
 			return nil, err

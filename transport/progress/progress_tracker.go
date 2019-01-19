@@ -253,7 +253,7 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 		case <-p.shutdownHandler.TerminateCtx.Done():
 			log.Debug("received terminateCtx cancellation")
 			return
-		case <-p.stopChan: // TODO is this needed now?
+		case <-p.stopChan: // TODO(#2): is this needed now?
 			log.Info("stopping")
 			break
 		case <-ticker.C:

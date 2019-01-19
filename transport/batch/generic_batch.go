@@ -29,7 +29,6 @@ func NewGenericBatch(partitionKey string, maxSize int) transport.Batch {
 
 func (b *GenericBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 	// Don't add BEGIN and COMMITS to batch
-	// TODO: but maybe we should increment the counter...
 	if msg.Operation == "BEGIN" || msg.Operation == "COMMIT" {
 		return true, nil
 	}

@@ -1,4 +1,3 @@
-//TODO should this be in one directiory above stats/stat.go ?
 package stats
 
 import (
@@ -15,7 +14,7 @@ const (
 )
 
 // Stat type which gets externally and internally constructed which contains a Stat and metadata.
-// TODO(slava): How can we do tags for Stat? Such as table name.
+// TODO(#5): How can we do tags for Stat? Such as table name.
 type Stat struct {
 	// What we aggregate on as a unique Stat.
 	Component string   // module from which the message is sent (e.g., filter)

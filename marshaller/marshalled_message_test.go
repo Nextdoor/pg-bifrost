@@ -22,7 +22,6 @@ import (
 )
 
 func TestString(t *testing.T) {
-	// TODO: update test
 	m := MarshalledMessage{"INSERT", []byte("json"), "key", 1, "0", "0"}
 	expected := "Operation: INSERT Json: json TimeBasedKey: key CommitWalStart: 1 Transaction: 0"
 

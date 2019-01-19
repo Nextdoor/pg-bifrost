@@ -202,7 +202,6 @@ func (b *Batcher) StartBatching() {
 
 		// Update ledger when a COMMIT is seen
 		if msg.Operation == "COMMIT" {
-			// TODO: is it safe to use msg instead of local vars?
 			s := &progress.Seen{
 				Transaction:    msg.Transaction,
 				TimeBasedKey:   msg.TimeBasedKey,

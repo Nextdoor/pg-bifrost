@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO(nehalrp) make these tests less declarative
+// TODO(#6): make these tests less declarative
 func TestToStatsWithCountStat(t *testing.T) {
 	data := aggregate{
 		component: "test_filter",

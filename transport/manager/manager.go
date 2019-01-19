@@ -25,7 +25,6 @@ import (
 	"log"
 )
 
-// TODO does manager need shutdown behavior?
 type TransportManager struct {
 	inputChan   <-chan *marshaller.MarshalledMessage
 	txnsSeen    chan *progress.Seen

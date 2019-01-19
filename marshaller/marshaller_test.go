@@ -152,7 +152,7 @@ func TestTimeBasedKey(t *testing.T) {
 	assert.Equal(t, "0-0", marshalled.TimeBasedKey)
 }
 
-// TODO: to test failures we need to have an interface and mock out the marshall function
+// TODO(#10): to test failures we need to have an interface and mock out the marshall function
 // func TestFailStat(t *testing.T) {}
 
 func TestSuccessStat(t *testing.T) {

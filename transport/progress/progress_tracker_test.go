@@ -163,7 +163,7 @@ func TestSingleSeenEntry(t *testing.T) {
 }
 
 
-// TODO add a test case to panic if you see two COMMITs with the same timeBasedKey
+// TODO(#9): add a test case to panic if you see two COMMITs with the same timeBasedKey
 //func TestDoubleSeenEntry(t *testing.T) {
 //	omap1 := ordered_map.NewOrderedMap()
 //	omap1.Set("1-1", WalTuple{uint64(0), "1"})
