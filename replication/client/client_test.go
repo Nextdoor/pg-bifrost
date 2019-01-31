@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package client
 
@@ -1064,11 +1064,14 @@ func TestHeartbeatRequestedError(t *testing.T) {
 
 	go replicator.Start(progChan)
 
-	time.Sleep(5 * time.Millisecond)
+	select {
+	case <-time.After(40 * time.Millisecond):
+		assert.Fail(t, "channel not closed in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
 	}
 }
 
