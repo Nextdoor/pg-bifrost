@@ -18,7 +18,6 @@ package transporter
 
 import (
 	"encoding/json"
-	"net/url"
 	"strings"
 	"time"
 
@@ -46,7 +45,6 @@ type RabbitMQTransporter struct {
 
 	log          logrus.Entry
 	id           int
-	amqpURL      *url.URL
 	exchangeName string
 	conn         *amqp.Connection
 	channel      *amqp.Channel
@@ -59,8 +57,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	statsChan chan stats.Stat,
 	log logrus.Entry,
 	id int,
-	amqpURL *url.URL,
-	exchangeName string) transport.Transporter {
+	exchangeName string,
+	conn *amqp.Connection) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
 
@@ -71,9 +69,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		statsChan:       statsChan,
 		log:             log,
 		id:              id,
-		amqpURL:         amqpURL,
 		exchangeName:    exchangeName,
-		conn:            nil,
+		conn:            conn,
 		channel:         nil,
 	}
 }
@@ -95,13 +92,12 @@ func (t RabbitMQTransporter) shutdown() {
 	t.log.Debug("closing progress channel")
 	close(t.txnsWritten)
 
-	err := t.channel.Close()
-	if err != nil {
-		t.log.WithError(err).Error("Error while closing channel")
-	}
-	err = t.conn.Close()
-	if err != nil {
-		t.log.WithError(err).Error("Error while closing connection")
+	var err error
+	if t.channel != nil {
+		err = t.channel.Close()
+		if err != nil {
+			t.log.WithError(err).Error("Error while closing channel")
+		}
 	}
 }
 
@@ -114,14 +110,11 @@ func (t RabbitMQTransporter) StartTransporting() {
 	var ok bool
 	var err error
 
-	t.conn, err = amqp.Dial(t.amqpURL.String())
-	if err != nil {
-		t.log.WithError(err).Fatal("Could not connect to RabbitMQ")
-	}
 	t.channel, err = t.conn.Channel()
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not open channel to RabbitMQ")
 	}
+	closeNotify := t.channel.NotifyClose(make(chan *amqp.Error))
 
 	for {
 		select {
@@ -136,6 +129,9 @@ func (t RabbitMQTransporter) StartTransporting() {
 		select {
 		case <-t.shutdownHandler.TerminateCtx.Done():
 			t.log.Debug("received terminateCtx cancellation")
+			return
+		case err := <-closeNotify:
+			t.log.Error(err.Error())
 			return
 		default:
 			// pass

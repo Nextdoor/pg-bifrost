@@ -26,6 +26,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -92,20 +93,39 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 			log.Fatalf("Expected type for %s is %s", ConfVarVirtualHost, "string")
 		}
 	}
+
 	amqpURL := &url.URL{
 		Scheme: "amqp",
 		Host:   host,
 		User:   url.UserPassword(username, password),
 		Path:   virtualHost,
 	}
+	conn, err := amqp.Dial(amqpURL.String())
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to RabbitMQ")
+	}
 
 	transports := make([]*transport.Transporter, workers)
 
 	// Make and link transporters to the batcher's output channels
 	for i := 0; i < workers; i++ {
-		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, amqpURL, exchangeName)
+		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, exchangeName, conn)
 		transports[i] = &t
 	}
 
+	go connectionCleanup(shutdownHandler, conn, log)
+
 	return transports
+}
+
+func connectionCleanup(shutdownHandler shutdown.ShutdownHandler, conn *amqp.Connection, log *logrus.Entry) {
+	closeNotify := conn.NotifyClose(make(chan *amqp.Error))
+
+	select {
+	case <-shutdownHandler.TerminateCtx.Done():
+		conn.Close()
+	case err := <-closeNotify:
+		log.Error(err.Error())
+		shutdownHandler.CancelFunc()
+	}
 }
