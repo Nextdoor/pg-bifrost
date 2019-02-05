@@ -103,7 +103,7 @@ jobs:
 
             # Create tarball and compute hashes
             export ARTIFACT="pg-bifrost.linux-amd64.tar.gz"
-            tar -czvf ${ARTIFACT} /tmp/workspace/pg-bifrost.git/target/*
+            tar -czvf ${ARTIFACT} -C /tmp/workspace/pg-bifrost.git/target .
             SHA256_HASH=$(/usr/bin/sha256sum -b ${ARTIFACT} | cut -d' ' -f1)
             SHA1_HASH=$(/usr/bin/sha1sum -b ${ARTIFACT} | cut -d' ' -f1)
             MD5_HASH=$(/usr/bin/md5sum -b ${ARTIFACT} | cut -d' ' -f1)
