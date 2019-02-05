@@ -165,6 +165,14 @@
   version = "v1.0.6"
 
 [[projects]]
+  branch = "master"
+  digest = "1:525ac3364813b4688df380594e562133e07830dfce0722effda64b37634c13d0"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a314942b2fd9dde7a3f70ba3f1062848ce6eb392"
+
+[[projects]]
   digest = "1:18752d0b95816a1b777505a97f71c7467a8445b8ffb55631a7bf779f6ba4fa83"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
@@ -229,6 +237,7 @@
     "github.com/jackc/pgx",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
+    "github.com/streadway/amqp",
     "github.com/stretchr/testify/assert",
     "gopkg.in/Nextdoor/cli.v1",
     "gopkg.in/Nextdoor/cli.v1/altsrc",

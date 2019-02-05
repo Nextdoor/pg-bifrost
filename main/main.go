@@ -34,12 +34,13 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/app"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/Nextdoor/cli.v1"
+	cli "gopkg.in/Nextdoor/cli.v1"
 	"gopkg.in/Nextdoor/cli.v1/altsrc"
 )
 
@@ -451,6 +452,16 @@ func main() {
 	kinesisCmd.Before = altsrc.InitInputSourceWithContext(kinesis.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
 	kinesisCmd.Flags = kinesis.Flags
 
+	// Also set up rabbitmq subcommands flags from file
+	rabbitmqCmd := cli.Command{
+		Name:   "rabbitmq",
+		Usage:  "replicate to rabbitmq",
+		Action: replicateAction,
+	}
+
+	rabbitmqCmd.Before = altsrc.InitInputSourceWithContext(rabbitmq.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
+	rabbitmqCmd.Flags = rabbitmq.Flags
+
 	cli_app.Commands = []cli.Command{
 		{
 			Name:    "create",
@@ -567,6 +578,7 @@ func main() {
 					Action: replicateAction,
 				},
 				kinesisCmd,
+				rabbitmqCmd,
 			},
 		},
 	}
