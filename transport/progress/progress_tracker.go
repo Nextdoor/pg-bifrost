@@ -19,13 +19,14 @@ package progress
 import (
 	"errors"
 	"fmt"
+	"github.com/Nextdoor/pg-bifrost.git/stats"
+	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
-	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
@@ -72,6 +73,7 @@ type ProgressTracker struct {
 
 	txnSeenChan <-chan *Seen
 	txnsWritten <-chan *ordered_map.OrderedMap // <transaction:progress.written>
+	statsChan    chan stats.Stat
 	OutputChan  chan uint64                    // channel to send overall (youngest) progress on
 
 	ledger Ledger // ordered map which contains batches seen & written per transaction
@@ -83,13 +85,14 @@ type ProgressTracker struct {
 // txnsSeen MUST be an unbuffered channel
 func New(shutdownHandler shutdown.ShutdownHandler,
 	txnSeenChan <-chan *Seen,
-	txnsWritten <-chan *ordered_map.OrderedMap) ProgressTracker {
+	txnsWritten <-chan *ordered_map.OrderedMap,
+	statsChan    chan stats.Stat) ProgressTracker {
 
 	outputChan := make(chan uint64, outputChanSize)
 	stopChan := make(chan struct{})
 	ledger := NewLedger()
 
-	return ProgressTracker{shutdownHandler, txnSeenChan, txnsWritten, outputChan, ledger, stopChan}
+	return ProgressTracker{shutdownHandler, txnSeenChan, txnsWritten, statsChan, outputChan, ledger, stopChan}
 }
 
 // shutdown idempotently closes the output channel
@@ -273,13 +276,21 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 			}
 
 			// Emit progress of the updated ledger
+			initialLedgerSize := p.ledger.items.Len()
 			p.emitProgress()
+			finalLedgerSize := p.ledger.items.Len()
+
+			p.statsChan <- stats.NewStatHistogram("progress_tracker", "ledger_size", int64(finalLedgerSize), time.Now().UnixNano(), "count")
+			p.statsChan <- stats.NewStatHistogram("progress_tracker", "ledger_flushed", int64(initialLedgerSize-finalLedgerSize), time.Now().UnixNano(), "count")
+
 		case sig := <-sigchan:
 			log.Infof("Got a signal %d (%s)", sig, sig.String())
 
 			if sig == syscall.SIGUSR2 {
 				// Dump out ledger on SIGUSR2 signal
-				fmt.Println("Ledger:", utils.OrderedMapToString(p.ledger.items))
+				for _, entry := range utils.OrderedMapToStrings(p.ledger.items) {
+					fmt.Println("entry: ", entry)
+				}
 			}
 		default:
 			// Flush seen and written channel so the ledger is up to date before emitting

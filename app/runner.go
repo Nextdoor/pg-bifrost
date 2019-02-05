@@ -189,7 +189,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		batcherMemorySoftLimit,
 		batcherRoutingMethod)
 
-	progressTracker := progress.New(shutdownHandler, txnsSeen, txnsWritten)
+	progressTracker := progress.New(shutdownHandler, txnsSeen, txnsWritten, statsChan)
 	statsAggregator := aggregator.New(shutdownHandler, statsChan)
 
 	reporterConfig := map[string]interface{}{}

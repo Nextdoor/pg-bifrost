@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package utils
 
@@ -63,16 +63,17 @@ func PgDropReplicationSlot(sourceConfig pgx.ConnConfig, slot string) error {
 	return err
 }
 
-// orderedMapToString is a helper function to return ordered_map as a string with newlines
-func OrderedMapToString(om *ordered_map.OrderedMap) string {
+// orderedMapToString is a helper function to return ordered_map as an array of strings
+func OrderedMapToStrings(om *ordered_map.OrderedMap) []string {
 	builder := make([]string, om.Len())
 
 	var index int = 0
 	iter := om.IterFunc()
 	for kv, ok := iter(); ok; kv, ok = iter() {
 		val, _ := om.Get(kv.Key)
-		builder[index] = fmt.Sprintf("%v:%v, \n", kv.Key, val)
+		builder[index] = fmt.Sprintf("%v:%v", kv.Key, val)
 		index++
 	}
-	return fmt.Sprintf("OrderedMap%v", builder)
+
+	return builder
 }

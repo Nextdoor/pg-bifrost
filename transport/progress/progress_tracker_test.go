@@ -18,6 +18,7 @@ package progress
 
 import (
 	"fmt"
+	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"reflect"
 	"testing"
 	"time"
@@ -81,8 +82,9 @@ func getProgressTracker() (ProgressTracker, chan *Seen, chan *ordered_map.Ordere
 	seen := make(chan *Seen)
 	written := make(chan *ordered_map.OrderedMap, 1000)
 	sh := shutdown.NewShutdownHandler()
+	statsChan := make(chan stats.Stat, 100)
 
-	p := New(sh, seen, written)
+	p := New(sh, seen, written, statsChan)
 
 	return p, seen, written
 }
