@@ -18,6 +18,7 @@ package transporter
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -26,15 +27,15 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
+	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
-type operation struct {
-	Operation string `json:"operation"`
-	Table     string `json:"table"`
-}
+var (
+	TimeSource utils.TimeSource = utils.RealTime{}
+)
 
 type RabbitMQTransporter struct {
 	shutdownHandler shutdown.ShutdownHandler
@@ -43,11 +44,13 @@ type RabbitMQTransporter struct {
 
 	statsChan chan stats.Stat
 
-	log          logrus.Entry
-	id           int
-	exchangeName string
-	batchSize    int
-	conn         *amqp.Connection
+	log           logrus.Entry
+	id            int
+	exchangeName  string
+	batchSize     int
+	conn          *amqp.Connection
+	channel       *amqp.Channel
+	publishNotify chan amqp.Confirmation
 }
 
 // NewTransporter returns a rabbitmq transporter
@@ -101,20 +104,21 @@ func (t RabbitMQTransporter) StartTransporting() {
 
 	var b interface{}
 	var ok bool
+	var err error
 
-	channel, err := t.conn.Channel()
+	t.channel, err = t.conn.Channel()
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not open channel to RabbitMQ")
 	}
 	defer func() {
-		err = channel.Close()
+		err = t.channel.Close()
 		if err != nil {
 			t.log.WithError(err).Error("Error while closing channel")
 		}
 	}()
-	closeNotify := channel.NotifyClose(make(chan *amqp.Error))
-	publishNotify := channel.NotifyPublish(make(chan amqp.Confirmation, t.batchSize))
-	err = channel.Confirm(false)
+	closeNotify := t.channel.NotifyClose(make(chan *amqp.Error))
+	t.publishNotify = t.channel.NotifyPublish(make(chan amqp.Confirmation, t.batchSize))
+	err = t.channel.Confirm(false)
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not turn on confirmations for channel")
 	}
@@ -159,39 +163,74 @@ func (t RabbitMQTransporter) StartTransporting() {
 			panic("Batch payload is not a []*marshaller.MarshalledMessage")
 		}
 
-		op := operation{}
-		for _, msg := range messagesSlice {
-			err = json.Unmarshal(msg.Json, &op)
-			if err != nil {
-				t.log.WithError(err).Error("Could not unmarshal WAL json")
-			}
-			key := strings.Join([]string{op.Table, op.Operation}, ".")
-			amqpMsg := amqp.Publishing{
-				DeliveryMode: amqp.Persistent,
-				Timestamp:    time.Now(),
-				ContentType:  "application/json",
-				Body:         msg.Json,
-			}
+		// Begin timer
+		start := TimeSource.UnixNano()
 
-			err = channel.Publish(t.exchangeName, key, false, false, amqpMsg)
-			if err != nil {
-				t.log.WithError(err).Error("Could not publish to RabbitMQ")
-			}
+		err = t.sendMessages(messagesSlice)
+		if err != nil {
+			t.log.WithError(err).Error("Could not transport messages")
+			return
 		}
 
-		desiredCount := uint64(len(messagesSlice)) + confirms
-		t.log.WithField("desiredCount", desiredCount).Debug("Waiting for desired confirms count")
-		for confirms < desiredCount {
-			confirm := <-publishNotify
-			if !confirm.Ack {
-				t.log.Error("Message was not delievered to RabbitMQ")
-				return
-			}
-			confirms = confirm.DeliveryTag
+		confirms, err = t.waitForConfirmations(uint64(len(messagesSlice)), confirms)
+		if err != nil {
+			t.log.WithError(err).Error("Could not confirm message publication")
+			return
 		}
-		t.log.Info("Messages delivered")
+
+		// End timer and send stat
+		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("rabbitmq_transport", "duration", total, TimeSource.UnixNano(), "ms")
+
+		t.log.Debug("Messages delivered")
+		t.statsChan <- stats.NewStatCount("rabbitmq_transport", "written", int64(len(messagesSlice)), TimeSource.UnixNano())
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
 	}
+}
+
+type operation struct {
+	Operation string `json:"operation"`
+	Table     string `json:"table"`
+}
+
+func (t RabbitMQTransporter) sendMessages(messagesSlice []*marshaller.MarshalledMessage) error {
+	var err error
+	op := operation{}
+	for _, msg := range messagesSlice {
+		err = json.Unmarshal(msg.Json, &op)
+		if err != nil {
+			t.log.WithError(err).Error("Could not unmarshal WAL json")
+		}
+		key := strings.Join([]string{op.Table, op.Operation}, ".")
+		amqpMsg := amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
+			Timestamp:    time.Now(),
+			ContentType:  "application/json",
+			Body:         msg.Json,
+		}
+
+		err = t.channel.Publish(t.exchangeName, key, false, false, amqpMsg)
+		if err != nil {
+			t.log.WithError(err).Error("Could not publish to RabbitMQ")
+			return err
+		}
+	}
+	return nil
+}
+
+func (t RabbitMQTransporter) waitForConfirmations(messageCount, confirms uint64) (uint64, error) {
+	desiredCount := messageCount + confirms
+	t.log.WithField("desiredCount", desiredCount).Debug("Waiting for desired confirms count")
+	for confirms < desiredCount {
+		confirm := <-t.publishNotify
+		if !confirm.Ack {
+			t.log.Error("Message was not delivered to RabbitMQ")
+			return confirms, errors.New("Message was not acknowledged")
+		}
+		confirms = confirm.DeliveryTag
+	}
+
+	return confirms, nil
 }
