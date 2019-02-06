@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	ConfVarExchangeName = "exchange-name"
-	ConfVarUsername     = "rabbitmq-username"
-	ConfVarPassword     = "rabbitmq-password"
-	ConfVarHost         = "rabbitmq-host"
-	ConfVarVirtualHost  = "rabbitmq-vhost"
+	ConfVarExchangeName   = "exchange-name"
+	ConfVarUsername       = "rabbitmq-username"
+	ConfVarPassword       = "rabbitmq-password"
+	ConfVarHost           = "rabbitmq-host"
+	ConfVarVirtualHost    = "rabbitmq-vhost"
+	ConfVarWriteBatchSize = "rabbitmq-batch-size"
 )
 
 var Flags = []cli.Flag{
@@ -63,5 +64,11 @@ var Flags = []cli.Flag{
 		Usage:  "RabbitMQ Virtual Host",
 		EnvVar: "BIFROST_RABBITMQ_VHOST",
 		Value:  "/",
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
+		Name:   ConfVarWriteBatchSize,
+		Usage:  "RabbitMQ Number of messages to write before waiting for confirmations",
+		EnvVar: "BIFROST_RABBITMQ_BATCH_SIZE",
+		Value:  5000,
 	}),
 }

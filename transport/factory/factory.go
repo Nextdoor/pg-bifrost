@@ -8,6 +8,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/stdout"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -53,7 +54,7 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 	case transport.KINESIS:
 		batchFactory = kinesis.NewBatchFactory(transportConfig)
 	case transport.RABBITMQ:
-		batchFactory = batch.NewGenericBatchFactory(1)
+		batchFactory = rabbitmq.NewBatchFactory(transportConfig)
 	default:
 		panic("unrecognized TransportType")
 	}

@@ -32,8 +32,8 @@ import (
 )
 
 type operation struct {
-	operation string `json:"operation"`
-	table     string `json:"table"`
+	Operation string `json:"operation"`
+	Table     string `json:"table"`
 }
 
 type RabbitMQTransporter struct {
@@ -46,8 +46,8 @@ type RabbitMQTransporter struct {
 	log          logrus.Entry
 	id           int
 	exchangeName string
+	batchSize    int
 	conn         *amqp.Connection
-	channel      *amqp.Channel
 }
 
 // NewTransporter returns a rabbitmq transporter
@@ -58,7 +58,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	log logrus.Entry,
 	id int,
 	exchangeName string,
-	conn *amqp.Connection) transport.Transporter {
+	conn *amqp.Connection,
+	batchSize int) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
 
@@ -71,7 +72,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		id:              id,
 		exchangeName:    exchangeName,
 		conn:            conn,
-		channel:         nil,
+		batchSize:       batchSize,
 	}
 }
 
@@ -91,14 +92,6 @@ func (t RabbitMQTransporter) shutdown() {
 
 	t.log.Debug("closing progress channel")
 	close(t.txnsWritten)
-
-	var err error
-	if t.channel != nil {
-		err = t.channel.Close()
-		if err != nil {
-			t.log.WithError(err).Error("Error while closing channel")
-		}
-	}
 }
 
 // StartTransporting reads in message batches, outputs its String to RabbitMQ and then sends a progress report on the batch
@@ -108,13 +101,24 @@ func (t RabbitMQTransporter) StartTransporting() {
 
 	var b interface{}
 	var ok bool
-	var err error
 
-	t.channel, err = t.conn.Channel()
+	channel, err := t.conn.Channel()
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not open channel to RabbitMQ")
 	}
-	closeNotify := t.channel.NotifyClose(make(chan *amqp.Error))
+	defer func() {
+		err = channel.Close()
+		if err != nil {
+			t.log.WithError(err).Error("Error while closing channel")
+		}
+	}()
+	closeNotify := channel.NotifyClose(make(chan *amqp.Error))
+	publishNotify := channel.NotifyPublish(make(chan amqp.Confirmation, t.batchSize))
+	err = channel.Confirm(false)
+	if err != nil {
+		t.log.WithError(err).Fatal("Could not turn on confirmations for channel")
+	}
+	confirms := uint64(0)
 
 	for {
 		select {
@@ -161,19 +165,31 @@ func (t RabbitMQTransporter) StartTransporting() {
 			if err != nil {
 				t.log.WithError(err).Error("Could not unmarshal WAL json")
 			}
-			key := strings.Join([]string{op.table, op.operation}, ".")
-			msg := amqp.Publishing{
+			key := strings.Join([]string{op.Table, op.Operation}, ".")
+			amqpMsg := amqp.Publishing{
 				DeliveryMode: amqp.Persistent,
 				Timestamp:    time.Now(),
 				ContentType:  "application/json",
 				Body:         msg.Json,
 			}
 
-			err = t.channel.Publish(t.exchangeName, key, false, false, msg)
+			err = channel.Publish(t.exchangeName, key, false, false, amqpMsg)
 			if err != nil {
 				t.log.WithError(err).Error("Could not publish to RabbitMQ")
 			}
 		}
+
+		desiredCount := uint64(len(messagesSlice)) + confirms
+		t.log.WithField("desiredCount", desiredCount).Debug("Waiting for desired confirms count")
+		for confirms < desiredCount {
+			confirm := <-publishNotify
+			if !confirm.Ack {
+				t.log.Error("Message was not delievered to RabbitMQ")
+				return
+			}
+			confirms = confirm.DeliveryTag
+		}
+		t.log.Info("Messages delivered")
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
