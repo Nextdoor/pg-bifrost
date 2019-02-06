@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NeowayLabs/wabbit"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -48,9 +49,9 @@ type RabbitMQTransporter struct {
 	id            int
 	exchangeName  string
 	batchSize     int
-	conn          *amqp.Connection
-	channel       *amqp.Channel
-	publishNotify chan amqp.Confirmation
+	conn          wabbit.Conn
+	channel       wabbit.Channel
+	publishNotify chan wabbit.Confirmation
 }
 
 // NewTransporter returns a rabbitmq transporter
@@ -61,7 +62,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	log logrus.Entry,
 	id int,
 	exchangeName string,
-	conn *amqp.Connection,
+	conn wabbit.Conn,
 	batchSize int) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
@@ -116,8 +117,8 @@ func (t RabbitMQTransporter) StartTransporting() {
 			t.log.WithError(err).Error("Error while closing channel")
 		}
 	}()
-	closeNotify := t.channel.NotifyClose(make(chan *amqp.Error))
-	t.publishNotify = t.channel.NotifyPublish(make(chan amqp.Confirmation, t.batchSize))
+	closeNotify := t.channel.NotifyClose(make(chan wabbit.Error))
+	t.publishNotify = t.channel.NotifyPublish(make(chan wabbit.Confirmation, t.batchSize))
 	err = t.channel.Confirm(false)
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not turn on confirmations for channel")
@@ -204,14 +205,12 @@ func (t RabbitMQTransporter) sendMessages(messagesSlice []*marshaller.Marshalled
 			t.log.WithError(err).Error("Could not unmarshal WAL json")
 		}
 		key := strings.Join([]string{op.Table, op.Operation}, ".")
-		amqpMsg := amqp.Publishing{
-			DeliveryMode: amqp.Persistent,
-			Timestamp:    time.Now(),
-			ContentType:  "application/json",
-			Body:         msg.Json,
+		options := wabbit.Option{
+			"deliveryMode": amqp.Persistent,
+			"contentType":  "application/json",
 		}
 
-		err = t.channel.Publish(t.exchangeName, key, false, false, amqpMsg)
+		err = t.channel.Publish(t.exchangeName, key, msg.Json, options)
 		if err != nil {
 			t.log.WithError(err).Error("Could not publish to RabbitMQ")
 			return err
@@ -225,11 +224,11 @@ func (t RabbitMQTransporter) waitForConfirmations(messageCount, confirms uint64)
 	t.log.WithField("desiredCount", desiredCount).Debug("Waiting for desired confirms count")
 	for confirms < desiredCount {
 		confirm := <-t.publishNotify
-		if !confirm.Ack {
+		if !confirm.Ack() {
 			t.log.Error("Message was not delivered to RabbitMQ")
 			return confirms, errors.New("Message was not acknowledged")
 		}
-		confirms = confirm.DeliveryTag
+		confirms = confirm.DeliveryTag()
 	}
 
 	return confirms, nil

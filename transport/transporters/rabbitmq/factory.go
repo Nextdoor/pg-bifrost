@@ -20,6 +20,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -27,7 +29,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
 )
 
 var (
@@ -140,7 +141,7 @@ func getConfig(transportConfig map[string]interface{}) *config {
 }
 
 // createConnection either returns a connection or logs a fatal message
-func createConnection(host, user, pass, vhost string, log *logrus.Entry) *amqp.Connection {
+func createConnection(host, user, pass, vhost string, log *logrus.Entry) wabbit.Conn {
 	amqpURL := &url.URL{
 		Scheme: "amqp",
 		Host:   host,
@@ -155,8 +156,8 @@ func createConnection(host, user, pass, vhost string, log *logrus.Entry) *amqp.C
 	return conn
 }
 
-func connectionCleanup(shutdownHandler shutdown.ShutdownHandler, conn *amqp.Connection, log *logrus.Entry) {
-	closeNotify := conn.NotifyClose(make(chan *amqp.Error))
+func connectionCleanup(shutdownHandler shutdown.ShutdownHandler, conn wabbit.Conn, log *logrus.Entry) {
+	closeNotify := conn.NotifyClose(make(chan wabbit.Error))
 
 	select {
 	case <-shutdownHandler.TerminateCtx.Done():
