@@ -61,6 +61,22 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	conf := getConfig(transportConfig)
 
 	conn := createConnection(conf.host, conf.username, conf.password, conf.vhost, log)
+	channel, err := conn.Channel()
+	if err != nil {
+		log.WithError(err).Fatal("Could not open channel")
+	}
+	defer channel.Close()
+	err = channel.ExchangeDeclare(
+		conf.exchange, // name of the exchange
+		"topic",       // type
+		wabbit.Option{
+			"durable":  true,
+			"delete":   false,
+			"internal": false,
+			"noWait":   false,
+		},
+	)
+	log.WithField("exchangeName", conf.exchange).WithError(err).Fatal("Could not declare exchange")
 
 	transports := make([]*transport.Transporter, workers)
 
