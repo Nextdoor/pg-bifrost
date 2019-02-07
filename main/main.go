@@ -40,7 +40,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
-	cli "gopkg.in/Nextdoor/cli.v1"
+	"gopkg.in/Nextdoor/cli.v1"
 	"gopkg.in/Nextdoor/cli.v1/altsrc"
 )
 

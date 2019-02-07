@@ -17,7 +17,7 @@
 package rabbitmq
 
 import (
-	cli "gopkg.in/Nextdoor/cli.v1"
+	"gopkg.in/Nextdoor/cli.v1"
 	"gopkg.in/Nextdoor/cli.v1/altsrc"
 )
 
