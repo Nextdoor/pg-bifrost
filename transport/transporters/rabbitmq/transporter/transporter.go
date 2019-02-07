@@ -48,7 +48,7 @@ type RabbitMQTransporter struct {
 	id            int
 	exchangeName  string
 	batchSize     int
-	connMan       *ConnMan
+	connMan       ConnectionGetter
 	channel       wabbit.Channel
 	publishNotify chan wabbit.Confirmation
 }
@@ -61,7 +61,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	log logrus.Entry,
 	id int,
 	exchangeName string,
-	connMan *ConnMan,
+	connMan ConnectionGetter,
 	batchSize int) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
@@ -97,7 +97,8 @@ func (t RabbitMQTransporter) shutdown() {
 	close(t.txnsWritten)
 }
 
-// StartTransporting reads in message batches, outputs its String to RabbitMQ and then sends a progress report on the batch
+// StartTransporting gets a RabbitMQ connection from the ConnectionGetter and
+// passes it to transport()
 func (t RabbitMQTransporter) StartTransporting() {
 	t.log.Info("starting transporter")
 	defer t.shutdown()
@@ -112,15 +113,13 @@ func (t RabbitMQTransporter) StartTransporting() {
 
 		conn, err := t.connMan.GetConnection(t.shutdownHandler.TerminateCtx)
 		if err != nil {
-			t.log.WithError(err).Fatal("Shutting down")
-		}
-		if conn == nil {
 			return
 		}
 		t.transport(conn)
 	}
 }
 
+// transport reads in message batches, outputs its String to RabbitMQ and then sends a progress report on the batch
 func (t RabbitMQTransporter) transport(conn wabbit.Conn) {
 	var b interface{}
 	var ok bool

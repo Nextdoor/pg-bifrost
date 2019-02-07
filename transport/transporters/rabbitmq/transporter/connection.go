@@ -26,6 +26,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -destination=mock_transporter.go -package=mocks github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter ConnectionGetter
+
+// ConnectionGetter can get a wabbit.Conn or an error
+type ConnectionGetter interface {
+	GetConnection(ctx context.Context) (wabbit.Conn, error)
+}
+
+// DialerFn type for functions that return a (wabbit.Conn, error) tuple
 type DialerFn func() (wabbit.Conn, error)
 
 // ConnMan holds an wabbit.Conn, and a mutex for blocking while it tries

@@ -22,12 +22,14 @@ import (
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
 	"github.com/cevaris/ordered_map"
@@ -127,4 +129,46 @@ func TestPutOk(t *testing.T) {
 		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(3000*time.Millisecond)),
 	}
 	stats.VerifyStats(t, statsChan, expected)
+}
+
+func TestConnectionDies(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	defer resetTimeSource()
+
+	in := make(chan transport.Batch, 1000)
+	txns := make(chan *ordered_map.OrderedMap, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+
+	connString := "amqp://anyhost:anyport/%2fanyVHost"
+	fakeServer := server.NewServer(connString)
+	err := fakeServer.Start()
+	if err != nil {
+		t.Error(err)
+	}
+
+	conn, err := amqptest.Dial(connString)
+	if err != nil {
+		t.Error(err)
+	}
+	connMan := mocks.NewMockConnectionGetter(mockCtrl)
+	connMan.EXPECT().GetConnection(gomock.Any()).Return(conn, nil).Times(2)
+
+	sh := shutdown.NewShutdownHandler()
+
+	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, "testexchange", connMan, 1000)
+
+	// Start test
+	go transport.StartTransporting()
+
+	fakeServer.Stop()
+	err = fakeServer.Start()
+	if err != nil {
+		t.Error(err)
+	}
+	defer fakeServer.Stop()
+
+	time.Sleep(time.Second * 1)
+
+	sh.CancelFunc()
 }
