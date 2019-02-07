@@ -20,7 +20,6 @@ import (
 	"os"
 
 	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -72,10 +71,12 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		log.Fatalf("Expected type for %s is %s", ConfVarWriteBatchSize, "int")
 	}
 
-	conn, err := amqp.Dial(amqpURL)
+	connMan := transporter.NewConnectionManager(amqpURL, log)
+	conn, err := connMan.GetConnection(shutdownHandler.TerminateCtx)
 	if err != nil {
-		log.WithError(err).Fatal("Could not connect to RabbitMQ")
+		log.WithError(err).Fatal("Shutting down")
 	}
+
 	channel, err := conn.Channel()
 	if err != nil {
 		log.WithError(err).Fatal("Could not open channel")
@@ -105,28 +106,11 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 
 	// Make and link transporters to the batcher's output channels
 	for i := 0; i < workers; i++ {
-		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, exchangeName, conn, batchSize)
+		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, exchangeName, connMan, batchSize)
 		transports[i] = &t
 	}
 
-	go connectionCleanup(shutdownHandler, conn, log)
-
 	return transports
-}
-
-func connectionCleanup(shutdownHandler shutdown.ShutdownHandler, conn wabbit.Conn, log *logrus.Entry) {
-	closeNotify := conn.NotifyClose(make(chan wabbit.Error))
-
-	select {
-	case <-shutdownHandler.TerminateCtx.Done():
-		err := conn.Close()
-		if err != nil {
-			log.WithError(err).Error("Error while closing connection")
-		}
-	case amqpErr := <-closeNotify:
-		log.Error(amqpErr.Error())
-		shutdownHandler.CancelFunc()
-	}
 }
 
 // NewBatchFactory returns a GenericBatchFactory configured for RabbitMQ

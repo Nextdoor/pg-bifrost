@@ -49,7 +49,7 @@ type RabbitMQTransporter struct {
 	id            int
 	exchangeName  string
 	batchSize     int
-	conn          wabbit.Conn
+	connMan       *ConnMan
 	channel       wabbit.Channel
 	publishNotify chan wabbit.Confirmation
 }
@@ -62,7 +62,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	log logrus.Entry,
 	id int,
 	exchangeName string,
-	conn wabbit.Conn,
+	connMan *ConnMan,
 	batchSize int) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
@@ -75,7 +75,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		log:             log,
 		id:              id,
 		exchangeName:    exchangeName,
-		conn:            conn,
+		connMan:         connMan,
 		batchSize:       batchSize,
 	}
 }
@@ -103,11 +103,31 @@ func (t RabbitMQTransporter) StartTransporting() {
 	t.log.Info("starting transporter")
 	defer t.shutdown()
 
+	for {
+		select {
+		case <-t.shutdownHandler.TerminateCtx.Done():
+			t.log.Debug("received terminateCtx cancellation")
+			return
+		default:
+		}
+
+		conn, err := t.connMan.GetConnection(t.shutdownHandler.TerminateCtx)
+		if err != nil {
+			t.log.WithError(err).Fatal("Shutting down")
+		}
+		if conn == nil {
+			return
+		}
+		t.transport(conn)
+	}
+}
+
+func (t RabbitMQTransporter) transport(conn wabbit.Conn) {
 	var b interface{}
 	var ok bool
 	var err error
 
-	t.channel, err = t.conn.Channel()
+	t.channel, err = conn.Channel()
 	if err != nil {
 		t.log.WithError(err).Fatal("Could not open channel to RabbitMQ")
 	}
@@ -117,6 +137,7 @@ func (t RabbitMQTransporter) StartTransporting() {
 			t.log.WithError(err).Error("Error while closing channel")
 		}
 	}()
+	t.log.Info("Created new channel")
 	closeNotify := t.channel.NotifyClose(make(chan wabbit.Error))
 	t.publishNotify = t.channel.NotifyPublish(make(chan wabbit.Confirmation, t.batchSize))
 	err = t.channel.Confirm(false)
@@ -130,6 +151,9 @@ func (t RabbitMQTransporter) StartTransporting() {
 		case <-t.shutdownHandler.TerminateCtx.Done():
 			t.log.Debug("received terminateCtx cancellation")
 			return
+		case <-closeNotify:
+			t.log.Debug("channel closed")
+			return
 
 		case b, ok = <-t.inputChan:
 			// pass
@@ -139,8 +163,7 @@ func (t RabbitMQTransporter) StartTransporting() {
 		case <-t.shutdownHandler.TerminateCtx.Done():
 			t.log.Debug("received terminateCtx cancellation")
 			return
-		case err := <-closeNotify:
-			t.log.Error(err.Error())
+		case <-closeNotify:
 			return
 		default:
 			// pass
@@ -167,13 +190,14 @@ func (t RabbitMQTransporter) StartTransporting() {
 		// Begin timer
 		start := TimeSource.UnixNano()
 
-		err = t.sendMessages(messagesSlice)
+		err = t.sendMessages(closeNotify, messagesSlice)
 		if err != nil {
 			t.log.WithError(err).Error("Could not transport messages")
+			t.statsChan <- stats.NewStatCount("rabbitmq_transport", "failure", 1, TimeSource.UnixNano())
 			return
 		}
 
-		confirms, err = t.waitForConfirmations(uint64(len(messagesSlice)), confirms)
+		confirms, err = t.waitForConfirmations(closeNotify, uint64(len(messagesSlice)), confirms)
 		if err != nil {
 			t.log.WithError(err).Error("Could not confirm message publication")
 			return
@@ -196,10 +220,18 @@ type operation struct {
 	Table     string `json:"table"`
 }
 
-func (t RabbitMQTransporter) sendMessages(messagesSlice []*marshaller.MarshalledMessage) error {
+func (t RabbitMQTransporter) sendMessages(closeNotify chan wabbit.Error, messagesSlice []*marshaller.MarshalledMessage) error {
 	var err error
 	op := operation{}
 	for _, msg := range messagesSlice {
+		select {
+		case <-t.shutdownHandler.TerminateCtx.Done():
+			return errors.New("Shutting down.  Did not publish all messages")
+		case <-closeNotify:
+			return errors.New("Channel closed.  Could not publish all messages")
+		default:
+			// pass
+		}
 		err = json.Unmarshal(msg.Json, &op)
 		if err != nil {
 			t.log.WithError(err).Error("Could not unmarshal WAL json")
@@ -219,16 +251,22 @@ func (t RabbitMQTransporter) sendMessages(messagesSlice []*marshaller.Marshalled
 	return nil
 }
 
-func (t RabbitMQTransporter) waitForConfirmations(messageCount, confirms uint64) (uint64, error) {
+func (t RabbitMQTransporter) waitForConfirmations(closeNotify chan wabbit.Error, messageCount, confirms uint64) (uint64, error) {
 	desiredCount := messageCount + confirms
 	t.log.WithField("desiredCount", desiredCount).Debug("Waiting for desired confirms count")
 	for confirms < desiredCount {
-		confirm := <-t.publishNotify
-		if !confirm.Ack() {
-			t.log.Error("Message was not delivered to RabbitMQ")
-			return confirms, errors.New("Message was not acknowledged")
+		select {
+		case confirm := <-t.publishNotify:
+			if !confirm.Ack() {
+				t.log.Error("Message was not delivered to RabbitMQ")
+				return confirms, errors.New("Message was not acknowledged")
+			}
+			confirms = confirm.DeliveryTag()
+		case <-t.shutdownHandler.TerminateCtx.Done():
+			return confirms, errors.New("Shutting down.  Could not confirm all messages were published")
+		case <-closeNotify:
+			return confirms, errors.New("Channel closed.  Could not confirm all messages were published")
 		}
-		confirms = confirm.DeliveryTag()
 	}
 
 	return confirms, nil
