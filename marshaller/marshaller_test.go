@@ -116,6 +116,7 @@ func TestBasicMessage(t *testing.T) {
 
 	assert.Equal(t, uint64(1), marshalled.WalStart)
 	assert.Equal(t, "INSERT", marshalled.Operation)
+	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
 	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"

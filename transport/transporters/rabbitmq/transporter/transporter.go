@@ -17,7 +17,6 @@
 package transporter
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -215,14 +214,8 @@ func (t RabbitMQTransporter) transport(conn wabbit.Conn) {
 	}
 }
 
-type operation struct {
-	Operation string `json:"operation"`
-	Table     string `json:"table"`
-}
-
 func (t RabbitMQTransporter) sendMessages(closeNotify chan wabbit.Error, messagesSlice []*marshaller.MarshalledMessage) error {
 	var err error
-	op := operation{}
 	for _, msg := range messagesSlice {
 		select {
 		case <-t.shutdownHandler.TerminateCtx.Done():
@@ -232,11 +225,7 @@ func (t RabbitMQTransporter) sendMessages(closeNotify chan wabbit.Error, message
 		default:
 			// pass
 		}
-		err = json.Unmarshal(msg.Json, &op)
-		if err != nil {
-			t.log.WithError(err).Error("Could not unmarshal WAL json")
-		}
-		key := strings.Join([]string{op.Table, op.Operation}, ".")
+		key := strings.Join([]string{msg.Table, msg.Operation}, ".")
 		options := wabbit.Option{
 			"deliveryMode": amqp.Persistent,
 			"contentType":  "application/json",
