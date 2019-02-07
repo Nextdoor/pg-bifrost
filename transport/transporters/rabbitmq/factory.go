@@ -17,7 +17,6 @@
 package rabbitmq
 
 import (
-	"net/url"
 	"os"
 
 	"github.com/NeowayLabs/wabbit"
@@ -36,15 +35,6 @@ var (
 	log    = logger.WithField("package", "rabbitmq")
 )
 
-type config struct {
-	host      string
-	username  string
-	password  string
-	vhost     string
-	exchange  string
-	batchSize int
-}
-
 func init() {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.InfoLevel)
@@ -58,40 +48,6 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	inputChans []<-chan transport.Batch,
 	transportConfig map[string]interface{}) []*transport.Transporter {
 
-	conf := getConfig(transportConfig)
-
-	conn := createConnection(conf.host, conf.username, conf.password, conf.vhost, log)
-	channel, err := conn.Channel()
-	if err != nil {
-		log.WithError(err).Fatal("Could not open channel")
-	}
-	defer channel.Close()
-	err = channel.ExchangeDeclare(
-		conf.exchange, // name of the exchange
-		"topic",       // type
-		wabbit.Option{
-			"durable":  true,
-			"delete":   false,
-			"internal": false,
-			"noWait":   false,
-		},
-	)
-	log.WithField("exchangeName", conf.exchange).WithError(err).Fatal("Could not declare exchange")
-
-	transports := make([]*transport.Transporter, workers)
-
-	// Make and link transporters to the batcher's output channels
-	for i := 0; i < workers; i++ {
-		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, conf.exchange, conn, conf.batchSize)
-		transports[i] = &t
-	}
-
-	go connectionCleanup(shutdownHandler, conn, log)
-
-	return transports
-}
-
-func getConfig(transportConfig map[string]interface{}) *config {
 	exchangeNameVar := transportConfig[ConfVarExchangeName]
 	exchangeName, ok := exchangeNameVar.(string)
 
@@ -99,43 +55,13 @@ func getConfig(transportConfig map[string]interface{}) *config {
 		log.Fatalf("Expected type for %s is %s", ConfVarExchangeName, "string")
 	}
 
-	usernameVar := transportConfig[ConfVarUsername]
-	var username string
-	if usernameVar != "" {
-		username, ok = usernameVar.(string)
+	amqpURLVar := transportConfig[ConfVarURL]
+	var amqpURL string
+	if amqpURLVar != "" {
+		amqpURL, ok = amqpURLVar.(string)
 
 		if !ok {
-			log.Fatalf("Expected type for %s is %s", ConfVarUsername, "string")
-		}
-	}
-
-	passwordVar := transportConfig[ConfVarPassword]
-	var password string
-	if passwordVar != "" {
-		password, ok = passwordVar.(string)
-
-		if !ok {
-			log.Fatalf("Expected type for %s is %s", ConfVarPassword, "string")
-		}
-	}
-
-	hostVar := transportConfig[ConfVarHost]
-	var host string
-	if hostVar != "" {
-		host, ok = hostVar.(string)
-
-		if !ok {
-			log.Fatalf("Expected type for %s is %s", ConfVarHost, "string")
-		}
-	}
-
-	virtualHostVar := transportConfig[ConfVarVirtualHost]
-	var virtualHost string
-	if virtualHostVar != "" {
-		virtualHost, ok = virtualHostVar.(string)
-
-		if !ok {
-			log.Fatalf("Expected type for %s is %s", ConfVarVirtualHost, "string")
+			log.Fatalf("Expected type for %s is %s", ConfVarURL, "string")
 		}
 	}
 
@@ -146,30 +72,46 @@ func getConfig(transportConfig map[string]interface{}) *config {
 		log.Fatalf("Expected type for %s is %s", ConfVarWriteBatchSize, "int")
 	}
 
-	return &config{
-		host:      host,
-		username:  username,
-		password:  password,
-		vhost:     virtualHost,
-		exchange:  exchangeName,
-		batchSize: batchSize,
-	}
-}
-
-// createConnection either returns a connection or logs a fatal message
-func createConnection(host, user, pass, vhost string, log *logrus.Entry) wabbit.Conn {
-	amqpURL := &url.URL{
-		Scheme: "amqp",
-		Host:   host,
-		User:   url.UserPassword(user, pass),
-		Path:   vhost,
-	}
-	conn, err := amqp.Dial(amqpURL.String())
+	conn, err := amqp.Dial(amqpURL)
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to RabbitMQ")
 	}
+	channel, err := conn.Channel()
+	if err != nil {
+		log.WithError(err).Fatal("Could not open channel")
+	}
+	defer func() {
+		err = channel.Close()
+		if err != nil {
+			log.WithError(err).Error("Error while closing channel")
+		}
+	}()
 
-	return conn
+	err = channel.ExchangeDeclare(
+		exchangeName, // name of the exchange
+		"topic",      // type
+		wabbit.Option{
+			"durable":  true,
+			"delete":   false,
+			"internal": false,
+			"noWait":   false,
+		},
+	)
+	if err != nil {
+		log.WithField("exchangeName", exchangeName).WithError(err).Fatal("Could not declare exchange")
+	}
+
+	transports := make([]*transport.Transporter, workers)
+
+	// Make and link transporters to the batcher's output channels
+	for i := 0; i < workers; i++ {
+		t := transporter.NewTransporter(shutdownHandler, inputChans[i], txnsWritten, statsChan, *log, i, exchangeName, conn, batchSize)
+		transports[i] = &t
+	}
+
+	go connectionCleanup(shutdownHandler, conn, log)
+
+	return transports
 }
 
 func connectionCleanup(shutdownHandler shutdown.ShutdownHandler, conn wabbit.Conn, log *logrus.Entry) {

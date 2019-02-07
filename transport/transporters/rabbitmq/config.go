@@ -23,10 +23,7 @@ import (
 
 const (
 	ConfVarExchangeName   = "exchange-name"
-	ConfVarUsername       = "rabbitmq-username"
-	ConfVarPassword       = "rabbitmq-password"
-	ConfVarHost           = "rabbitmq-host"
-	ConfVarVirtualHost    = "rabbitmq-vhost"
+	ConfVarURL            = "rabbitmq-url"
 	ConfVarWriteBatchSize = "rabbitmq-batch-size"
 )
 
@@ -42,28 +39,9 @@ var Flags = []cli.Flag{
 		EnvVar: "BIFROST_RABBITMQ_EXCHANGE_NAME",
 	}),
 	altsrc.NewStringFlag(cli.StringFlag{
-		Name:   ConfVarUsername,
-		Usage:  "RabbitMQ Username",
-		EnvVar: "BIFROST_RABBITMQ_USERNAME",
-		Value:  "guest",
-	}),
-	altsrc.NewStringFlag(cli.StringFlag{
-		Name:   ConfVarPassword,
-		Usage:  "RabbitMQ Password",
-		EnvVar: "BIFROST_RABBITMQ_PASSWORD",
-		Value:  "guest",
-	}),
-	altsrc.NewStringFlag(cli.StringFlag{
-		Name:   ConfVarHost,
-		Usage:  "RabbitMQ Host",
-		EnvVar: "BIFROST_RABBITMQ_HOST",
-		Value:  "localhost:5672",
-	}),
-	altsrc.NewStringFlag(cli.StringFlag{
-		Name:   ConfVarVirtualHost,
-		Usage:  "RabbitMQ Virtual Host",
-		EnvVar: "BIFROST_RABBITMQ_VHOST",
-		Value:  "/",
+		Name:   ConfVarURL,
+		Usage:  "RabbitMQ URL",
+		EnvVar: "BIFROST_RABBITMQ_URL",
 	}),
 	altsrc.NewIntFlag(cli.IntFlag{
 		Name:   ConfVarWriteBatchSize,
