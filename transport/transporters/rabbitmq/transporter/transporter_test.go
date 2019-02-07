@@ -17,6 +17,12 @@
 package transporter
 
 import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/amqptest/server"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -24,14 +30,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
-
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqptest"
-	"github.com/NeowayLabs/wabbit/amqptest/server"
-
-	"testing"
-	"time"
-
 	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
@@ -63,7 +61,8 @@ func TestPutOk(t *testing.T) {
 	}
 	defer fakeServer.Stop()
 
-	mockConn, err := amqptest.Dial(connString)
+	connMan := NewConnectionManager(connString, log, makeDialer(connString))
+	mockConn, err := connMan.GetConnection(context.Background())
 	if err != nil {
 		t.Error(err)
 	}
@@ -95,12 +94,13 @@ func TestPutOk(t *testing.T) {
 	TimeSource = mockTime
 	sh := shutdown.NewShutdownHandler()
 
-	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, exchangeName, mockConn, 1000)
+	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, exchangeName, connMan, 1000)
 	b := batch.NewGenericBatch("", 1000)
 
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
-		Json:         []byte(`{"table":"test_table","operation":"INSERT"}`),
+		Table:        "test_table",
+		Json:         []byte("data"),
 		TimeBasedKey: "123",
 		WalStart:     1234,
 		Transaction:  "123",

@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -37,6 +38,12 @@ var (
 func init() {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.InfoLevel)
+}
+
+func makeDialer(connStr string) DialerFn {
+	return func() (wabbit.Conn, error) {
+		return amqp.Dial(connStr)
+	}
 }
 
 // New creates a rabbitmq transport which has rabbitmq batching and rabbitmq transporting, connected by channels
@@ -71,7 +78,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		log.Fatalf("Expected type for %s is %s", ConfVarWriteBatchSize, "int")
 	}
 
-	connMan := transporter.NewConnectionManager(amqpURL, log)
+	connMan := transporter.NewConnectionManager(amqpURL, log, makeDialer(amqpURL))
 	conn, err := connMan.GetConnection(shutdownHandler.TerminateCtx)
 	if err != nil {
 		log.WithError(err).Fatal("Shutting down")

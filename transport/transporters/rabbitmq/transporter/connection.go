@@ -18,25 +18,28 @@ package transporter
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
 )
 
+type DialerFn func() (wabbit.Conn, error)
+
+// ConnMan holds an wabbit.Conn, and a mutex for blocking while it tries
+// to get a connection
 type ConnMan struct {
 	lock        sync.Mutex
+	dialer      DialerFn
 	conn        wabbit.Conn
 	retryPolicy backoff.BackOff
 	log         *logrus.Entry
-	amqpURL     string
 }
 
-func NewConnectionManager(amqpURL string, log *logrus.Entry) *ConnMan {
+// NewConnectionManager returns a ConnMan, with a built-in backoff retryPolicy
+func NewConnectionManager(amqpURL string, log *logrus.Entry, dialer DialerFn) *ConnMan {
 	retryPolicy := &backoff.ExponentialBackOff{
 		InitialInterval:     1500 * time.Millisecond,
 		RandomizationFactor: 0.5,
@@ -46,20 +49,22 @@ func NewConnectionManager(amqpURL string, log *logrus.Entry) *ConnMan {
 	}
 
 	return &ConnMan{
-		amqpURL:     amqpURL,
+		dialer:      dialer,
 		retryPolicy: retryPolicy,
 		log:         log,
 	}
 }
 
-// GetConnection returns a RabbitMQ connection.
+// GetConnection blocks until it returns a RabbitMQ connection, or the retry
+// gave up, or the context was cancelled.
 func (cm *ConnMan) GetConnection(ctx context.Context) (wabbit.Conn, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
 	if cm.conn == nil {
 		operation := func() error {
-			conn, err := amqp.Dial(cm.amqpURL)
+			cm.log.Info("Trying to connect to RabbitMQ")
+			conn, err := cm.dialer()
 			if err != nil {
 				return err
 			}
@@ -69,13 +74,10 @@ func (cm *ConnMan) GetConnection(ctx context.Context) (wabbit.Conn, error) {
 
 		err := backoff.Retry(operation, backoff.WithContext(cm.retryPolicy, ctx))
 		if err != nil {
-			cm.log.WithError(err).Fatal("Could not connect to RabbitMQ")
+			cm.log.WithError(err).Error("Could not connect to RabbitMQ")
 			return nil, err
 		}
 
-		if cm.conn == nil {
-			return nil, errors.New("Could not get connection")
-		}
 		closeNotify := cm.conn.NotifyClose(make(chan wabbit.Error))
 		go cm.CloseHandler(ctx, closeNotify)
 	}
@@ -90,7 +92,7 @@ func (cm *ConnMan) CloseHandler(ctx context.Context, closeNotify chan wabbit.Err
 	case <-ctx.Done():
 		cm.log.Debug("Connection Manager received context cancellation")
 	case err := <-closeNotify:
-		cm.log.Error(err.Error())
+		cm.log.Warn(err.Error())
 		cm.lock.Lock()
 		defer cm.lock.Unlock()
 		cm.conn = nil
