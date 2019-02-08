@@ -18,6 +18,7 @@ package transporter
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -95,6 +96,7 @@ func TestPutOk(t *testing.T) {
 	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
 	TimeSource = mockTime
 	sh := shutdown.NewShutdownHandler()
+	defer sh.CancelFunc()
 
 	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, exchangeName, connMan, 1000)
 	b := batch.NewGenericBatch("", 1000)
@@ -132,9 +134,10 @@ func TestPutOk(t *testing.T) {
 }
 
 func TestConnectionDies(t *testing.T) {
+	var wg sync.WaitGroup
+
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	defer resetTimeSource()
 
 	in := make(chan transport.Batch, 1000)
 	txns := make(chan *ordered_map.OrderedMap, 1000)
@@ -147,19 +150,26 @@ func TestConnectionDies(t *testing.T) {
 		t.Error(err)
 	}
 
-	conn, err := amqptest.Dial(connString)
-	if err != nil {
-		t.Error(err)
-	}
+	wg.Add(2)
+	defer wg.Wait()
+
 	connMan := mocks.NewMockConnectionGetter(mockCtrl)
-	connMan.EXPECT().GetConnection(gomock.Any()).Return(conn, nil).Times(2)
+	connMan.EXPECT().GetConnection(gomock.Any()).DoAndReturn(
+		func(context.Context) (wabbit.Conn, error) {
+			wg.Done()
+			return amqptest.Dial(connString)
+		},
+	).Times(2)
 
 	sh := shutdown.NewShutdownHandler()
+	defer sh.CancelFunc()
 
 	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, "testexchange", connMan, 1000)
 
 	// Start test
 	go transport.StartTransporting()
+
+	time.Sleep(time.Millisecond * 25)
 
 	fakeServer.Stop()
 	err = fakeServer.Start()
@@ -167,8 +177,4 @@ func TestConnectionDies(t *testing.T) {
 		t.Error(err)
 	}
 	defer fakeServer.Stop()
-
-	time.Sleep(time.Second * 1)
-
-	sh.CancelFunc()
 }
