@@ -40,7 +40,7 @@ func init() {
 	logger.SetLevel(logrus.InfoLevel)
 }
 
-func makeDialer(connStr string) DialerFn {
+func makeDialer(connStr string) transporter.DialerFn {
 	return func() (wabbit.Conn, error) {
 		return amqp.Dial(connStr)
 	}
