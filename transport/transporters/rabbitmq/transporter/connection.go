@@ -70,27 +70,41 @@ func (cm *ConnMan) GetConnection(ctx context.Context) (wabbit.Conn, error) {
 	defer cm.lock.Unlock()
 
 	if cm.conn == nil {
-		operation := func() error {
-			cm.log.Info("Trying to connect to RabbitMQ")
-			conn, err := cm.dialer()
-			if err != nil {
-				return err
-			}
-			cm.conn = conn
-			return nil
-		}
-
-		err := backoff.Retry(operation, backoff.WithContext(cm.retryPolicy, ctx))
+		err := cm.getConnectionWithRetry(ctx)
 		if err != nil {
 			cm.log.WithError(err).Error("Could not connect to RabbitMQ")
 			return nil, err
 		}
-
-		closeNotify := cm.conn.NotifyClose(make(chan wabbit.Error))
-		go cm.CloseHandler(ctx, closeNotify)
 	}
 
 	return cm.conn, nil
+}
+
+func (cm *ConnMan) getConnectionWithRetry(ctx context.Context) error {
+	operation := func() error {
+		cm.log.Info("Trying to connect to RabbitMQ")
+		conn, err := cm.dialer()
+		if err != nil {
+			return err
+		}
+		cm.conn = conn
+		return nil
+	}
+
+	defer func() {
+		cm.retryPolicy.Reset()
+	}()
+
+	err := backoff.Retry(operation, backoff.WithContext(cm.retryPolicy, ctx))
+	if err != nil {
+		return err
+	}
+
+	cm.log.Info("Created RabbitMQ connection")
+	closeNotify := cm.conn.NotifyClose(make(chan wabbit.Error))
+	go cm.CloseHandler(ctx, closeNotify)
+
+	return nil
 }
 
 // CloseHandler listens for connection close signals and sets connection
