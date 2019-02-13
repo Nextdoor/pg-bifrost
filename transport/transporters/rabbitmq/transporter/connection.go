@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//go:generate mockgen -destination=mock_transporter.go -package=mocks github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter ConnectionGetter
+//go:generate mockgen -destination=mocks/mock_transporter.go -package=mocks github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter ConnectionGetter
 
 // ConnectionGetter can get a wabbit.Conn or an error
 type ConnectionGetter interface {
