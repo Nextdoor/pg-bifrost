@@ -39,7 +39,7 @@ type DialerFn func() (wabbit.Conn, error)
 // ConnMan holds an wabbit.Conn, and a mutex for blocking while it tries
 // to get a connection
 type ConnMan struct {
-	lock        sync.Mutex
+	sync.Mutex
 	dialer      DialerFn
 	conn        wabbit.Conn
 	retryPolicy backoff.BackOff
@@ -66,8 +66,8 @@ func NewConnectionManager(amqpURL string, log *logrus.Entry, dialer DialerFn) *C
 // GetConnection blocks until it returns a RabbitMQ connection, or the retry
 // gave up, or the context was cancelled.
 func (cm *ConnMan) GetConnection(ctx context.Context) (wabbit.Conn, error) {
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
+	cm.Lock()
+	defer cm.Unlock()
 
 	if cm.conn == nil {
 		err := cm.getConnectionWithRetry(ctx)
@@ -115,8 +115,8 @@ func (cm *ConnMan) CloseHandler(ctx context.Context, closeNotify chan wabbit.Err
 		cm.log.Debug("Connection Manager received context cancellation")
 	case err := <-closeNotify:
 		cm.log.Warn(err.Error())
-		cm.lock.Lock()
-		defer cm.lock.Unlock()
+		cm.Lock()
+		defer cm.Unlock()
 		cm.conn = nil
 	}
 }
