@@ -33,6 +33,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
+	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
@@ -88,17 +89,24 @@ func TestPutOk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = channel.Close()
-	if err != nil {
-		t.Error(err)
-	}
+	defer channel.Close()
 
 	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
 	TimeSource = mockTime
 	sh := shutdown.NewShutdownHandler()
 	defer sh.CancelFunc()
 
-	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, exchangeName, connMan, 1000)
+	transport := NewTransporter(
+		sh,
+		in,
+		txns,
+		statsChan,
+		*log,
+		1,
+		exchangeName,
+		connMan,
+		1000, backoff.NewConstantBackOff(0),
+	)
 	b := batch.NewGenericBatch("", 1000)
 
 	marshalledMessage := marshaller.MarshalledMessage{
@@ -116,6 +124,7 @@ func TestPutOk(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
 
 	in <- b
 
@@ -127,8 +136,9 @@ func TestPutOk(t *testing.T) {
 
 	// Verify stats
 	expected := []stats.Stat{
-		stats.NewStatHistogram("rabbitmq_transport", "duration", 1000, int64(2000*time.Millisecond), "ms"),
-		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(3000*time.Millisecond)),
+		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatHistogram("rabbitmq_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
+		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(4000*time.Millisecond)),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 }
@@ -150,7 +160,7 @@ func TestConnectionDies(t *testing.T) {
 		t.Error(err)
 	}
 
-	wg.Add(2)
+	wg.Add(3)
 	defer wg.Wait()
 
 	connMan := mocks.NewMockConnectionGetter(mockCtrl)
@@ -159,22 +169,91 @@ func TestConnectionDies(t *testing.T) {
 			wg.Done()
 			return amqptest.Dial(connString)
 		},
-	).Times(2)
+	).Times(3)
+	mockConn, err := connMan.GetConnection(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+	channel, err := mockConn.Channel()
+	if err != nil {
+		t.Error(err)
+	}
 
+	exchangeName := "testexchange"
+	err = channel.ExchangeDeclare(
+		exchangeName, // name of the exchange
+		"topic",      // type
+		wabbit.Option{
+			"durable":  true,
+			"delete":   false,
+			"internal": false,
+			"noWait":   false,
+		},
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	defer channel.Close()
+
+	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
+	TimeSource = mockTime
 	sh := shutdown.NewShutdownHandler()
 	defer sh.CancelFunc()
 
-	transport := NewTransporter(sh, in, txns, statsChan, *log, 1, "testexchange", connMan, 1000)
+	transport := NewTransporter(
+		sh,
+		in,
+		txns,
+		statsChan,
+		*log,
+		1,
+		"testexchange",
+		connMan,
+		1000,
+		backoff.NewConstantBackOff(time.Millisecond*25),
+	)
 
 	// Start test
 	go transport.StartTransporting()
 
-	time.Sleep(time.Millisecond * 25)
+	b := batch.NewGenericBatch("", 1000)
+
+	marshalledMessage := marshaller.MarshalledMessage{
+		Operation:    "INSERT",
+		Table:        "test_table",
+		Json:         []byte("data"),
+		TimeBasedKey: "123",
+		WalStart:     1234,
+		Transaction:  "123",
+	}
+
+	b.Add(&marshalledMessage)
+
+	mockTime.EXPECT().UnixNano().Return(int64(0))
+	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
 
 	fakeServer.Stop()
+
+	in <- b
+
+	time.Sleep(time.Millisecond * 25)
+
 	err = fakeServer.Start()
 	if err != nil {
 		t.Error(err)
 	}
 	defer fakeServer.Stop()
+
+	time.Sleep(time.Millisecond * 25)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatHistogram("rabbitmq_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
+		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(4000*time.Millisecond)),
+	}
+	stats.VerifyStats(t, statsChan, expected)
 }
