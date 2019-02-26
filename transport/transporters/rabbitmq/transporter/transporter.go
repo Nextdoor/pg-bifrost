@@ -217,7 +217,9 @@ func (t *RabbitMQTransporter) transportWithRetry(ctx context.Context, messagesSl
 			return nil
 		}
 
-		messagesSlice = messagesSlice[uint64(len(messagesSlice))-remaining:]
+		if remaining > 0 {
+			messagesSlice = messagesSlice[uint64(len(messagesSlice))-remaining:]
+		}
 
 		// record the error
 		err = fmt.Errorf("%d records failed to be acknowledged by RabbitMQ: %v", remaining, err)
