@@ -329,7 +329,7 @@ func (t *RabbitMQTransporter) waitForConfirmations(ctx context.Context, messageC
 		remaining = desiredCount - t.channelConfirms
 		select {
 		case confirm := <-t.publishNotify:
-			t.log.Trace("received confirmation")
+			t.log.Debug("received confirmation")
 			if !confirm.Ack() {
 				t.log.Error("Message was not delivered to RabbitMQ")
 				return remaining, errors.New("Message was not acknowledged")
