@@ -269,7 +269,7 @@ func (t *RabbitMQTransporter) setupChannel(ctx context.Context) error {
 
 		go t.closeHandler(ctx, t.closeNotify)
 
-		t.log.Info("Created new channel")
+		t.log.Debug("Created new channel")
 	}
 
 	return nil
@@ -329,7 +329,7 @@ func (t *RabbitMQTransporter) waitForConfirmations(ctx context.Context, messageC
 		remaining = desiredCount - t.channelConfirms
 		select {
 		case confirm := <-t.publishNotify:
-			t.log.Info("received confirmation")
+			t.log.Trace("received confirmation")
 			if !confirm.Ack() {
 				t.log.Error("Message was not delivered to RabbitMQ")
 				return remaining, errors.New("Message was not acknowledged")
