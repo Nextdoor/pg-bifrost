@@ -20,6 +20,7 @@ import "fmt"
 
 type MarshalledMessage struct {
 	Operation    string // SQL operation
+	Table        string // SQL Table name
 	Json         []byte // Serialized JSON blob
 	TimeBasedKey string // Used in BatchTransactions to seperate temporally different but same messages
 	WalStart     uint64 // id or offset of the wal message
@@ -28,5 +29,5 @@ type MarshalledMessage struct {
 }
 
 func (m MarshalledMessage) String() string {
-	return fmt.Sprintf("Operation: %v Json: %s TimeBasedKey: %s CommitWalStart: %d Transaction: %s", m.Operation, m.Json, m.TimeBasedKey, m.WalStart, m.Transaction)
+	return fmt.Sprintf("Operation: %v Table: %v Json: %s TimeBasedKey: %s CommitWalStart: %d Transaction: %s", m.Operation, m.Table, m.Json, m.TimeBasedKey, m.WalStart, m.Transaction)
 }

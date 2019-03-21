@@ -19,6 +19,20 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:12ecdca1db48afdfdc9f1128a70b7001a0a9f8f7b0306b20b38417747485157c"
+  name = "github.com/NeowayLabs/wabbit"
+  packages = [
+    ".",
+    "amqp",
+    "amqptest",
+    "amqptest/server",
+    "utils",
+  ]
+  pruneopts = "UT"
+  revision = "e762dd02f7f2e23411c32955e37fdc78def3e6f2"
+
+[[projects]]
+  branch = "master"
   digest = "1:273e16b51cf8969bd3d7ea448cdab5ccdf532d32b1f97edb37cc5ea6b94185fd"
   name = "github.com/Nextdoor/parselogical"
   packages = ["."]
@@ -119,6 +133,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:236d7e1bdb50d8f68559af37dbcf9d142d56b431c9b2176d41e2a009b664cda8"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:8dfbec76b4834d96c37ba4c4969fc47c9a15e67c5a7eecfa031fbe67dab50429"
   name = "github.com/jackc/pgx"
   packages = [
@@ -139,6 +161,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "0b12d6b5"
+
+[[projects]]
+  digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
+  name = "github.com/pborman/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
@@ -163,6 +193,14 @@
   pruneopts = "UT"
   revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
   version = "v1.0.6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:525ac3364813b4688df380594e562133e07830dfce0722effda64b37634c13d0"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a314942b2fd9dde7a3f70ba3f1062848ce6eb392"
 
 [[projects]]
   digest = "1:18752d0b95816a1b777505a97f71c7467a8445b8ffb55631a7bf779f6ba4fa83"
@@ -215,6 +253,8 @@
   analyzer-version = 1
   input-imports = [
     "github.com/DataDog/datadog-go/statsd",
+    "github.com/NeowayLabs/wabbit/amqp",
+    "github.com/NeowayLabs/wabbit/amqptest",
     "github.com/Nextdoor/parselogical",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
@@ -229,6 +269,7 @@
     "github.com/jackc/pgx",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
+    "github.com/streadway/amqp",
     "github.com/stretchr/testify/assert",
     "gopkg.in/Nextdoor/cli.v1",
     "gopkg.in/Nextdoor/cli.v1/altsrc",

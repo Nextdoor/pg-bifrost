@@ -24,8 +24,9 @@ import (
 type TransportType string
 
 const (
-	STDOUT  TransportType = "stdout"
-	KINESIS TransportType = "kinesis"
+	STDOUT   TransportType = "stdout"
+	KINESIS  TransportType = "kinesis"
+	RABBITMQ TransportType = "rabbitmq"
 )
 
 type Transporter interface {

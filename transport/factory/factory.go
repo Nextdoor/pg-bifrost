@@ -8,6 +8,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/stdout"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -26,7 +27,7 @@ func init() {
 	log.SetLevel(logrus.WarnLevel)
 }
 
-// New returns out a transport (batcher, transporters) based on the type
+// NewTransport returns out a transport (batcher, transporters) based on the type
 func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 	transportType transport.TransportType,
 	transportConfig map[string]interface{},
@@ -52,6 +53,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		batchFactory = batch.NewGenericBatchFactory(1)
 	case transport.KINESIS:
 		batchFactory = kinesis.NewBatchFactory(transportConfig)
+	case transport.RABBITMQ:
+		batchFactory = rabbitmq.NewBatchFactory(transportConfig)
 	default:
 		panic("unrecognized TransportType")
 	}
@@ -81,6 +84,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		t = stdout.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans)
 	case transport.KINESIS:
 		t = kinesis.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
+	case transport.RABBITMQ:
+		t = rabbitmq.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
 	default:
 		panic("unrecognized TransportType")
 	}

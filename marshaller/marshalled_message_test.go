@@ -22,8 +22,8 @@ import (
 )
 
 func TestString(t *testing.T) {
-	m := MarshalledMessage{"INSERT", []byte("json"), "key", 1, "0", "0"}
-	expected := "Operation: INSERT Json: json TimeBasedKey: key CommitWalStart: 1 Transaction: 0"
+	m := MarshalledMessage{"INSERT", "test_table", []byte("json"), "key", 1, "0", "0"}
+	expected := "Operation: INSERT Table: test_table Json: json TimeBasedKey: key CommitWalStart: 1 Transaction: 0"
 
 	eq := reflect.DeepEqual(expected, m.String())
 	if !eq {

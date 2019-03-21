@@ -76,3 +76,11 @@
 [[constraint]]
   name = "github.com/DataDog/datadog-go"
   version = "2.1.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/streadway/amqp"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/NeowayLabs/wabbit"

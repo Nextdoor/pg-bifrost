@@ -126,6 +126,7 @@ func (m Marshaller) Start() {
 
 		marshalledMessage := MarshalledMessage{
 			walMessage.Pr.Operation,
+			walMessage.Pr.Relation,
 			byteMessage,
 			walMessage.TimeBasedKey,
 			walMessage.WalStart,
