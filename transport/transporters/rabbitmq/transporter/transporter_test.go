@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
+	w_amqp "github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -37,6 +38,7 @@ import (
 	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -254,6 +256,129 @@ func TestConnectionDies(t *testing.T) {
 		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(1000*time.Millisecond)),
 		stats.NewStatHistogram("rabbitmq_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
 		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(4000*time.Millisecond)),
+	}
+	stats.VerifyStats(t, statsChan, expected)
+}
+
+func TestRetryAfterWaitForConnectionError(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	defer resetTimeSource()
+
+	in := make(chan transport.Batch, 1000)
+	txns := make(chan *ordered_map.OrderedMap, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+
+	connString := "amqp://anyhost:anyport/%2fanyVHost"
+	fakeServer := server.NewServer(connString)
+	err := fakeServer.Start()
+	if err != nil {
+		t.Error(err)
+	}
+	defer fakeServer.Stop()
+
+	connMan := NewConnectionManager(connString, log, makeDialer(connString))
+	mockConn, err := connMan.GetConnection(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+	channel, err := mockConn.Channel()
+	if err != nil {
+		t.Error(err)
+	}
+
+	exchangeName := "exchange"
+	err = channel.ExchangeDeclare(
+		exchangeName, // name of the exchange
+		"topic",      // type
+		wabbit.Option{
+			"durable":  true,
+			"delete":   false,
+			"internal": false,
+			"noWait":   false,
+		},
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	defer channel.Close()
+
+	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
+	TimeSource = mockTime
+	sh := shutdown.NewShutdownHandler()
+	defer sh.CancelFunc()
+
+	transport := &RabbitMQTransporter{
+		shutdownHandler: sh,
+		inputChan:       in,
+		txnsWritten:     txns,
+		statsChan:       statsChan,
+		log:             *log,
+		id:              1,
+		exchangeName:    exchangeName,
+		connMan:         connMan,
+		batchSize:       1000,
+		retryPolicy:     backoff.NewConstantBackOff(0),
+	}
+	b := batch.NewGenericBatch("", 1000)
+
+	marshalledMessage := marshaller.MarshalledMessage{
+		Operation:    "INSERT",
+		Table:        "test_table",
+		Json:         []byte("data"),
+		TimeBasedKey: "123",
+		WalStart:     1234,
+		Transaction:  "123",
+	}
+
+	b.Add(&marshalledMessage)
+
+	mockTime.EXPECT().UnixNano().Return(int64(0))
+	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(5000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(6000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(7000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(8000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(9000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(10000 * time.Millisecond))
+
+	in <- b
+
+	// Start test
+	go transport.StartTransporting()
+
+	// Wait for data to go through
+	time.Sleep(time.Millisecond * 25)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatHistogram("rabbitmq_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
+		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(4000*time.Millisecond)),
+	}
+	stats.VerifyStats(t, statsChan, expected)
+
+	// Put fake Nack on publishNotify to trigger retry
+	wabbitConf := w_amqp.Confirmation{
+		Confirmation: amqp.Confirmation{
+			DeliveryTag: 0,
+			Ack:         false,
+		},
+	}
+	transport.publishNotify <- wabbitConf
+	in <- b
+
+	// Wait for data to go through
+	time.Sleep(time.Millisecond * 25)
+
+	expected = []stats.Stat{
+		stats.NewStatCount("rabbitmq_transport", "failure", 1, int64(6000*time.Millisecond)),
+		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(7000*time.Millisecond)),
+		stats.NewStatHistogram("rabbitmq_transport", "duration", 3000, int64(9000*time.Millisecond), "ms"),
+		stats.NewStatCount("rabbitmq_transport", "written", int64(1), int64(10000*time.Millisecond)),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 }

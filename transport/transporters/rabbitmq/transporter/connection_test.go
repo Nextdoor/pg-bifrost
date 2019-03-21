@@ -30,6 +30,7 @@ func makeDialer(connStr string) DialerFn {
 		return amqptest.Dial(connStr)
 	}
 }
+
 func TestGetConnection(t *testing.T) {
 	connString := "amqp://anyhost:anyport/%2fanyVHost"
 	fakeServer := server.NewServer(connString)
