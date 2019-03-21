@@ -260,7 +260,7 @@ func (t *RabbitMQTransporter) setupChannel(ctx context.Context) error {
 
 		t.channelConfirms = 0
 		t.closeNotify = t.channel.NotifyClose(make(chan wabbit.Error))
-		t.publishNotify = t.channel.NotifyPublish(make(chan wabbit.Confirmation))
+		t.publishNotify = t.channel.NotifyPublish(make(chan wabbit.Confirmation, t.batchSize))
 		err = t.channel.Confirm(false)
 		if err != nil {
 			t.log.WithError(err).Error("Could not turn on confirmations for channel")
@@ -304,6 +304,7 @@ func (t *RabbitMQTransporter) sendMessages(ctx context.Context, messagesSlice []
 		default:
 			// pass
 		}
+
 		key := strings.Join([]string{msg.Table, msg.Operation}, ".")
 		options := wabbit.Option{
 			"deliveryMode": amqp.Persistent,
