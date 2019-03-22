@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/Nextdoor/pg-bifrost/tree/master.svg?style=svg)](https://circleci.com/gh/Nextdoor/pg-bifrost/tree/master)
 
-pg-bifrost is a [logical decoding](https://www.postgresql.org/docs/9.6/logicaldecoding.html) tool for PostgresSQL that writes the database's stream of events (creates, inserts, and deletes) to [Amazon Kinesis Data Streams](https://aws.amazon.com/kinesis/data-streams/). It is written in a modular manner that allows adding additional sinks such as S3, DynamoDB, and non-AWS destinations as well.
+pg-bifrost is a [logical decoding](https://www.postgresql.org/docs/9.6/logicaldecoding.html) tool for PostgresSQL that writes the database's stream of events (creates, inserts, and deletes) to [Amazon Kinesis Data Streams](https://aws.amazon.com/kinesis/data-streams/) or [RabbitMQ](https://www.rabbitmq.com/). It is written in a modular manner that allows adding additional sinks such as S3, DynamoDB, and non-AWS destinations as well.
 
 ## Installation
 
@@ -73,8 +73,9 @@ USAGE:
    pg-bifrost replicate command [command options] [arguments...]
 
 COMMANDS:
-     stdout   replicate to stdout
-     kinesis  replicate to kinesis
+     stdout    replicate to stdout
+     kinesis   replicate to kinesis
+     rabbitmq  replicate to rabbitmq
 
 OPTIONS:
    --create-slot, -s                  Creates replication slot if it doesn't exist before replicating [$CREATE_SLOT]
