@@ -11,23 +11,6 @@ defaults_itests: &defaults_itests
     docker_layer_caching: true
 
 step_library:
-- &step_restore_vendor_cache
-  restore_cache:
-    keys:
-    - vendor-{{ checksum "Gopkg.lock" }}
-
-- &step_save_vendor_cache
-  save_cache:
-    key: vendor-{{ checksum "Gopkg.lock" }}
-    paths:
-    - vendor
-
-- &step_test
-  run:
-    name: Run go vet and tests
-    command: |
-      CI=true make test
-
 - &step_itests
   run:
     name: Run integration tests in docker
@@ -40,7 +23,11 @@ step_library:
   run:
     name: Run make build
     command: |
-      make build
+      # builds pg-bifrost in a docker container
+      CI=true make docker_build
+
+      # pull binary out of docker container
+      CI=true make docker_get_binary
       /usr/bin/md5sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.md5
       cat target/pg-bifrost.md5
       /usr/bin/sha1sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha1
@@ -48,23 +35,13 @@ step_library:
       /usr/bin/sha256sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha256
       cat target/pg-bifrost.sha256
 
-- &step_build_docker_containers
-  run:
-    name: Building integration test docker containers
-    command: |
-      make docker
-
-
 jobs:
   build: &build
     <<: *defaults
     steps:
     - checkout
 
-    - *step_restore_vendor_cache
     - *step_build_artifact
-    - *step_test
-    - *step_save_vendor_cache
     - persist_to_workspace:
         root: /go/src/github.com/Nextdoor
         paths:
@@ -84,7 +61,6 @@ jobs:
         sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
         sudo tar -xf go1.11.4.linux-amd64.tar.gz
         sudo mv go /usr/local
-    - *step_build_docker_containers
     - *step_itests
     - store_test_results:
         path: ./itests/test_output/

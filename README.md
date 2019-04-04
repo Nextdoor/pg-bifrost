@@ -159,11 +159,8 @@ The integration tests are setup and run with:
 git submodule sync
 git submodule update --init
 
-# Build binary
-make build
-
-# Create docker images
-make docker
+# Build binary inside a docker container
+make docker_build
 
 # Run the integration tests
 make itests
@@ -172,19 +169,13 @@ make itests
 Example:
 
 ```
-[Slava pg-bifrost.git] $ make build
-Running go generate ...
-Creating GO binary
-mkdir -p target
-GOOS=linux GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
-ln -f target/pg-bifrost itests/containers/pg-bifrost/app/pg-bifrost
+[Slava pg-bifrost.git] $ make docker_build
+Building pg-bifrost docker image
+Sending build context to Docker daemon  16.78MB
+Step 1/15 : FROM golang:1.11.4-stretch as intermediate
+ ---> dd46c1256829
+ ...
 
-[Slava pg-bifrost.git] $ make docker
-Building docker integration test images
-TEST_NAME=test_basic docker-compose -f itests/docker-compose.yml build
-Building bifrost
-Step 1/3 : FROM alpine:3.8
-...
 
 [Slava pg-bifrost.git] $ make itests
 Running integration tests

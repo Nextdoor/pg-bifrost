@@ -18,6 +18,7 @@ package transporter
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
@@ -154,6 +155,7 @@ func TestConnectionDies(t *testing.T) {
 	in := make(chan transport.Batch, 1000)
 	txns := make(chan *ordered_map.OrderedMap, 1000)
 	statsChan := make(chan stats.Stat, 1000)
+	expectChan := make(chan interface{}, 10)
 
 	connString := "amqp://anyhost:anyport/%2fanyVHost"
 	fakeServer := server.NewServer(connString)
@@ -235,7 +237,10 @@ func TestConnectionDies(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond)).Do(
+		func() {
+			expectChan <- 1
+		})
 
 	fakeServer.Stop()
 
@@ -249,8 +254,12 @@ func TestConnectionDies(t *testing.T) {
 	}
 	defer fakeServer.Stop()
 
-	time.Sleep(time.Millisecond * 25)
-
+	select {
+	case <-time.After(400 * time.Millisecond):
+		assert.Fail(t, "did not pass data through in time")
+	case <-expectChan:
+		// pass
+	}
 	// Verify stats
 	expected := []stats.Stat{
 		stats.NewStatCount("rabbitmq_transport", "success", int64(1), int64(1000*time.Millisecond)),
