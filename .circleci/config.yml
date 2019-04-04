@@ -40,7 +40,7 @@ jobs:
     <<: *defaults
     steps:
     - checkout
-
+    - setup_remote_docker
     - *step_build_artifact
     - persist_to_workspace:
         root: /go/src/github.com/Nextdoor
