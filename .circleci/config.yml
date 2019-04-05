@@ -17,21 +17,21 @@ step_library:
     command: |
       git submodule sync
       git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
-      CI=true make itests-circleci
+      make itests-circleci
 
 - &step_build_artifact
   run:
     name: Run make build
     command: |
       # builds pg-bifrost in a docker container
-      CI=true make docker_build
+      make docker_build
 
       # Save the docker container for re-use
       mkdir -p docker-cache
       docker save -o docker-cache/built-image.tar pg-bifrost:latest
 
       # pull binary out of docker container
-      CI=true make docker_get_binary
+      make docker_get_binary
       /usr/bin/md5sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.md5
       cat target/pg-bifrost.md5
       /usr/bin/sha1sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha1
