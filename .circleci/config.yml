@@ -26,6 +26,10 @@ step_library:
       # builds pg-bifrost in a docker container
       CI=true make docker_build
 
+      # Save the docker container for re-use
+      mkdir -p docker-cache
+      docker save -o docker-cache/built-image.tar pg-bifrost:latest
+
       # pull binary out of docker container
       CI=true make docker_get_binary
       /usr/bin/md5sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.md5
@@ -62,6 +66,7 @@ jobs:
         sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
         sudo tar -xf go1.11.4.linux-amd64.tar.gz
         sudo mv go /usr/local
+        sudo docker load < docker-cache/built-image.tar
     - *step_itests
     - store_test_results:
         path: ./itests/test_output/
