@@ -1,5 +1,7 @@
 # Test and build binary
 FROM golang:1.11.4-stretch as intermediate
+
+# Build dependencies
 RUN go get github.com/golang/mock/gomock
 RUN go install github.com/golang/mock/mockgen
 RUN go get github.com/golang/dep/cmd/dep
@@ -14,8 +16,16 @@ COPY Gopkg.lock Gopkg.toml ./
 RUN dep ensure --vendor-only
 
 COPY . .
+
+# The CI flag is used to control the auto generation of
+# code from interfaces (running go generate). In dev we
+# want that to happen automatically but in the CI build
+# we only want to use the code that was checked in. When
+# CI=true generate is not run.
 ARG is_ci
 ENV CI=$is_ci
+
+# Run tests and make the binary
 RUN make test && make build
 
 # Package binary in a scratch container
