@@ -607,6 +607,7 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	// Setup
 	progChan := make(chan uint64, 1000)
 	statsChan := make(chan stats.Stat, 1000)
+	expectChan := make(chan interface{}, 100)
 
 	sh := shutdown.NewShutdownHandler()
 	replicator := New(sh, statsChan, mockManager, 10)
@@ -621,7 +622,8 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
-		}).MinTimes(10)
+			expectChan <- 1
+		}).MinTimes(1)
 
 	progChan <- uint64(standbyWalStart)
 
@@ -630,6 +632,9 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	// Wait a little bit for replicator to process progress
 	select {
 	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
 	}
 }
 
@@ -678,11 +683,13 @@ func TestClosedProgressChan(t *testing.T) {
 		}
 	}
 
-	timeout = time.NewTimer(50 * time.Millisecond)
-
-	_, ok := <-replicator.shutdownHandler.TerminateCtx.Done()
-	if ok {
-		assert.Fail(t, "context not cancelled")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.shutdownHandler.TerminateCtx.Done():
+		if ok {
+			assert.Fail(t, "context not cancelled")
+		}
 	}
 }
 
@@ -872,10 +879,14 @@ func TestDeadlineExceeded(t *testing.T) {
 	// test
 	time.Sleep(10 * time.Millisecond)
 	replicator.shutdownHandler.CancelFunc()
-	time.Sleep(15 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
@@ -900,7 +911,14 @@ func TestTerminationContext(t *testing.T) {
 	replicator.shutdownHandler.CancelFunc()
 
 	// wait for shutdown
-	time.Sleep(5 * time.Millisecond)
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
+	}
 }
 
 func TestGetConnectionError(t *testing.T) {
@@ -922,10 +940,13 @@ func TestGetConnectionError(t *testing.T) {
 
 	go replicator.Start(progChan)
 
-	time.Sleep(5 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
@@ -939,10 +960,13 @@ func TestGetConnectionErrorInLoop(t *testing.T) {
 
 	go replicator.Start(progChan)
 
-	time.Sleep(5 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
@@ -961,10 +985,13 @@ func TestPanic(t *testing.T) {
 
 	go replicator.Start(progChan)
 
-	time.Sleep(5 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
@@ -995,10 +1022,13 @@ func TestProgressChanClosed(t *testing.T) {
 
 	go replicator.Start(progChan)
 
-	time.Sleep(5 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
@@ -1021,16 +1051,20 @@ func TestProgressChanClosedDeadline(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// Wait for replicator to run
-	time.Sleep(5 * time.Millisecond)
-	_, ok := <-replicator.outputChan
-	if ok {
-		assert.Fail(t, "output channel not properly closed")
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
 	}
 }
 
 func TestHeartbeatRequested(t *testing.T) {
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
+	expectChan := make(chan interface{}, 100)
 
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
 
@@ -1041,11 +1075,20 @@ func TestHeartbeatRequested(t *testing.T) {
 	// expect to reply
 	status0, _ := pgx.NewStandbyStatus(progress0)
 	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1)
+	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1).Do(
+		func(_ interface{}) {
+			expectChan <- 1
+		})
 
 	go replicator.Start(progChan)
 
-	time.Sleep(20 * time.Millisecond)
+	// Wait for test to run
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
+	}
 }
 
 func TestHeartbeatRequestedError(t *testing.T) {
@@ -1071,7 +1114,6 @@ func TestHeartbeatRequestedError(t *testing.T) {
 		if ok {
 			assert.Fail(t, "output channel not properly closed")
 		}
-
 	}
 }
 
@@ -1080,6 +1122,7 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(4)
+	expectChan := make(chan interface{}, 100)
 
 	// Setup return
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
@@ -1103,19 +1146,29 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	progress0 := uint64(10)
 	status0, _ := pgx.NewStandbyStatus(progress0)
 	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1)
+	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Times(1).Do(
+		func(_ interface{}) {
+			expectChan <- 1
+		})
 
 	// Do test
 	go replicator.Start(progChan)
 
-	// Wait for shutdown
-	time.Sleep(time.Millisecond * 15)
+	// Wait for expect
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
+	}
 }
 
 func TestSendKeepaliveChanFullError(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
+
+	expectChan := make(chan interface{}, 1)
 
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(3)
 
@@ -1142,18 +1195,27 @@ func TestSendKeepaliveChanFullError(t *testing.T) {
 			replicator.shutdownHandler.CancelFunc()
 			time.Sleep(time.Millisecond * 1)
 		}).Times(1)
-	mockManager.EXPECT().Close().Times(1)
+	mockManager.EXPECT().Close().Times(1).Do(func() {
+		expectChan <- 1
+	})
 
 	// Do test
 	go replicator.Start(progChan)
 
 	// Wait for test to run
-	time.Sleep(time.Millisecond * 15)
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
+	}
 }
 
 func TestSendStandbyStatusError(t *testing.T) {
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
+
+	expectChan := make(chan interface{}, 100)
 
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
 
@@ -1167,17 +1229,26 @@ func TestSendStandbyStatusError(t *testing.T) {
 
 	err := errors.New("expected error")
 	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Return(err).Times(1)
-	mockManager.EXPECT().Close().Times(1)
+	mockManager.EXPECT().Close().Times(1).Do(func() {
+		expectChan <- 1
+	})
 
 	go replicator.Start(progChan)
 
-	time.Sleep(20 * time.Millisecond)
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
+	}
 }
 
 func TestOldOverallProgress(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
+
+	expectChan := make(chan interface{}, 1)
 
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
 
@@ -1191,11 +1262,19 @@ func TestOldOverallProgress(t *testing.T) {
 
 	status0, _ := pgx.NewStandbyStatus(progress0)
 	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Times(1)
+	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Times(1).Do(
+		func(_ interface{}) {
+			expectChan <- 1
+		})
 
 	progChan <- progress0
 	progChan <- progress1
 	go replicator.Start(progChan)
 
-	time.Sleep(20 * time.Millisecond)
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case <-expectChan:
+		// pass
+	}
 }

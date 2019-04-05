@@ -2,15 +2,16 @@
 
 GO_LDFLAGS ?= -w -extldflags "-static"
 
+GIT_REVISION := $(shell git rev-parse --short HEAD)
+GIT_TAG_VERSION := $(shell git tag -l --points-at HEAD)
+
 ifeq ($(CI),true)
 	GO_TEST_EXTRAS ?= "-coverprofile=c.out"
-	GIT_REVISION := $(shell git rev-parse --short HEAD)
-	VERSION := $(shell git tag -l --points-at HEAD)
-	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(VERSION)
+	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(GIT_TAG_VERSION)
 endif
 
 vendor:
-	dep ensure
+	dep ensure --vendor-only
 
 vet:
 	@echo "Running go vet ..."
@@ -29,15 +30,13 @@ test: vendor generate vet
 
 itests-circleci:
 	@echo "Running integration tests"
+	TEST_NAME=test_basic docker-compose -f itests/docker-compose.yml build
 	cd ./itests && ./circleci_split_itests.sh
 
 itests:
 	@echo "Running integration tests"
-	cd ./itests && ./integration_tests.bats -r tests
-
-docker:
-	@echo "Building docker integration test images"
 	TEST_NAME=test_basic docker-compose -f itests/docker-compose.yml build
+	cd ./itests && ./integration_tests.bats -r tests
 
 clean:
 	@echo "Removing vendor deps"
@@ -53,6 +52,20 @@ build: vendor generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
-	ln -f target/pg-bifrost itests/containers/pg-bifrost/app/pg-bifrost
 
-.PHONY: clean test itests
+# Standard settings that will be used later
+DOCKER := $(shell which docker)
+
+docker_build:
+	@echo "Building pg-bifrost docker image"
+	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
+
+docker_get_binary:
+	@echo "Copying binary from docker image"
+	mkdir -p target
+	@$(DOCKER) rm "pg-bifrost-build" || true
+	@$(DOCKER) create --name "pg-bifrost-build" "pg-bifrost:latest" /pg-bifrost
+	@$(DOCKER) cp "pg-bifrost-build":/pg-bifrost target/
+	@$(DOCKER) rm "pg-bifrost-build"
+
+.PHONY: clean test itests docker_build docker_get_binary

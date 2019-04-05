@@ -26,7 +26,7 @@ services:
 
   bifrost:
     container_name: bifrost
-    build: containers/pg-bifrost
+    image: pg-bifrost:latest
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
@@ -37,7 +37,7 @@ services:
         aliases:
           - kinesis
           - postgres
-    command: /app/pg-bifrost replicate kinesis
+    command: /pg-bifrost replicate kinesis
 
   kinesis-poller:
     container_name: kinesis-poller

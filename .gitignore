@@ -7,7 +7,6 @@ _vendor-*/
 
 # exclude build files
 target/
-itests/containers/pg-bifrost/app/pg-bifrost
 
 # exclude itest outputs
 itests/tests/*/output/*
