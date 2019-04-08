@@ -101,7 +101,7 @@ jobs:
 
             # Get commit history between the previous tag and this tag
             PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n2 | head -1 | cut -d' ' -f1)
-            LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..${CIRCLE_TAG})
+            LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..HEAD)
 
             # Create changelog
             cat << EOF > CHANGELOG.txt
@@ -118,7 +118,7 @@ jobs:
 
             CHANGELOG=$(cat CHANGELOG.txt)
 
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${GHR_ARGS} -delete -name ${CIRCLE_TAG} -b "${CHANGELOG}" ${RELEASE_TAG} ${ARTIFACT}
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${GHR_ARGS} -delete -name ${RELEASE_TAG} -b "${CHANGELOG}" ${RELEASE_TAG} ${ARTIFACT}
 
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
             docker load < docker-cache/built-image.tar
