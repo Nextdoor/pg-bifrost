@@ -71,14 +71,14 @@ jobs:
     - store_test_results:
         path: ./itests/test_output/
 
-  publish_github_release:
+  publish_binary:
     docker:
       - image: circleci/golang:1.8
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: "Publish Release on GitHub"
+          name: "Publish Release on GitHub and Docker Hub"
           command: |
             GIT_CMD="git --git-dir /tmp/workspace/pg-bifrost.git/.git"
             go get github.com/tcnksm/ghr
@@ -90,8 +90,17 @@ jobs:
             SHA1_HASH=$(/usr/bin/sha1sum -b ${ARTIFACT} | cut -d' ' -f1)
             MD5_HASH=$(/usr/bin/md5sum -b ${ARTIFACT} | cut -d' ' -f1)
 
+            # Determine tagging
+            if [ -z "$CIRCLE_TAG" ]
+            then
+              RELEASE_TAG="latest"
+              GHR_ARGS="-prerelease"
+            else
+              RELEASE_TAG=${CIRCLE_TAG}
+            fi
+
             # Get commit history between the previous tag and this tag
-            PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | tail -n2 | head -1 | cut -d' ' -f1)
+            PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n2 | head -1 | cut -d' ' -f1)
             LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..${CIRCLE_TAG})
 
             # Create changelog
@@ -109,7 +118,12 @@ jobs:
 
             CHANGELOG=$(cat CHANGELOG.txt)
 
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -name ${CIRCLE_TAG} -b "${CHANGELOG}" ${CIRCLE_TAG} ${ARTIFACT}
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${GHR_ARGS} -delete -name ${CIRCLE_TAG} -b "${CHANGELOG}" ${RELEASE_TAG} ${ARTIFACT}
+
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            docker load < docker-cache/built-image.tar
+            docker tag pg-bifrost:latest "${HUB_REPO}:${RELEASE_TAG}"
+            docker push "${HUB_REPO}:${RELEASE_TAG}"
 
 workflows:
   version: 2
@@ -130,10 +144,11 @@ workflows:
           tags:
             only: /.*/
 
-    - publish_github_release:
+    - publish_binary:
         requires: [itests]
         filters:
           branches:
-            ignore: /.*/
+            # Ignore everything except master
+            ignore: /^(?!master).*$/
           tags:
             only: /[0-9\.]+/
