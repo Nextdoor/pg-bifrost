@@ -97,12 +97,13 @@ jobs:
             then
               RELEASE_TAG="latest"
               GHR_ARGS="-prerelease"
+              PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n1 | head -1 | cut -d' ' -f1)
             else
               RELEASE_TAG=${CIRCLE_TAG}
+              PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n2 | head -1 | cut -d' ' -f1)
             fi
 
             # Get commit history between the previous tag and this tag
-            PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n2 | head -1 | cut -d' ' -f1)
             LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..HEAD)
 
             # Create changelog
