@@ -149,6 +149,6 @@ workflows:
         filters:
           branches:
             # Ignore everything except master
-            ignore: /^(?!master).*$/
+            ignore: /^(?!feature\/docker3).*$/
           tags:
             only: /[0-9\.]+/
