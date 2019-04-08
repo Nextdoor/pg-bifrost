@@ -6,7 +6,7 @@ pg-bifrost is a [logical decoding](https://www.postgresql.org/docs/9.6/logicalde
 
 ## Installation
 
-A precompiled binary for Linux AMD 64 of the latest version of pg-kinesis can be obtained under the [Releases](https://github.com/Nextdoor/pg-bifrost/releases) tab.
+A precompiled binary for Linux AMD 64 can obtained under the github [Releases](https://github.com/Nextdoor/pg-bifrost/releases) tab. Additionally pg-bifrost can also be found on [Docker Hub](https://hub.docker.com/r/nextdoor/pg-bifrost). Note that the docker image is built and deployed by the circleci [build](https://circleci.com/gh/Nextdoor/workflows/pg-bifrost).
 
 ## Example
 
