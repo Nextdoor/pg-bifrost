@@ -16,15 +16,38 @@
 
 package utils
 
-import "time"
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
 
 //go:generate mockgen -destination mocks/mock_timesource.go -package=mocks github.com/Nextdoor/pg-bifrost.git/utils TimeSource
 type TimeSource interface {
 	UnixNano() int64
+	DateString() (string, string, string, string)
 }
 
 type RealTime struct{}
 
 func (rt RealTime) UnixNano() int64 {
 	return time.Now().UnixNano()
+}
+
+func IntDateToNormalString(i int) string {
+	if i < 10 {
+		return fmt.Sprintf("0%d", i)
+	}
+
+	return strconv.Itoa(i)
+}
+
+func (rt RealTime) DateString() (year string, month string, day string, full string) {
+	now := time.Now()
+	yearInt, timeMonth, dayInt := now.Date()
+	monthInt := int(timeMonth)
+
+	fullFormat := now.Format("20060102150405")
+
+	return strconv.Itoa(yearInt), IntDateToNormalString(monthInt), IntDateToNormalString(dayInt), fullFormat
 }

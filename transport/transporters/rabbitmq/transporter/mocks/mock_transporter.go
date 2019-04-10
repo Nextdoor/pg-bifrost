@@ -36,7 +36,6 @@ func (m *MockConnectionGetter) EXPECT() *MockConnectionGetterMockRecorder {
 
 // GetConnection mocks base method
 func (m *MockConnectionGetter) GetConnection(arg0 context.Context) (wabbit.Conn, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", arg0)
 	ret0, _ := ret[0].(wabbit.Conn)
 	ret1, _ := ret[1].(error)
@@ -45,6 +44,5 @@ func (m *MockConnectionGetter) GetConnection(arg0 context.Context) (wabbit.Conn,
 
 // GetConnection indicates an expected call of GetConnection
 func (mr *MockConnectionGetterMockRecorder) GetConnection(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockConnectionGetter)(nil).GetConnection), arg0)
 }

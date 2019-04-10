@@ -26,6 +26,7 @@ type TransportType string
 const (
 	STDOUT   TransportType = "stdout"
 	KINESIS  TransportType = "kinesis"
+	S3       TransportType = "s3"
 	RABBITMQ TransportType = "rabbitmq"
 )
 
