@@ -1,3 +1,7 @@
+# Download CA root certificates
+FROM alpine:latest as certs
+RUN apk --update add ca-certificates
+
 # Test and build binary
 FROM golang:1.11.4-stretch as intermediate
 
@@ -28,7 +32,8 @@ ENV CI=$is_ci
 # Run tests and make the binary
 RUN make test && make build
 
-# Package binary in a scratch container
+# Package binary & certs in a scratch container
 FROM scratch
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=intermediate /go/src/github.com/Nextdoor/pg-bifrost.git/target/pg-bifrost /
 CMD ["/pg-bifrost"]
