@@ -10,16 +10,16 @@ services:
     networks:
       - net
 
-  kinesis:
-    container_name: kinesis
+  localstack:
+    container_name: localstack
     image: localstack/localstack:0.8.7
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
     environment:
-      - SERVICES=kinesis
+    - SERVICES=${TRANSPORT_SINK}
     ports:
-     - 4568:4568
+     - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}
     restart: always
     networks:
       - net
@@ -30,27 +30,29 @@ services:
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
+    - "./contexts/${TRANSPORT_SINK}.env"
     volumes:
       - "./tests/${TEST_NAME}/perf_output:/perf"
     networks:
       net:
         aliases:
-          - kinesis
+          - localstack
           - postgres
-    command: /pg-bifrost replicate kinesis
+    command: /pg-bifrost replicate ${TRANSPORT_SINK}
 
-  kinesis-poller:
-    container_name: kinesis-poller
-    build: containers/kinesis-poller
+  data-poller:
+    container_name: data-poller
+    build: containers/data-poller
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
+    - "./contexts/${TRANSPORT_SINK}.env"
     volumes:
     - "./tests/${TEST_NAME}/output:/output"
     networks:
       net:
         aliases:
-          - kinesis
+          - localstack
 
 networks:
   net:

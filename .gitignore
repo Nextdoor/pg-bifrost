@@ -12,3 +12,4 @@ target/
 itests/tests/*/output/*
 itests/test_output/*
 itests/perf_output/*
+itests/tests/*/perf_output/*

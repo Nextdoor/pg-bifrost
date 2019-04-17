@@ -55,7 +55,7 @@ _startup() {
   sleep 5
 
   _check_container postgres
-  _check_container kinesis
+  _check_container localstack
   _check_container bifrost
 
   log "Containers are running!"
@@ -221,7 +221,7 @@ _profile() {
 
 _wait() {
   log "Waiting for test to finish"
-  grep -q 'Records read' <(docker logs --follow kinesis-poller 2>&1)
+  grep -q 'Records read' <(docker logs --follow data-poller 2>&1)
   pkill -f "docker logs.*" || true
 }
 

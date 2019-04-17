@@ -14,7 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TESTFILES=$(cd tests && circleci tests glob "*" | circleci tests split --split-by=timings)
+get_testfiles() {
+    _transport_sink=$1
+
+    if [ "$CI" == "true" ]; then
+        _testfiles=$(cd tests && circleci tests glob "*" | circleci tests split --split-by=timings)
+    else
+        _testfiles=$(cd tests && ls -d */ | sed 's#/##')
+    fi
+
+    echo "$_testfiles"
+}
+
+# Kinesis
+set -a ; . contexts/kinesis.env ; set +a
+
+TEST_NAME=test_basic docker-compose -f docker-compose.yml build
+TESTFILES=$(get_testfiles $TRANSPORT_SINK)
+
 echo "TESTFILES=$TESTFILES"
 for TEST in $TESTFILES
 do

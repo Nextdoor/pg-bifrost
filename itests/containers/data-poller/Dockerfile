@@ -7,4 +7,4 @@ RUN \
 
 ADD app /app
 VOLUME /output
-CMD ["python", "/app/poller.py"]
+CMD ["sh", "/app/entrypoint.sh"]
