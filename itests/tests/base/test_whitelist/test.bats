@@ -1,5 +1,5 @@
 load ../../../common
 
-@test "kinesis/test_staggered" {
+@test "base/test_whitelist" {
   do_test
 }

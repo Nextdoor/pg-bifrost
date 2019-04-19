@@ -1,5 +1,5 @@
 load ../../../common
 
-@test "kinesis/test_timeout" {
+@test "base/test_large_txn" {
   do_test
 }

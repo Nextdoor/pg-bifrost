@@ -1,5 +1,5 @@
 load ../../../common
 
-@test "kinesis/test_large_txn" {
+@test "base/test_staggered" {
   do_test
 }

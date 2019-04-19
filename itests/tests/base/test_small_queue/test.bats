@@ -1,5 +1,5 @@
 load ../../../common
 
-@test "kinesis/test_blacklist" {
+@test "base/test_small_queue" {
   do_test
 }
