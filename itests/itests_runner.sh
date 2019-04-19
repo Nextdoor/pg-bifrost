@@ -18,21 +18,25 @@ get_testfiles() {
     _transport_sink=$1
 
     if [ "$CI" == "true" ]; then
-        _testfiles=$(cd tests && circleci tests glob "*" | circleci tests split --split-by=timings)
+        _base_testfiles=$(cd tests/base && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e 's/^/base\//')
+        _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
     else
-        _testfiles=$(cd tests && ls -d */ | sed 's#/##')
+        _base_testfiles=$(cd tests/base && ls -d */ | sed 's#/##' | sed -e 's/^/base\//')
+        _specific_testfiles=$(cd tests/${_transport_sink} && ls -d */ | sed 's#/##' | sed -e "s/^/${_transport_sink}\//")
     fi
 
-    echo "$_testfiles"
+    echo "${_base_testfiles} ${_specific_testfiles}"
 }
 
 # Kinesis
 set -a ; . contexts/kinesis.env ; set +a
 
-TEST_NAME=test_basic docker-compose -f docker-compose.yml build
+TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
 TESTFILES=$(get_testfiles $TRANSPORT_SINK)
 
-echo "TESTFILES=$TESTFILES"
+echo "TESTFILES:"
+echo $TESTFILES | tr ' ' '\n'
+
 for TEST in $TESTFILES
 do
    echo "running test $TEST"
