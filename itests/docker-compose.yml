@@ -14,12 +14,12 @@ services:
     container_name: localstack
     image: localstack/localstack:0.8.7
     env_file:
-    - "./containers/defaults.env"
-    - "./tests/${TEST_NAME}/envfile.env"
+      - "./containers/defaults.env"
+      - "./tests/${TEST_NAME}/envfile.env"
     environment:
-    - SERVICES=${TRANSPORT_SINK}
+      - SERVICES=${TRANSPORT_SINK}
     ports:
-     - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}
+      - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}
     restart: always
     networks:
       - net
@@ -28,9 +28,9 @@ services:
     container_name: bifrost
     image: pg-bifrost:latest
     env_file:
-    - "./containers/defaults.env"
-    - "./tests/${TEST_NAME}/envfile.env"
-    - "./contexts/${TRANSPORT_SINK}.env"
+      - "./containers/defaults.env"
+      - "./tests/${TEST_NAME}/envfile.env"
+      - "./contexts/${TRANSPORT_SINK}.env"
     volumes:
       - "./tests/${TEST_NAME}/perf_output:/perf"
     networks:
@@ -44,11 +44,11 @@ services:
     container_name: data-poller
     build: containers/data-poller
     env_file:
-    - "./containers/defaults.env"
-    - "./tests/${TEST_NAME}/envfile.env"
-    - "./contexts/${TRANSPORT_SINK}.env"
+      - "./containers/defaults.env"
+      - "./tests/${TEST_NAME}/envfile.env"
+      - "./contexts/${TRANSPORT_SINK}.env"
     volumes:
-    - "./tests/${TEST_NAME}/output:/output"
+      - "./tests/${TEST_NAME}/output:/output"
     networks:
       net:
         aliases:
