@@ -19,28 +19,45 @@ get_testfiles() {
 
     if [ "$CI" == "true" ]; then
         _base_testfiles=$(cd tests/base && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e 's/^/base\//')
-        _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
+        if [ -d "tests/${_transport_sink}" ]; then
+            _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
+        fi
     else
         _base_testfiles=$(cd tests/base && ls -d */ | sed 's#/##' | sed -e 's/^/base\//')
-        _specific_testfiles=$(cd tests/${_transport_sink} && ls -d */ | sed 's#/##' | sed -e "s/^/${_transport_sink}\//")
+        if [ -d "tests/${_transport_sink}" ]; then
+            _specific_testfiles=$(cd tests/${_transport_sink} && ls -d */ | sed 's#/##' | sed -e "s/^/${_transport_sink}\//")
+        fi
     fi
 
     echo "${_base_testfiles} ${_specific_testfiles}"
 }
 
-# Kinesis
-set -a ; . contexts/kinesis.env ; set +a
+# Iterate through our transport sink contexts (e.g., kinesis, s3, etc.)
+for file in ./contexts/*; do
+    # Source the transport sink's context
+    set -a ; . $file ; set +a
 
-TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
-TESTFILES=$(get_testfiles $TRANSPORT_SINK)
+    # Setup docker images & get test cases
+    TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
+    TESTFILES=$(get_testfiles $TRANSPORT_SINK)
 
-echo "TESTFILES:"
-echo $TESTFILES | tr ' ' '\n'
+    # Start itests
+    echo '' ; echo '################################'
+    echo "Starting ${TRANSPORT_SINK} itests:"
+    echo '################################' ; echo ''
 
-for TEST in $TESTFILES
-do
-   echo "running test $TEST"
-   ./integration_tests.bats -r tests -f "$TEST"
+    echo "TESTFILES:"
+    echo $TESTFILES | tr ' ' '\n' ; echo ''
+
+    for TEST in $TESTFILES
+    do
+       echo "running test $TEST"
+       ./integration_tests.bats -r tests -f "$TEST"
+    done
+
+    unset $(cat $file | awk -F= '{print $1}' | xargs)
+
+    echo '' ; echo '################################'
+    echo "${TRANSPORT_SINK} itests successful in this slice!"
+    echo '################################' ; echo ''
 done
-
-unset $(cat contexts/kinesis.env | awk -F= '{print $1}' | xargs)

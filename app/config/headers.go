@@ -27,6 +27,7 @@ const (
 	VAR_NAME_DB          = "dbname"
 	VAR_NAME_MEM_PROFILE = "memprofile"
 	VAR_NAME_CPU_PROFILE = "cpuprofile"
+	VAR_NAME_START_SLEEP = "startsleep"
 )
 
 // Replicate cli flag names

@@ -133,21 +133,21 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 
 	var sess *session.Session
 
-	// TODO(nehalrp): add this to other transporters like kinesis
-	if *awsAccessKeyId != "" && *awsSecretAccessKey != "" {
-		creds := credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
+	creds := credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
+
+	if *endpoint != "" {
 		sess = session.Must(session.NewSession(&aws.Config{
-			Region:      aws.String(*awsRegion),
-			Credentials: creds,
-			Endpoint:    endpoint,
+			Region:      		aws.String(*awsRegion),
+			Credentials: 		creds,
+			S3ForcePathStyle: 	aws.Bool(true),
+			Endpoint:    		aws.String(*endpoint),
 		}))
 	} else {
 		sess = session.Must(session.NewSession(&aws.Config{
 			Region:      aws.String(*awsRegion),
-			Endpoint:    endpoint,
+			Credentials: creds,
 		}))
 	}
-
 
 	client := s3.New(sess)
 

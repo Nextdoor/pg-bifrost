@@ -262,6 +262,7 @@ teardown() {
 
   log "Running docker-compose down"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
+  sleep 5
 
   _write_junit_xml
 }
