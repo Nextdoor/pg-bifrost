@@ -102,7 +102,13 @@ _insert_data() {
 
   # Launch inserts
   for file in ./tests/"$BATS_TEST_DESCRIPTION"/input/*; do
-    file=$(echo "$file" | cut -d "/" -f 5)
+    file=$(echo "$file" | cut -d "/" -f 6)
+
+    # Sanity check to make sure we're looking in the right place
+    if ! test -f "./tests/${BATS_TEST_DESCRIPTION}/input/${file}" ; then
+        echo "File './tests/${BATS_TEST_DESCRIPTION}/input/${file}' is not a test file. Failing."
+        exit 1
+    fi
 
     log "Loading $file"
     TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres wait_ready.sh /usr/local/bin/psql -f "/input/$file" &
@@ -158,7 +164,14 @@ _check_lsn() {
 _verify() {
   log "Verifying test output"
   for file in ./tests/"$BATS_TEST_DESCRIPTION"/golden/*; do
-    file=$(echo "$file" | cut -d "/" -f 5)
+    file=$(echo "$file" | cut -d "/" -f 6)
+
+    # Sanity check to make sure we're looking in the right place
+    if ! test -f "./tests/${BATS_TEST_DESCRIPTION}/golden/${file}" ; then
+        echo "File './tests/${BATS_TEST_DESCRIPTION}/golden/${file}' is not a test file. Failing."
+        exit 1
+    fi
+
     log "Verifying against golden file $file"
     log "Sort: $SORT"
 
