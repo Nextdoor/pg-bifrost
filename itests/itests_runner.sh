@@ -42,3 +42,5 @@ do
    echo "running test $TEST"
    ./integration_tests.bats -r tests -f "$TEST"
 done
+
+unset $(cat contexts/kinesis.env | awk -F= '{print $1}' | xargs)
