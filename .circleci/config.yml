@@ -17,7 +17,7 @@ step_library:
     command: |
       git submodule sync
       git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
-      make itests-circleci
+      make itests
 
 - &step_build_artifact
   run:

@@ -28,15 +28,9 @@ test: vendor generate vet
 	@echo "Executing tests ..."
 	go test -race -v ${GO_TEST_EXTRAS} ./...
 
-itests-circleci:
-	@echo "Running integration tests"
-	TEST_NAME=test_basic docker-compose -f itests/docker-compose.yml build
-	cd ./itests && ./circleci_split_itests.sh
-
 itests:
 	@echo "Running integration tests"
-	TEST_NAME=test_basic docker-compose -f itests/docker-compose.yml build
-	cd ./itests && ./integration_tests.bats -r tests
+	cd ./itests && ./itests_runner.sh
 
 clean:
 	@echo "Removing vendor deps"
