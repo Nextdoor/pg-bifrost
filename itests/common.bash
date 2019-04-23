@@ -102,7 +102,7 @@ _insert_data() {
 
   # Launch inserts
   for file in ./tests/"$BATS_TEST_DESCRIPTION"/input/*; do
-    file=$(echo "$file" | cut -d "/" -f 5)
+    file=$(echo "$file" | cut -d "/" -f 6)
 
     log "Loading $file"
     TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres wait_ready.sh /usr/local/bin/psql -f "/input/$file" &
@@ -158,7 +158,7 @@ _check_lsn() {
 _verify() {
   log "Verifying test output"
   for file in ./tests/"$BATS_TEST_DESCRIPTION"/golden/*; do
-    file=$(echo "$file" | cut -d "/" -f 5)
+    file=$(echo "$file" | cut -d "/" -f 6)
     log "Verifying against golden file $file"
     log "Sort: $SORT"
 
