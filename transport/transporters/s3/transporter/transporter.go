@@ -41,7 +41,6 @@ import (
 )
 
 // Generate mock for s3 client
-// TODO(nehalrp): do this before unit tests
 //go:generate mockgen -destination=mocks/mock_s3.go -package=mocks github.com/aws/aws-sdk-go/service/s3/s3iface S3API
 
 var (
@@ -86,10 +85,8 @@ type S3Transporter struct {
 	client      s3iface.S3API
 	bucketName  string
 	keySpace    string
-	batchSize   int
 }
 
-// TODO(nehalrp): why is this interface needed?
 func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan transport.Batch,
 	txnsWritten chan<- *ordered_map.OrderedMap,
@@ -98,7 +95,6 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 	id int,
 	bucketName string,
 	keySpace string,
-	batchSize int,
 	client s3iface.S3API) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
@@ -112,7 +108,6 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 		client,
 		bucketName,
 		keySpace,
-		batchSize,
 	}
 }
 
@@ -125,7 +120,6 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	id int,
 	bucketName string,
 	keySpace string,
-	batchSize int,
 	awsRegion *string,
 	awsAccessKeyId *string,
 	awsSecretAccessKey *string,
@@ -160,7 +154,6 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		id,
 		bucketName,
 		keySpace,
-		batchSize,
 		client)
 }
 

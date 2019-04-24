@@ -62,13 +62,6 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKeySpace, "string")
 	}
 
-	batchSizeVar := transportConfig[ConfVarPutBatchSize]
-	batchSize, ok := batchSizeVar.(int)
-
-	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarPutBatchSize, "int")
-	}
-
 	awsRegion := transportConfig[ConfVarAwsRegion]
 	var awsRegionVar string
 	if awsRegion != "" {
@@ -123,7 +116,6 @@ func New(
 			i,
 			bucketName,
 			keySpace,
-			batchSize,
 			&awsRegionVar,
 			&awsAccessKeyIdVar,
 			&awsSecretAccessKeyVar,
