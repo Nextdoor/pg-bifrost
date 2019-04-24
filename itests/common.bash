@@ -257,12 +257,10 @@ teardown() {
 
   # Print current state of the ledger for debugging
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s IO bifrost # dump ledger to stdout
-  sleep 5
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
 
   log "Running docker-compose down"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
-  sleep 5
 
   _write_junit_xml
 }
