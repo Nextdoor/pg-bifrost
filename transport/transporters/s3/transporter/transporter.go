@@ -22,7 +22,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-		"strings"
+	"strings"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -240,7 +240,7 @@ func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshall
 	}
 
 	// If any errors occurred during sending then entire batch
-	t.log.WithError(err).Error(fmt.Sprintf("wal_start %d failed to be uploaded to S3", firstWalStart))
+	t.log.WithError(err).Error(fmt.Sprintf("wal_start %d failed to be uploaded to S3 after client retries", firstWalStart))
 	t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
 
 	return err, cancelled
@@ -302,7 +302,7 @@ func (t *S3Transporter) StartTransporting() {
 		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, TimeSource.UnixNano(), "ms")
 
 		if err != nil {
-			t.log.Error("max retries exceeded")
+			t.log.Error(err)
 			return
 		}
 
