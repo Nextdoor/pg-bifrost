@@ -236,13 +236,13 @@ func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshall
 
 	// If there are no failures then all messages were sent
 	if err == nil {
-		t.log.Info(fmt.Sprintf("successful PUT: %s/%s", t.bucketName, fullKey))
+		t.log.Infof("successful PUT: %s/%s", t.bucketName, fullKey)
 		t.statsChan <- stats.NewStatCount("s3_transport", "success", 1, TimeSource.UnixNano())
 		return nil, cancelled
 	}
 
 	// If any errors occurred during sending then entire batch
-	t.log.WithError(err).Error(fmt.Sprintf("wal_start %d failed to be uploaded to S3 after client retries", firstWalStart))
+	t.log.WithError(err).Errorf("wal_start %d failed to be uploaded to S3 after client retries", firstWalStart)
 	t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
 
 	return err, cancelled

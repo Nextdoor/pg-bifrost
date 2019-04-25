@@ -50,7 +50,7 @@ build: vendor generate
 build_mac: vendor generate
 	@echo "Creating GO binary"
 	mkdir -p target
-	go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
