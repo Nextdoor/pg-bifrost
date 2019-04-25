@@ -35,9 +35,7 @@ ARG is_ci
 ENV CI=$is_ci
 
 # Run tests and make the binary
-# TODO(nehalrp): put this back before merge
-# RUN make test && make build
-RUN make build
+RUN make test && make build
 
 # Package binary & certs in a scratch container
 FROM scratch
