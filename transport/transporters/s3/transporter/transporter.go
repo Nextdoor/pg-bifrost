@@ -47,6 +47,7 @@ var (
 	TimeSource utils.TimeSource = utils.RealTime{}
 )
 
+// key_join is a helper to concatenate strings to form an S3 key
 func key_join(gzipped bool, strs ...string, ) string {
 	var sb strings.Builder
 	for i, str := range strs {
@@ -176,7 +177,7 @@ func (t *S3Transporter) shutdown() {
 }
 
 
-
+// transport does a PUT on a full batch as a single key/file to S3
 func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (error, bool) {
 	var cancelled bool
 
@@ -190,6 +191,7 @@ func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshall
 	default:
 	}
 
+	// add all messages into a gzipped buffer
 	for _, msg := range messagesSlice {
 		if _, err := gz.Write(msg.Json); err != nil {
 			return err, cancelled

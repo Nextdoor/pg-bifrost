@@ -30,11 +30,13 @@ type TimeSource interface {
 
 type RealTime struct{}
 
+// UnixNano gets the current time in a Unix Nanoseconds format
 func (rt RealTime) UnixNano() int64 {
 	return time.Now().UnixNano()
 }
 
-func IntDateToNormalString(i int) string {
+// intDateToNormalString normalizes single digit integers to a double digit string (by adding a leading zero if needed)
+func intDateToNormalString(i int) string {
 	if i < 10 {
 		return fmt.Sprintf("0%d", i)
 	}
@@ -42,6 +44,8 @@ func IntDateToNormalString(i int) string {
 	return strconv.Itoa(i)
 }
 
+// DateString return year/month/day as seperate strings and also a normalized string of datetime that is 14 characters.
+// It is intended to be used to partition PUTs on transport sinks.
 func (rt RealTime) DateString() (year string, month string, day string, full string) {
 	now := time.Now()
 	yearInt, timeMonth, dayInt := now.Date()
@@ -49,5 +53,5 @@ func (rt RealTime) DateString() (year string, month string, day string, full str
 
 	fullFormat := now.Format("20060102150405")
 
-	return strconv.Itoa(yearInt), IntDateToNormalString(monthInt), IntDateToNormalString(dayInt), fullFormat
+	return strconv.Itoa(yearInt), intDateToNormalString(monthInt), intDateToNormalString(dayInt), fullFormat
 }
