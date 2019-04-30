@@ -1,7 +1,6 @@
 """
 This script obtains records from Kinesis and writes them to a local file as
-as defined by OUT_FILE. It will exit when either EXPECTED_COUNT or WAIT_TIME
-is reached.
+as defined by OUT_FILE. It will exit when no additional files have been read for WAIT_TIME.
 """
 
 import os
@@ -19,8 +18,9 @@ OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'itests')
 CREATE_BUCKET = bool(os.getenv('CREATE_BUCKET', '1'))
 ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4572')
-WAIT_TIME = int(os.getenv('WAIT_TIME', '90'))
-EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
+INITIAL_WAIT_TIME = int(os.getenv('INITIAL_WAIT_TIME', '60')) # time to wait for initial list of keys
+WAIT_TIME = int(os.getenv('WAIT_TIME', '5')) # incremental time to wait for new keys if none have been seen
+EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1')) # expect number of records (only used for logging)
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 
 client = boto3.client('s3',
@@ -63,59 +63,74 @@ if CREATE_BUCKET:
             raise e
 
 
-keys = None
+# get initial set of keys with a deadline of INITIAL_WAIT_TIME
+all_keys = []
+timeout_for_first_keys = time.time() + INITIAL_WAIT_TIME
 
-timeout = time.time() + 60*5
 while True:
-    if time.time() > timeout:
+    if time.time() > timeout_for_first_keys:
         print("No data received to poller. Exiting.")
         exit(1)
 
     print("Getting keys list...")
     sys.stdout.flush()
     try:
-        keys = _get_all_s3_keys(BUCKET_NAME)
+        all_keys = _get_all_s3_keys(BUCKET_NAME)
         break
     except KeyError:
-        time.sleep(2)
+        time.sleep(1)
         pass
 
-# Start timer and iterate over keys
-end = time.time() + WAIT_TIME
-
-print("Records expected: {}".format(EXPECTED_COUNT))
+all_keys.sort()
 
 key_i = 0
 total = 0
 
 print("Records expected: {}".format(EXPECTED_COUNT))
 
-while total < EXPECTED_COUNT:
-    if time.time() >= end:
-        break
+# Start the moving deadline and iterate over new keys
+moving_deadline = time.time() + WAIT_TIME
+
+
+while time.time() <= moving_deadline:
+    if key_i >= len(all_keys):
+        # our pointer is past the length of the keys we have seen, so we wait for more...
+        print("Waiting for more keys...")
+        time.sleep(1)
+        # get additional, unique keys and loop back around
+        all_keys = list(set(all_keys + _get_all_s3_keys(BUCKET_NAME)))
+        all_keys.sort()
+        continue
 
     record_count = 0
 
+    # get object data
     resp = client.get_object(
         Bucket=BUCKET_NAME,
-        Key=keys[key_i],
+        Key=all_keys[key_i],
     )
 
     bytestream = BytesIO(resp['Body'].read())
     got_text = GzipFile(None, 'rb', fileobj=bytestream).read().decode('utf-8')
     records = got_text.split('\n')
+
+    # filter out any empty lines
+    records = filter(None, records)
+
     sys.stdout.flush()
 
+    # write out a single key/object to a single output file
     with open(OUT_FILE + "." + str(key_i), "a") as fp:
         for record in records:
             fp.write(record)
             fp.write('\n')
 
         fp.flush()
-
         record_count += len(records)
 
+    # update pointer in keys read
     key_i += 1
+
     total += record_count
     print("total so far: {}".format(total))
 
