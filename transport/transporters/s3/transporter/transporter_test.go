@@ -157,7 +157,7 @@ func TestSingleRecordSinglePutOk(t *testing.T) {
 	// Expects
 	expectedInput := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456-1234.gz"),
+		Key: aws.String("2000/01/02/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -234,7 +234,7 @@ func TestSingleMultipleSinglePutOk(t *testing.T) {
 	// Expects
 	expectedInput := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456-1234.gz"),
+		Key: aws.String("2000/01/02/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -302,7 +302,7 @@ func TestSinglePutFail(t *testing.T) {
 	// Expects
 	expectedInput := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456-1234.gz"),
+		Key: aws.String("2000/01/02/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}

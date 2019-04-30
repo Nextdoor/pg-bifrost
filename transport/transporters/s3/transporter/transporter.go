@@ -222,7 +222,7 @@ func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshall
 
 	// Partition the S3 keys into days
 	year, month, day, full := TimeSource.DateString()
-	baseFilename := fmt.Sprintf("%s-%d", full, firstWalStart)
+	baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
 
 	fullKey := key_join(true, t.keySpace, year, month, day, baseFilename)
 
