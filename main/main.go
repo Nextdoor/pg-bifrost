@@ -424,13 +424,6 @@ func replicateAction(c *cli.Context) error {
 	batcherConfig[config.VAR_NAME_BATCHER_MEMORY_SOFT_LIMIT] = batcherMemorySoftLimit
 	batcherConfig[config.VAR_NAME_BATCHER_ROUTING_METHOD] = batcherRoutingMethod
 
-	if c.GlobalInt(config.VAR_NAME_START_SLEEP) > 0 {
-		log.Info(
-			fmt.Sprintf(
-				"Sleeping for %d seconds before starting replicate...", c.GlobalInt(config.VAR_NAME_START_SLEEP)))
-		time.Sleep(time.Duration(c.GlobalInt(config.VAR_NAME_START_SLEEP)) * time.Second)
-	}
-
 	//
 	// Start replication
 	//
@@ -602,12 +595,6 @@ func main() {
 					Usage:  "A blacklist of tables to exclude. All others will be included.",
 					EnvVar: "BLACKLIST",
 				},
-				altsrc.NewIntFlag(cli.IntFlag{
-					Name:   config.VAR_NAME_START_SLEEP,
-					Usage:  "number of seconds to sleep at start before starting pg-bifrost replicate",
-					EnvVar: "START_SLEEP",
-					Hidden: true,
-				}),
 			},
 			Subcommands: []cli.Command{
 				{
