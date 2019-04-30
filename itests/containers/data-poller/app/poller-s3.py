@@ -97,9 +97,12 @@ while time.time() <= moving_deadline:
         # our pointer is past the length of the keys we have seen, so we wait for more...
         print("Waiting for more keys...")
         time.sleep(1)
-        # get additional, unique keys and loop back around
+
+        # get additional, unique keys and update the moving deadline, then loop back around
         all_keys = list(set(all_keys + _get_all_s3_keys(BUCKET_NAME)))
         all_keys.sort()
+
+        moving_deadline = time.time() + WAIT_TIME
         continue
 
     record_count = 0
