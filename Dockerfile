@@ -6,6 +6,8 @@ RUN apk --update add ca-certificates
 FROM golang:1.11.4-stretch as intermediate
 
 # Build dependencies
+RUN go get golang.org/x/tools/go/packages
+RUN go install golang.org/x/tools/go/packages
 RUN go get github.com/golang/mock/gomock
 RUN go install github.com/golang/mock/mockgen
 RUN go get github.com/golang/dep/cmd/dep
