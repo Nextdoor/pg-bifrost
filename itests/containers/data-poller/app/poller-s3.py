@@ -18,10 +18,11 @@ OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'itests')
 CREATE_BUCKET = bool(os.getenv('CREATE_BUCKET', '1'))
 ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4572')
-INITIAL_WAIT_TIME = int(os.getenv('INITIAL_WAIT_TIME', '60')) # time to wait for initial list of keys
-WAIT_TIME = int(os.getenv('WAIT_TIME', '5')) # incremental time to wait for new keys if none have been seen
-EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1')) # expect number of records (only used for logging)
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
+EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1')) # expect number of records (only used for logging)
+INITIAL_WAIT_TIME = int(os.getenv('S3_POLLER_INITIAL_WAIT_TIME', '90')) # time to wait for initial list of keys
+WAIT_TIME = int(os.getenv('S3_POLLER_WAIT_TIME', '10')) # incremental time to wait for new keys if none have been seen
+MAP_KEYS_TO_OUTPUT_FILES = bool(os.getenv('S3_POLLER_MAP_KEYS_TO_OUTPUT_FILES', '')) # whether to create a single output file
 
 client = boto3.client('s3',
                       endpoint_url=ENDPOINT_URL,
@@ -72,7 +73,7 @@ while True:
         print("No data received to poller. Exiting.")
         exit(1)
 
-    print("Getting keys list...")
+    print("Getting initial keys list...")
     sys.stdout.flush()
     try:
         all_keys = _get_all_s3_keys(BUCKET_NAME)
@@ -96,14 +97,20 @@ while time.time() <= moving_deadline:
     if key_i >= len(all_keys):
         # our pointer is past the length of the keys we have seen, so we wait for more...
         print("Waiting for more keys...")
+        sys.stdout.flush()
         time.sleep(1)
 
-        # get additional, unique keys and update the moving deadline, then loop back around
-        all_keys = list(set(all_keys + _get_all_s3_keys(BUCKET_NAME)))
-        all_keys.sort()
+        remote_keys = _get_all_s3_keys(BUCKET_NAME)
+        if len(remote_keys) > len(all_keys):
+            # if there are new keys, update our all_keys list and process
+            all_keys = list(set(all_keys + remote_keys))
+            all_keys.sort()
 
-        moving_deadline = time.time() + WAIT_TIME
-        continue
+            # update deadline as if we had new keys
+            moving_deadline = time.time() + WAIT_TIME
+        else:
+            # else, look back around
+            continue
 
     record_count = 0
 
@@ -122,8 +129,13 @@ while time.time() <= moving_deadline:
 
     sys.stdout.flush()
 
-    # write out a single key/object to a single output file
-    with open(OUT_FILE + "." + str(key_i), "a") as fp:
+    # By default we only create a single file no matter how many S3 keys we have
+    _file_num = 0
+
+    if MAP_KEYS_TO_OUTPUT_FILES:
+        _file_num = key_i
+
+    with open(OUT_FILE + "." + str(_file_num), "a") as fp:
         for record in records:
             fp.write(record)
             fp.write('\n')

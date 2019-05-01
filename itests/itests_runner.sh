@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 # Used to manually run itests against a single transport sink
 ITESTS_TRANSPORT_SINK=${ITESTS_TRANSPORT_SINK:-}
 
@@ -59,11 +61,13 @@ run_itests_on_transport_sink() {
        ./integration_tests.bats -r tests -f "$TEST"
     done
 
-    unset $(cat $_file | awk -F= '{print $1}' | xargs)
-
     echo '' ; echo '################################'
     echo "${TRANSPORT_SINK} itests successful in this slice!"
     echo '################################' ; echo ''
+
+    echo "Cleaning up containers, volumes and environment variables..."
+    TEST_NAME=base/test_basic docker-compose -f docker-compose.yml rm -f -s -v
+    unset $(cat $_file | awk -F= '{print $1}' | xargs)
 }
 
 # Start the itests

@@ -4,51 +4,65 @@ services:
     container_name: postgres
     build: containers/postgres
     volumes:
-      - "./tests/${TEST_NAME}/input:/input"
+    - "./tests/${TEST_NAME}/input:/input"
     environment:
-      - POSTGRES_PASSWORD=pgbifrost
+    - POSTGRES_PASSWORD=pgbifrost
     networks:
-      - net
+    - net
 
   localstack:
     container_name: localstack
     image: localstack/localstack:0.8.7
     env_file:
-      - "./containers/defaults.env"
-      - "./tests/${TEST_NAME}/envfile.env"
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
     environment:
-      - SERVICES=${TRANSPORT_SINK}
+    - SERVICES=${TRANSPORT_SINK}
     ports:
-      - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}
+    - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}
     restart: always
     networks:
-      - net
-
-  bifrost:
-    container_name: bifrost
-    image: pg-bifrost:latest
-    env_file:
-      - "./containers/defaults.env"
-      - "./tests/${TEST_NAME}/envfile.env"
-      - "./contexts/${TRANSPORT_SINK}.env"
-    networks:
-      net:
-        aliases:
-          - localstack
-          - postgres
-    command: /pg-bifrost replicate ${TRANSPORT_SINK}
+    - net
 
   data-poller:
     container_name: data-poller
     build: containers/data-poller
+    depends_on:
+    - localstack
     env_file:
-      - "./containers/defaults.env"
-      - "./tests/${TEST_NAME}/envfile.env"
-      - "./contexts/${TRANSPORT_SINK}.env"
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
+    - "./contexts/${TRANSPORT_SINK}.env"
     networks:
       net:
         aliases:
-          - localstack
+        - localstack
+
+  # bifrost needs postgres to be up, and for data-poller to have created sinks (e.g, s3 bucket, kinesis stream, etc)
+  # This container is intended to be started first by the caller and then bifrost
+  start_dependencies:
+    image: alpine:3.8
+    depends_on:
+    - postgres
+    - localstack
+    - data-poller
+    command: sleep 300
+
+  bifrost:
+    container_name: bifrost
+    image: pg-bifrost:latest
+    depends_on:
+    - start_dependencies
+    env_file:
+    - "./containers/defaults.env"
+    - "./tests/${TEST_NAME}/envfile.env"
+    - "./contexts/${TRANSPORT_SINK}.env"
+    networks:
+      net:
+        aliases:
+        - localstack
+        - postgres
+    command: /pg-bifrost replicate ${TRANSPORT_SINK}
 
 networks:
   net:

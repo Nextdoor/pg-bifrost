@@ -16,10 +16,10 @@ from retry import retry
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 STREAM_NAME = os.getenv('STREAM_NAME', 'itests')
 ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4568')
-WAIT_TIME = int(os.getenv('WAIT_TIME', '90'))
-EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
-SHARD_COUNT = int(os.getenv('SHARD_COUNT', '1'))
+EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
+WAIT_TIME = int(os.getenv('KINESIS_POLLER_WAIT_TIME', '90'))
+SHARD_COUNT = int(os.getenv('KINESIS_POLLER_SHARD_COUNT', '1'))
 
 client = boto3.client('kinesis',
                       endpoint_url=ENDPOINT_URL,
