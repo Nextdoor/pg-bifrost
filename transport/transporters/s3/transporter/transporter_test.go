@@ -33,12 +33,12 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3/transporter/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
-	"github.com/pkg/errors"
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -122,7 +122,7 @@ func EqPutObjectInputWithBufferRead(putObject *s3.PutObjectInput) gomock.Matcher
 	}
 }
 
-func TestSingleRecordSinglePutOk(t *testing.T) {
+func TestSinglSinglePutOk(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	defer resetTimeSource()
@@ -140,8 +140,8 @@ func TestSingleRecordSinglePutOk(t *testing.T) {
 
 	batchSize := 1
 
-	//
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient)
+	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
 
@@ -190,7 +190,7 @@ func TestSingleRecordSinglePutOk(t *testing.T) {
 }
 
 
-func TestSingleMultipleSinglePutOk(t *testing.T) {
+func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	defer resetTimeSource()
@@ -208,8 +208,8 @@ func TestSingleMultipleSinglePutOk(t *testing.T) {
 
 	batchSize := 2
 
-	//
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient)
+	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
 
@@ -266,8 +266,7 @@ func TestSingleMultipleSinglePutOk(t *testing.T) {
 	stats.VerifyStats(t, statsChan, expected)
 }
 
-
-func TestSinglePutFail(t *testing.T) {
+func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	defer resetTimeSource()
@@ -285,29 +284,38 @@ func TestSinglePutFail(t *testing.T) {
 
 	batchSize := 1
 
-	//
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient)
+	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
 
-	firstMarshalledMessage := marshaller.MarshalledMessage{
+	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
-		Json:         []byte("dataOne"),
+		Json:         []byte("data"),
 		TimeBasedKey: "123",
 		WalStart:     1234,
 		Transaction:  "123",
 	}
-	b.Add(&firstMarshalledMessage)
+	b.Add(&marshalledMessage)
 
 	// Expects
-	expectedInput := s3.PutObjectInput{
+	expectedInputOne := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key: aws.String("2000/01/02/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
-	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInput)).Return(nil, errors.New("Error"))
+	// We need two "identical" inputs because Body's io.Reader is mutable (reading needs a Seek back to start offset)
+	expectedInputTwo := s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key: aws.String("2000/01/02/456_1234.gz"),
+		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		ContentEncoding: aws.String("gzip"),
+	}
+
+	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputOne)).Return(nil, errors.New("some error"))
+	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputTwo)).Return(nil, nil)
 
 	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
 
@@ -315,6 +323,8 @@ func TestSinglePutFail(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(5000 * time.Millisecond))
 
 	in <- b
 
@@ -323,6 +333,91 @@ func TestSinglePutFail(t *testing.T) {
 
 	// Wait for data to go through
 	time.Sleep(time.Millisecond * 25)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("s3_transport", "failure", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatCount("s3_transport", "success", int64(1), int64(2000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "duration", 3000, int64(4000*time.Millisecond), "ms"),
+		stats.NewStatCount("s3_transport", "written", int64(1), int64(5000*time.Millisecond)),
+	}
+	stats.VerifyStats(t, statsChan, expected)
+}
+
+func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	defer resetTimeSource()
+
+	in := make(chan transport.Batch, 1000)
+	txns := make(chan *ordered_map.OrderedMap, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+
+	bucketName := "test-bucket"
+	keySpace := ""
+	mockClient := mocks.NewMockS3API(mockCtrl)
+	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
+	TimeSource = mockTime
+	sh := shutdown.NewShutdownHandler()
+
+	batchSize := 1
+
+	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 1)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
+	b := batch.NewGenericBatch("", batchSize)
+
+
+	marshalledMessage := marshaller.MarshalledMessage{
+		Operation:    "INSERT",
+		Json:         []byte("data"),
+		TimeBasedKey: "123",
+		WalStart:     1234,
+		Transaction:  "123",
+	}
+	b.Add(&marshalledMessage)
+
+	// Expects
+	expectedInputOne := s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key: aws.String("2000/01/02/456_1234.gz"),
+		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		ContentEncoding: aws.String("gzip"),
+	}
+
+	// We need two "identical" inputs because Body's io.Reader is mutable (reading needs a Seek back to start offset)
+	expectedInputTwo := s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key: aws.String("2000/01/02/456_1234.gz"),
+		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		ContentEncoding: aws.String("gzip"),
+	}
+
+	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputOne)).Return(nil, errors.New("some error"))
+	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputTwo)).Return(nil, errors.New("some error"))
+
+	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
+
+	mockTime.EXPECT().UnixNano().Return(int64(0))
+	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
+
+	in <- b
+
+	// Start test
+	go transport.StartTransporting()
+
+	// Wait for data to go through
+	time.Sleep(time.Millisecond * 25)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("s3_transport", "failure", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatCount("s3_transport", "failure", int64(1), int64(2000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "duration", 3000, int64(4000*time.Millisecond), "ms"),
+	}
+	stats.VerifyStats(t, statsChan, expected)
 
 	// Verify shutdown
 	_, ok := <-sh.TerminateCtx.Done()
