@@ -19,12 +19,14 @@ package s3
 
 import (
 	"os"
+	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3/transporter"
+	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
@@ -108,6 +110,17 @@ func New(
 
 	// Make and link transporters to the batcher's output channels
 	for i := 0; i < workers; i++ {
+		// One retry policy per worker is required because the policy
+		// is not thread safe.
+		retryPolicy := &backoff.ExponentialBackOff{
+			InitialInterval:     1500 * time.Millisecond,
+			RandomizationFactor: 0.5,
+			Multiplier:          1.2,
+			MaxInterval:         5 * time.Second,
+			MaxElapsedTime:      time.Duration(time.Minute * 5),
+			Clock:               backoff.SystemClock,
+		}
+
 		t := transporter.NewTransporter(shutdownHandler,
 			inputChans[i],
 			txnsWritten,
@@ -116,6 +129,7 @@ func New(
 			i,
 			bucketName,
 			keySpace,
+			retryPolicy,
 			&awsRegionVar,
 			&awsAccessKeyIdVar,
 			&awsSecretAccessKeyVar,

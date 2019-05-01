@@ -36,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
@@ -86,6 +87,7 @@ type S3Transporter struct {
 	client      s3iface.S3API
 	bucketName  string
 	keySpace    string
+	retryPolicy backoff.BackOff
 }
 
 func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
@@ -96,7 +98,8 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 	id int,
 	bucketName string,
 	keySpace string,
-	client s3iface.S3API) transport.Transporter {
+	client s3iface.S3API,
+	retryPolicy backoff.BackOff) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
 
@@ -109,6 +112,7 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 		client,
 		bucketName,
 		keySpace,
+		retryPolicy,
 	}
 }
 
@@ -121,6 +125,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	id int,
 	bucketName string,
 	keySpace string,
+	retryPolicy backoff.BackOff,
 	awsRegion *string,
 	awsAccessKeyId *string,
 	awsSecretAccessKey *string,
@@ -136,11 +141,13 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 			Credentials: 		creds,
 			S3ForcePathStyle: 	aws.Bool(true),
 			Endpoint:    		aws.String(*endpoint),
+			MaxRetries:			aws.Int(0), // We disable the client retry policy because of our own retry logic
 		}))
 	} else {
 		sess = session.Must(session.NewSession(&aws.Config{
 			Region:      aws.String(*awsRegion),
 			Credentials: creds,
+			MaxRetries:	 aws.Int(0),
 		}))
 	}
 
@@ -155,7 +162,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		id,
 		bucketName,
 		keySpace,
-		client)
+		client,
+		retryPolicy)
 }
 
 // shutdown idempotently closes the output channel
@@ -177,75 +185,91 @@ func (t *S3Transporter) shutdown() {
 }
 
 
-// transport does a PUT on a full batch as a single key/file to S3
-func (t *S3Transporter) transport(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (error, bool) {
+// transportWithRetry does a PUT on a full batch as a single key/file to S3
+func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (error, bool) {
 	var cancelled bool
 
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
+	// An operation that may fail.
+	operation := func() error {
+		var buf bytes.Buffer
+		gz := gzip.NewWriter(&buf)
 
-	select {
-	case <-ctx.Done():
-		t.log.Debug("received terminateCtx cancellation")
-		return nil, true
-	default:
-	}
-
-	// add all messages into a gzipped buffer
-	for _, msg := range messagesSlice {
-		if _, err := gz.Write(msg.Json); err != nil {
-			return err, cancelled
+		select {
+		case <-ctx.Done():
+			t.log.Debug("received terminateCtx cancellation")
+			cancelled = true
+		default:
 		}
-		gz.Write([]byte("\n"))
-	}
 
-	if err := gz.Flush(); err != nil {
-		return err, cancelled
-	}
-	if err := gz.Close(); err != nil {
-		return err, cancelled
-	}
+		// add all messages into a gzipped buffer
+		for _, msg := range messagesSlice {
+			if _, err := gz.Write(msg.Json); err != nil {
+				return err
+			}
+			gz.Write([]byte("\n"))
+		}
 
-	gz.Reset(ioutil.Discard)
+		if err := gz.Flush(); err != nil {
+			return err
+		}
+		if err := gz.Close(); err != nil {
+			return err
+		}
 
-	firstWalStart := messagesSlice[0].WalStart
+		gz.Reset(ioutil.Discard)
 
-	// Free up messagesSlice now that we're done with it
-	messagesSlice = nil
+		firstWalStart := messagesSlice[0].WalStart
 
-	// Clear out every allocation in the conversion
-	byteArray := buf.Bytes()
-	buf.Reset()
+		// Free up messagesSlice now that we're done with it
+		messagesSlice = nil
 
-	byteReader := bytes.NewReader(byteArray)
-	byteArray = nil
+		// Clear out every allocation in the conversion
+		byteArray := buf.Bytes()
+		buf.Reset()
 
-	// Partition the S3 keys into days
-	year, month, day, full := TimeSource.DateString()
-	baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
+		byteReader := bytes.NewReader(byteArray)
+		byteArray = nil
 
-	fullKey := key_join(true, t.keySpace, year, month, day, baseFilename)
+		// Partition the S3 keys into days
+		year, month, day, full := TimeSource.DateString()
+		baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
 
-	// Do the upload and let S3 handle retries
-	_, err := t.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
-		Bucket:          aws.String(t.bucketName),
-		Key:             aws.String(fullKey),
-		Body:   		 byteReader,
-		ContentEncoding: aws.String("gzip"),
-	})
+		fullKey := key_join(true, t.keySpace, year, month, day, baseFilename)
 
-	// If there are no failures then all messages were sent
-	if err == nil {
+		// Do the upload and let S3 handle retries TODO(nehal): disable retries here
+		_, err := t.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
+			Bucket:          aws.String(t.bucketName),
+			Key:             aws.String(fullKey),
+			Body:            byteReader,
+			ContentEncoding: aws.String("gzip"),
+		})
+
+		// If any errors occurred during sending the entire batch
+		if err != nil {
+			t.log.WithError(err).Errorf("wal_start %d failed to be uploaded to S3 after client retries", firstWalStart)
+			t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
+
+			return err
+		}
+
+		// If there are no failures then all messages were sent
 		t.log.Infof("successful PUT: %s/%s", t.bucketName, fullKey)
 		t.statsChan <- stats.NewStatCount("s3_transport", "success", 1, TimeSource.UnixNano())
-		return nil, cancelled
+		return nil
 	}
 
-	// If any errors occurred during sending then entire batch
-	t.log.WithError(err).Errorf("wal_start %d failed to be uploaded to S3 after client retries", firstWalStart)
-	t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
+	// Reset retrier
+	defer func() {
+		t.retryPolicy.Reset()
+	}()
 
-	return err, cancelled
+	err := backoff.Retry(operation, t.retryPolicy)
+	if err != nil {
+		// Handle error.
+		return err, cancelled
+	}
+
+	return nil, cancelled
 }
 
 
@@ -297,18 +321,18 @@ func (t *S3Transporter) StartTransporting() {
 		start := TimeSource.UnixNano()
 
 		// send to S3
-		err, cancelled := t.transport(t.shutdownHandler.TerminateCtx, messagesSlice)
+		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
 
 		// End timer and send stat
 		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
 		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, TimeSource.UnixNano(), "ms")
 
 		if err != nil {
-			t.log.Error(err)
+			t.log.Error("max retries exceeded")
 			return
 		}
 
-		// if transport was cancelled, then loop back around to shutdown
+		// if transportWithRetry was cancelled, then loop back around to shutdown
 		if cancelled {
 			continue
 		}
