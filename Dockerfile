@@ -34,8 +34,9 @@ COPY . .
 ARG is_ci
 ENV CI=$is_ci
 
-# Run tests and make the binary
-RUN make test && make build
+# Run tests (if in CI build) then make the binary
+RUN test -z "$CI" || make test
+RUN make build
 
 # Package binary & certs in a scratch container
 FROM scratch
