@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Used to manually run itests against a single transport sink
+ITESTS_TRANSPORT_SINK=${ITESTS_TRANSPORT_SINK:-}
+
 get_testfiles() {
     _transport_sink=$1
 
@@ -32,10 +35,11 @@ get_testfiles() {
     echo "${_base_testfiles} ${_specific_testfiles}"
 }
 
-# Iterate through our transport sink contexts (e.g., kinesis, s3, etc.)
-for file in ./contexts/*; do
+run_itests_on_transport_sink() {
+    _file=$1
+
     # Source the transport sink's context
-    set -a ; . $file ; set +a
+    set -a ; . $_file ; set +a
 
     # Setup docker images & get test cases
     TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
@@ -55,9 +59,19 @@ for file in ./contexts/*; do
        ./integration_tests.bats -r tests -f "$TEST"
     done
 
-    unset $(cat $file | awk -F= '{print $1}' | xargs)
+    unset $(cat $_file | awk -F= '{print $1}' | xargs)
 
     echo '' ; echo '################################'
     echo "${TRANSPORT_SINK} itests successful in this slice!"
     echo '################################' ; echo ''
-done
+}
+
+# Start the itests
+if [ ! -z "${ITESTS_TRANSPORT_SINK}" ] ; then
+    run_itests_on_transport_sink "contexts/${ITESTS_TRANSPORT_SINK}.env"
+else
+    # Iterate through our transport sink contexts (e.g., kinesis, s3, etc.)
+    for file in ./contexts/*; do
+        run_itests_on_transport_sink $file
+    done
+fi
