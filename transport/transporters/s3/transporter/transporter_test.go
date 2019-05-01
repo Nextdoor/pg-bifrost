@@ -122,7 +122,7 @@ func EqPutObjectInputWithBufferRead(putObject *s3.PutObjectInput) gomock.Matcher
 	}
 }
 
-func TestSinglSinglePutOk(t *testing.T) {
+func TestSinglePutOk(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	defer resetTimeSource()
@@ -306,7 +306,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 		ContentEncoding: aws.String("gzip"),
 	}
 
-	// We need two "identical" inputs because Body's io.Reader is mutable (reading needs a Seek back to start offset)
+	// We need two "identical" inputs because Body's io.Reader is mutable (reading again needs a Seek to rewind)
 	expectedInputTwo := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key: aws.String("2000/01/02/456_1234.gz"),

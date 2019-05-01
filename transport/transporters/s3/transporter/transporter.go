@@ -235,9 +235,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 
 	// An operation that may fail.
 	operation := func() error {
-		fmt.Println("NEHAL running operation...")
-
-		// Do the upload and let S3 handle retries TODO(nehal): disable retries here
+		// Do the upload and let S3 handle retries
 		_, err := t.client.PutObjectWithContext(ctx, &s3.PutObjectInput{
 			Bucket:          aws.String(t.bucketName),
 			Key:             aws.String(fullKey),
@@ -245,17 +243,17 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 			ContentEncoding: aws.String("gzip"),
 		})
 
-		// Reset the Reader for retries
-		byteReader.Seek(0, 0)
-
-		fmt.Println("NEHAL err:", err)
-
 		// If any errors occurred during sending the entire batch
 		if err != nil {
 			t.log.WithError(err).Errorf("wal_start %d failed to be uploaded to S3", firstWalStart)
 			t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
 
-			fmt.Println("NEHAL returning err:", err)
+			// Rewind the reader for retries
+			_, seekErr := byteReader.Seek(0, 0)
+			if seekErr != nil {
+				t.log.Fatal("Seek error on io.Reader rewind when preparing for retry:", seekErr)
+			}
+
 			return err
 		}
 
@@ -271,13 +269,10 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	}()
 
 	err := backoff.Retry(operation, t.retryPolicy)
-	fmt.Println("NEHAL retry err:", err)
 	if err != nil {
 		// Handle error.
 		return err, cancelled
 	}
-
-	fmt.Println("NEHAL exit err:", err)
 
 	return nil, cancelled
 }
@@ -332,7 +327,6 @@ func (t *S3Transporter) StartTransporting() {
 
 		// send to S3
 		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
-		fmt.Println("NEHAL caller err:", err)
 
 		// End timer and send stat
 		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
