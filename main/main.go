@@ -265,6 +265,8 @@ func runReplicate(
 						memProfile(fmt.Sprintf(memprofile))
 					}
 
+					// bifrost only supports gathering of profiling data once. This flag will permanantly disable
+					// profiling in the existing runtime and further SIGUSR1 signals will not start/stop it again.
 					stoppedProfiling = true
 				}
 
