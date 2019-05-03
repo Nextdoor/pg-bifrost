@@ -243,14 +243,36 @@ func runReplicate(
 
 	// Signal Handling
 	go func() {
+		stoppedProfiling := false
+
 		for {
 			sig := <-sigchan
 			log.Infof("Got a signal %d (%s)", sig, sig.String())
 
-			// If it's a SIGUSR1 and the memprofile flag was set, then dump a pprof and continue running
-			// https://golang.org/pkg/runtime/pprof/
+			// If it's a SIGUSR1 and the cpuprofile/memprofile flag was set, then dump pprof files and continue running
+			// https://golang.org/pkg/runtime/pprof
 			if sig == syscall.SIGUSR1 {
 
+				if stoppedProfiling != true {
+					if cpuprofile != "" {
+						log.Warn("Stopping CPU profiling")
+						pprof.StopCPUProfile()
+						log.Infof("Wrote pprof cpu profile to: '%s'", cpuprofile)
+					}
+
+					if memprofile != "" {
+						time.Sleep(1 * time.Second)
+						memProfile(fmt.Sprintf(memprofile))
+					}
+
+					stoppedProfiling = true
+				}
+
+				continue
+			}
+
+			if stoppedProfiling != true {
+				// Stop profiling on shutdown
 				if cpuprofile != "" {
 					log.Warn("Stopping CPU profiling")
 					pprof.StopCPUProfile()
@@ -258,20 +280,8 @@ func runReplicate(
 
 				if memprofile != "" {
 					time.Sleep(1 * time.Second)
-					memProfile(fmt.Sprintf(memprofile))
+					memProfile(fmt.Sprintf("%s.stop", memprofile))
 				}
-				continue
-			}
-
-			// Stop profiling on shutdown
-			if cpuprofile != "" {
-				log.Warn("Stopping CPU profiling")
-				pprof.StopCPUProfile()
-			}
-
-			if memprofile != "" {
-				time.Sleep(1 * time.Second)
-				memProfile(fmt.Sprintf("%s.stop", memprofile))
 			}
 
 			// initiates all modules to run their shutdown() function
