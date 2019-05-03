@@ -120,5 +120,6 @@ while total < EXPECTED_COUNT:
         time.sleep(1)
     sys.stdout.flush()
 
+# NOTE: 'Records read' is used by the tests framework to know when all expected data has been read.
 print("Records read {}".format(total))
 sys.stdout.flush()
