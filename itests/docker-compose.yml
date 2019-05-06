@@ -31,8 +31,6 @@ services:
       - "./containers/defaults.env"
       - "./tests/${TEST_NAME}/envfile.env"
       - "./contexts/${TRANSPORT_SINK}.env"
-    volumes:
-      - "./tests/${TEST_NAME}/perf_output:/perf"
     networks:
       net:
         aliases:
@@ -47,8 +45,6 @@ services:
       - "./containers/defaults.env"
       - "./tests/${TEST_NAME}/envfile.env"
       - "./contexts/${TRANSPORT_SINK}.env"
-    volumes:
-      - "./tests/${TEST_NAME}/output:/output"
     networks:
       net:
         aliases:

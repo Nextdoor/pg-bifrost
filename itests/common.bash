@@ -89,8 +89,9 @@ EOL
 
 _clean() {
   log "Cleaning up previous test run output"
-  rm -f ./tests/"$BATS_TEST_DESCRIPTION"/output/*
-  rm -f ./tests/"$BATS_TEST_DESCRIPTION"/perf_output/*
+  # The whole directories are explictly removed here so that we can `docker cp` a new directories here
+  rm -rf ./tests/"$BATS_TEST_DESCRIPTION"/output
+  rm -rf ./tests/"$BATS_TEST_DESCRIPTION"/perf_output
 }
 
 _insert_data() {
@@ -161,6 +162,21 @@ _check_lsn() {
   return 0
 }
 
+_gather_test_output() {
+  log "Exporting messages test output from containers"
+  # Copy output directories from the containers to the host
+  docker cp data-poller:/output ./tests/$BATS_TEST_DESCRIPTION/output
+
+  if [ -d "./tests/$BATS_TEST_DESCRIPTION/perf_base" ]; then
+      log "Exporting performance test output from containers"
+      TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR1 bifrost # dump cpuprofile
+      TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR2 bifrost # dump memprofile
+      sleep 2
+
+      docker cp bifrost:/perf ./tests/$BATS_TEST_DESCRIPTION/perf_output
+  fi
+}
+
 _verify() {
   log "Verifying test output"
   for file in ./tests/"$BATS_TEST_DESCRIPTION"/golden/*; do
@@ -202,10 +218,8 @@ _profile() {
     return
   fi
 
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
-
   log "Comparing Memory Profile"
-  memprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/mem.pprof ../target/pg-bifrost tests/$BATS_TEST_DESCRIPTION/perf_output/mem.pprof.stop | tail -n +9 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5- | egrep -v vendor/gopkg.in/Nextdoor/cli)
+  memprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/mem.pprof ../target/pg-bifrost tests/$BATS_TEST_DESCRIPTION/perf_output/mem.pprof | tail -n +9 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5- | egrep -v vendor/gopkg.in/Nextdoor/cli)
   memory_leak=false
   while read -r line; do
     percent=$(echo $line | cut -d ' ' -f1 | rev | cut -c 2- | rev)
@@ -242,7 +256,7 @@ teardown() {
   _end_timer
 
   # Print current state of the ledger for debugging
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR2 bifrost
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s IO bifrost # dump ledger to stdout
   sleep 5
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
 
@@ -258,6 +272,7 @@ do_test() {
   _begin_timer
   _insert_data
   _wait
+  _gather_test_output
   _verify
   _profile
 }

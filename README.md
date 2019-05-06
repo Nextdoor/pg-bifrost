@@ -134,6 +134,27 @@ Messages from the same transaction go to the same shard (ordered) | transaction-
 Messages from the same table go to the same shard (unordered) | tablename | round-robin
 Messages from the same table go to the same shard (ordered) | tablename | partition
 
+### Profiling
+
+pg-bifrost natively supports CPU and memory profiling via `pprof`. To start profiling of either, you can simply specify the filesystem location of each expected `pprof` file via `CPUPROFILE` and `MEMPROFILE`.
+
+**CPU Profiling**
+
+To end CPU profiling, you send pg-bifrost a `SIGUSR1` signal and the `pprof` file will be finalized and written.
+
+*NOTE:* CPU profiling can only be done one time for any single run of pg-bifrost. Once a `SIGUSR1` is sent, further signals will have no effect in finalizing CPU profiling. A final CPU profile will also be written upon graceful shutdown of pg-bifrost, if it hasn't already been finalized.
+
+**Memory Profiling**
+
+To dump a memory profile, you send pg-bifrost a `SIGUSR2` signal and the `pprof` file will be written.
+
+*NOTE:* CPU profiling **can** be done multiple times for any single run of pg-bifrost. A final memory profile will also be written upon graceful shutdown of pg-bifrost.
+
+### Debugging
+
+**Progress Tracker (Ledger) Dump**
+
+In rare scenarios to investigate WAL standby acknowledgement issues to postgres (e.g., thrashing on duplicate data, a missing transaction, etc.) the ledger (the progress tracker's data structure to keep track of received and acknowledged transactions and their WAL messages) can be dumped to STDOUT by sending a `SIGIO` signal to pg-bifrost.
 
 ## Development
 

@@ -5,6 +5,9 @@ RUN apk --update add ca-certificates
 # Test and build binary
 FROM golang:1.11.4-stretch as intermediate
 
+# Make a directory to place pprof files in. Typically used for itests.
+RUN mkdir /perf
+
 # Build dependencies
 RUN go get golang.org/x/tools/go/packages
 RUN go install golang.org/x/tools/go/packages
@@ -37,5 +40,6 @@ RUN make test && make build
 # Package binary & certs in a scratch container
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=intermediate /perf /perf
 COPY --from=intermediate /go/src/github.com/Nextdoor/pg-bifrost.git/target/pg-bifrost /
 CMD ["/pg-bifrost"]
