@@ -169,7 +169,8 @@ _gather_test_output() {
 
   if [ -d "./tests/$BATS_TEST_DESCRIPTION/perf_base" ]; then
       log "Exporting performance test output from containers"
-      TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR1 bifrost
+      TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR1 bifrost # dump cpuprofile
+      TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR2 bifrost # dump memprofile
       sleep 2
 
       docker cp bifrost:/perf ./tests/$BATS_TEST_DESCRIPTION/perf_output
@@ -255,7 +256,7 @@ teardown() {
   _end_timer
 
   # Print current state of the ledger for debugging
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s USR2 bifrost
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s IO bifrost # dump ledger to stdout
   sleep 5
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
 

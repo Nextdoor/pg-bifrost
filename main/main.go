@@ -239,51 +239,53 @@ func runReplicate(
 	go runner.Start()
 
 	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR1)
+	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGUSR2)
 
 	// Signal Handling
 	go func() {
-		stoppedProfiling := false
+		stoppedCpuProfiling := false
 
 		for {
 			sig := <-sigchan
 			log.Infof("Got a signal %d (%s)", sig, sig.String())
 
-			// If it's a SIGUSR1 and the cpuprofile/memprofile flag was set, then dump pprof files and continue running
+			// If it's a SIGUSR1 and the cpuprofile flag was set, then dump pprof files and continue running.
 			// https://golang.org/pkg/runtime/pprof
-			if sig == syscall.SIGUSR1 {
+			if sig == syscall.SIGUSR1 && cpuprofile != "" {
+				if stoppedCpuProfiling != true {
+					log.Warn("Stopping CPU profiling")
+					pprof.StopCPUProfile()
+					log.Infof("Wrote pprof cpu profile to: '%s'", cpuprofile)
 
-				if stoppedProfiling != true {
-					if cpuprofile != "" {
-						log.Warn("Stopping CPU profiling")
-						pprof.StopCPUProfile()
-						log.Infof("Wrote pprof cpu profile to: '%s'", cpuprofile)
-					}
-
-					if memprofile != "" {
-						time.Sleep(1 * time.Second)
-						memProfile(fmt.Sprintf(memprofile))
-					}
-
-					// bifrost only supports gathering of profiling data once. This flag will permanantly disable
-					// profiling in the existing runtime and further SIGUSR1 signals will not start/stop it again.
-					stoppedProfiling = true
+					// bifrost only supports gathering of CPU profiling data once. This flag will permanantly disable
+					// profiling in the existing runtime and further SIGUSR1 signals will not finalize it again.
+					stoppedCpuProfiling = true
 				}
 
 				continue
 			}
 
-			if stoppedProfiling != true {
-				// Stop profiling on shutdown
-				if cpuprofile != "" {
-					log.Warn("Stopping CPU profiling")
-					pprof.StopCPUProfile()
-				}
+			// If it's a SIGUSR2 and the memprofile flag was set, then dump pprof file and continue running.
+			// NOTE: there can be multiple invocations of memprofile to dump new, updated pprof files.
+			// https://golang.org/pkg/runtime/pprof
+			if sig == syscall.SIGUSR2 && memprofile != "" {
+				time.Sleep(1 * time.Second)
+				memProfile(fmt.Sprintf(memprofile))
 
-				if memprofile != "" {
-					time.Sleep(1 * time.Second)
-					memProfile(fmt.Sprintf("%s.stop", memprofile))
-				}
+				continue
+			}
+
+			log.Info("pg-bifrost received a shutdown")
+
+			// Stop profiling on shutdown
+			if cpuprofile != "" && stoppedCpuProfiling != true {
+				log.Warn("Stopping CPU profiling")
+				pprof.StopCPUProfile()
+			}
+
+			if memprofile != "" {
+				time.Sleep(1 * time.Second)
+				memProfile(fmt.Sprintf("%s.stop", memprofile))
 			}
 
 			// initiates all modules to run their shutdown() function
@@ -293,7 +295,6 @@ func runReplicate(
 
 	// block on a shutdownHandler cancellation
 	<-shutdownHandler.TerminateCtx.Done()
-	fmt.Println("pg-bifrost received a shutdown")
 
 	// Wait a bit for routines to stop
 	timeout := time.NewTimer(10 * time.Second)

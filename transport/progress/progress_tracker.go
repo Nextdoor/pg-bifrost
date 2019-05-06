@@ -19,12 +19,13 @@ package progress
 import (
 	"errors"
 	"fmt"
-	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Nextdoor/pg-bifrost.git/stats"
+	"github.com/Nextdoor/pg-bifrost.git/utils"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/cevaris/ordered_map"
@@ -246,7 +247,7 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 
 	// Signal handler channel to dump out ledger
 	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGUSR2)
+	signal.Notify(sigchan, syscall.SIGIO)
 
 	var curSleep = initialSleep
 
@@ -286,10 +287,16 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 		case sig := <-sigchan:
 			log.Infof("Got a signal %d (%s)", sig, sig.String())
 
-			if sig == syscall.SIGUSR2 {
-				// Dump out ledger on SIGUSR2 signal
-				for _, entry := range utils.OrderedMapToStrings(p.ledger.items) {
-					fmt.Println("entry: ", entry)
+			if sig == syscall.SIGIO {
+				// Dump out any ledger entries on SIGIO signal
+				ledgerDump := utils.OrderedMapToStrings(p.ledger.items)
+
+				if len(ledgerDump) > 0 {
+					for _, entry := range ledgerDump {
+						fmt.Println("entry: ", entry)
+					}
+				} else {
+					log.Info("No ledger entries to dump")
 				}
 			}
 		default:
