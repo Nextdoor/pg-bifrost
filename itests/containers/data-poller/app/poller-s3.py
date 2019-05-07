@@ -29,14 +29,14 @@ client = boto3.client('s3',
                       region_name=AWS_REGION)
 
 # Create a bucket
-# @retry(exceptions.EndpointConnectionError, tries=10, delay=.5)
+@retry(exceptions.EndpointConnectionError, tries=10, delay=.5)
 def _create_bucket(name):
     print("Trying to create bucket {}".format(name))
     return client.create_bucket(
         Bucket=name)
 
 
-@retry(exceptions.EndpointConnectionError, tries=10, delay=.5)
+@retry(ValueError, tries=10, delay=.5)
 def _get_all_s3_keys(bucket):
     """Get a list of all keys in an S3 bucket."""
     keys = []
