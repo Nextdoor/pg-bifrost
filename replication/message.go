@@ -17,8 +17,6 @@
 package replication
 
 import (
-	"time"
-
 	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pgx"
 )
@@ -54,7 +52,8 @@ func PgxReplicationMessageToWalMessage(pgxMsg *pgx.ReplicationMessage) (*WalMess
 	walMsg := WalMessage{
 		pgxMsg.WalMessage.WalStart,
 		pgxMsg.WalMessage.ServerWalEnd,
-		time.Now().Unix(), // We set a time which is used to identify temporally unique transactions
+		// Note that in current postgres versions (9,10,11) ServerTime is unset and comes through as 0
+		int64(pgxMsg.WalMessage.ServerTime),
 		"",
 		pr,
 		"",

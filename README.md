@@ -39,6 +39,13 @@ DELETE FROM customers WHERE first_name = 'Goodbye';
 {"time":"1970-01-01T00:00:01Z","lsn":"0/1510CA8","table":"public.customers","operation":"DELETE","columns":{"id":{"old":{"q":"false","t":"integer","v":"2"}}}}
 ```
 
+**NOTE** 
+
+`time` here is not the time this wal message has been replicated, nor is it when the time the message has been transported to the sink. It is the server time as reported in the wal binary. These appear to be uninplemented in Postgres versions 9.5 to 11.2 so they they take the epoch time in the marshalled (JSON) message. 
+
+As such it does not provide any useful data. This is left in if there is support for this binary field in the future.
+
+ 
 ## Usage
 
 ### main
