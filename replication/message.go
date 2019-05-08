@@ -17,10 +17,9 @@
 package replication
 
 import (
-	"time"
-
 	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pgx"
+	"github.com/pkg/errors"
 )
 
 // WalMessage is the bifrost wal message struct we pass with stripped down fields.
@@ -36,6 +35,14 @@ type WalMessage struct {
 // PgxReplicationMessageToWalMessage is a converter and validator to turn pgx ReplicationMessages to the bifrost
 // format (which is stripped down).
 func PgxReplicationMessageToWalMessage(pgxMsg *pgx.ReplicationMessage) (*WalMessage, error) {
+	if pgxMsg == nil {
+		return &WalMessage{}, errors.New("pgx.ReplicationMessage is nil")
+	}
+
+	if pgxMsg.WalMessage == nil {
+		return &WalMessage{}, errors.New("pgx.ReplicationMessage.WalMessage is nil")
+	}
+
 	walString := string(pgxMsg.WalMessage.WalData)
 	pr := parselogical.NewParseResult(walString)
 
@@ -54,7 +61,8 @@ func PgxReplicationMessageToWalMessage(pgxMsg *pgx.ReplicationMessage) (*WalMess
 	walMsg := WalMessage{
 		pgxMsg.WalMessage.WalStart,
 		pgxMsg.WalMessage.ServerWalEnd,
-		time.Now().Unix(), // We set a time which is used to identify temporally unique transactions
+		// Note that in current postgres versions (9,10,11) ServerTime is unset and comes through as 0
+		int64(pgxMsg.WalMessage.ServerTime),
 		"",
 		pr,
 		"",

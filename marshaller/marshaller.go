@@ -180,7 +180,9 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
 func marshalWalToJson(msg *replication.WalMessage) ([]byte, error) {
 	lsn := pgx.FormatLSN(msg.WalStart)
-	time := time.Unix(0, int64(msg.ServerTime)).Format(time.RFC3339)
+
+	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
+	time := time.Unix(0, int64(msg.ServerTime) * 1000000).Format(time.RFC3339)
 	columns := make(map[string]map[string]map[string]string)
 
 	for k, v := range msg.Pr.Columns {
