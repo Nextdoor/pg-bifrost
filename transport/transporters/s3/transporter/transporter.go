@@ -50,7 +50,7 @@ var (
 )
 
 // key_join is a helper to concatenate strings to form an S3 key
-func key_join(gzipped bool, strs ...string, ) string {
+func key_join(strs ...string, ) string {
 	var sb strings.Builder
 	for i, str := range strs {
 		if str == "" || str == "/" {
@@ -69,9 +69,7 @@ func key_join(gzipped bool, strs ...string, ) string {
 		}
 	}
 
-	if gzipped {
-		sb.WriteString(".gz")
-	}
+	sb.WriteString(".gz")
 
 	return sb.String()
 }
@@ -232,7 +230,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	year, month, day, full := TimeSource.DateString()
 	baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
 
-	fullKey := key_join(true, t.keySpace, year, month, day, baseFilename)
+	fullKey := key_join(t.keySpace, year, month, day, baseFilename)
 
 	// An operation that may fail.
 	operation := func() error {
@@ -246,7 +244,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 
 		// If any errors occurred during sending the entire batch
 		if err != nil {
-			t.log.WithError(err).Errorf("wal_start %d failed to be uploaded to S3", firstWalStart)
+			t.log.WithError(err).Errorf("%s failed to be uploaded to S3", fullKey)
 			t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
 
 			// Rewind the reader for retries
