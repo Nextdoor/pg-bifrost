@@ -48,8 +48,12 @@ _startup() {
   log "Running docker-compose build"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose build
 
-  log "Starting docker-compose dependencies"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d start_dependencies
+  log "Starting docker-compose data-poller dependencies"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d start-data-poller-dependencies
+  sleep 2
+
+  log "Starting docker-compose bifrost dependencies"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d start-bifrost-dependencies
   sleep 2
 
   log "Starting docker-compose bifrost"

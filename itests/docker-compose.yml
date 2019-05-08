@@ -24,11 +24,19 @@ services:
     networks:
     - net
 
+  # data-poller needs localstack to be initialized to be able to call the local AWS service
+  # This container is intended to be started first by the caller and then data-poller
+  start-data-poller-dependencies:
+    image: alpine:3.8
+    depends_on:
+    - localstack
+    command: sleep 300
+
   data-poller:
     container_name: data-poller
     build: containers/data-poller
     depends_on:
-    - localstack
+    - start-data-poller-dependencies
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
@@ -40,7 +48,7 @@ services:
 
   # bifrost needs postgres to be up, and for data-poller to have created sinks (e.g, s3 bucket, kinesis stream, etc)
   # This container is intended to be started first by the caller and then bifrost
-  start_dependencies:
+  start-bifrost-dependencies:
     image: alpine:3.8
     depends_on:
     - postgres
@@ -52,7 +60,7 @@ services:
     container_name: bifrost
     image: pg-bifrost:latest
     depends_on:
-    - start_dependencies
+    - start-bifrost-dependencies
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
