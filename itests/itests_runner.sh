@@ -14,33 +14,68 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
+# Used to manually run itests against a single transport sink
+ITESTS_TRANSPORT_SINK=${ITESTS_TRANSPORT_SINK:-}
+
 get_testfiles() {
     _transport_sink=$1
 
     if [ "$CI" == "true" ]; then
         _base_testfiles=$(cd tests/base && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e 's/^/base\//')
-        _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
+        if [ -d "tests/${_transport_sink}" ]; then
+            _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
+        fi
     else
         _base_testfiles=$(cd tests/base && ls -d */ | sed 's#/##' | sed -e 's/^/base\//')
-        _specific_testfiles=$(cd tests/${_transport_sink} && ls -d */ | sed 's#/##' | sed -e "s/^/${_transport_sink}\//")
+        if [ -d "tests/${_transport_sink}" ]; then
+            _specific_testfiles=$(cd tests/${_transport_sink} && ls -d */ | sed 's#/##' | sed -e "s/^/${_transport_sink}\//")
+        fi
     fi
 
     echo "${_base_testfiles} ${_specific_testfiles}"
 }
 
-# Kinesis
-set -a ; . contexts/kinesis.env ; set +a
+run_itests_on_transport_sink() {
+    _file=$1
 
-TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
-TESTFILES=$(get_testfiles $TRANSPORT_SINK)
+    # Source the transport sink's context
+    set -a ; . $_file ; set +a
 
-echo "TESTFILES:"
-echo $TESTFILES | tr ' ' '\n'
+    # Setup docker images & get test cases
+    TEST_NAME=base/test_basic docker-compose -f docker-compose.yml build
+    TESTFILES=$(get_testfiles $TRANSPORT_SINK)
 
-for TEST in $TESTFILES
-do
-   echo "running test $TEST"
-   ./integration_tests.bats -r tests -f "$TEST"
-done
+    # Start itests
+    echo '' ; echo '################################'
+    echo "Starting ${TRANSPORT_SINK} itests:"
+    echo '################################' ; echo ''
 
-unset $(cat contexts/kinesis.env | awk -F= '{print $1}' | xargs)
+    echo "TESTFILES:"
+    echo $TESTFILES | tr ' ' '\n' ; echo ''
+
+    for TEST in $TESTFILES
+    do
+       echo "running test $TEST"
+       ./integration_tests.bats -r tests -f "$TEST"
+    done
+
+    echo '' ; echo '################################'
+    echo "${TRANSPORT_SINK} itests successful in this slice!"
+    echo '################################' ; echo ''
+
+    echo "Cleaning up containers, volumes and environment variables..."
+    TEST_NAME=base/test_basic docker-compose -f docker-compose.yml rm -f -s -v
+    unset $(cat $_file | awk -F= '{print $1}' | xargs)
+}
+
+# Start the itests
+if [ ! -z "${ITESTS_TRANSPORT_SINK}" ] ; then
+    run_itests_on_transport_sink "contexts/${ITESTS_TRANSPORT_SINK}.env"
+else
+    # Iterate through our transport sink contexts (e.g., kinesis, s3, etc.)
+    for file in ./contexts/*; do
+        run_itests_on_transport_sink $file
+    done
+fi

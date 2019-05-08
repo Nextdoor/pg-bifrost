@@ -48,11 +48,19 @@ _startup() {
   log "Running docker-compose build"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose build
 
-  log "Running docker-compose up"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d
+  log "Starting docker-compose data-poller dependencies"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d start-data-poller-dependencies
+  sleep 2
+
+  log "Starting docker-compose bifrost dependencies"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d start-bifrost-dependencies
+  sleep 2
+
+  log "Starting docker-compose bifrost"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose up -d bifrost
 
   log "Checking that containers are running..."
-  sleep 5
+  sleep 2
 
   _check_container postgres
   _check_container localstack
@@ -257,8 +265,8 @@ teardown() {
 
   # Print current state of the ledger for debugging
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s IO bifrost # dump ledger to stdout
-  sleep 5
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs data-poller
 
   log "Running docker-compose down"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down

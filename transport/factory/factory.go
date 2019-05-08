@@ -2,6 +2,8 @@ package factory
 
 import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
+
 	"os"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -14,8 +16,8 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
-	"github.com/sirupsen/logrus"
 	"github.com/cevaris/ordered_map"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -53,6 +55,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		batchFactory = batch.NewGenericBatchFactory(1)
 	case transport.KINESIS:
 		batchFactory = kinesis.NewBatchFactory(transportConfig)
+	case transport.S3:
+		batchFactory = s3.NewBatchFactory(transportConfig)
 	case transport.RABBITMQ:
 		batchFactory = rabbitmq.NewBatchFactory(transportConfig)
 	default:
@@ -84,6 +88,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		t = stdout.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans)
 	case transport.KINESIS:
 		t = kinesis.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
+	case transport.S3:
+		t = s3.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
 	case transport.RABBITMQ:
 		t = rabbitmq.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
 	default:

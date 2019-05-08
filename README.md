@@ -156,6 +156,10 @@ To dump a memory profile, you send pg-bifrost a `SIGUSR2` signal and the `pprof`
 
 In rare scenarios to investigate WAL standby acknowledgement issues to postgres (e.g., thrashing on duplicate data, a missing transaction, etc.) the ledger (the progress tracker's data structure to keep track of received and acknowledged transactions and their WAL messages) can be dumped to STDOUT by sending a `SIGIO` signal to pg-bifrost.
 
+### Transport Specific
+
+**S3**: [docs/transport/s3.md](docs/transport/s3.md)
+
 ## Development
 
 ### Bugs

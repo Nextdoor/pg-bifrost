@@ -35,19 +35,16 @@ func (m *MockManagerInterface) EXPECT() *MockManagerInterfaceMockRecorder {
 
 // Close mocks base method
 func (m *MockManagerInterface) Close() {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Close")
 }
 
 // Close indicates an expected call of Close
 func (mr *MockManagerInterfaceMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockManagerInterface)(nil).Close))
 }
 
 // GetConn mocks base method
 func (m *MockManagerInterface) GetConn() (conn.Conn, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConn")
 	ret0, _ := ret[0].(conn.Conn)
 	ret1, _ := ret[1].(error)
@@ -56,6 +53,5 @@ func (m *MockManagerInterface) GetConn() (conn.Conn, error) {
 
 // GetConn indicates an expected call of GetConn
 func (mr *MockManagerInterfaceMockRecorder) GetConn() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockManagerInterface)(nil).GetConn))
 }

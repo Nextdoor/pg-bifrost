@@ -1,0 +1,10 @@
+# This docker-compose can be used to bring up a basic postgres container for manual testing
+version: '3'
+services:
+  postgres:
+    container_name: postgres
+    build: itests/containers/postgres
+    environment:
+    - POSTGRES_PASSWORD=pgbifrost
+    ports:
+    - 5432:5432

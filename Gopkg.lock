@@ -40,7 +40,7 @@
   revision = "31546f21ba3471c8418511045aca77bff52af506"
 
 [[projects]]
-  digest = "1:9b9e13cdf36aadc59f25c0a77f89f0093f9c1003d6337b739651f8b7ad92145c"
+  digest = "1:3d46e78a871fb3ee291dc26904a789a436c60adcdab4138ed88f237731d0d359"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -65,14 +65,19 @@
     "internal/sdkuri",
     "internal/shareddefaults",
     "private/protocol",
+    "private/protocol/eventstream",
+    "private/protocol/eventstream/eventstreamapi",
     "private/protocol/json/jsonutil",
     "private/protocol/jsonrpc",
     "private/protocol/query",
     "private/protocol/query/queryutil",
     "private/protocol/rest",
+    "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
     "service/kinesis",
     "service/kinesis/kinesisiface",
+    "service/s3",
+    "service/s3/s3iface",
     "service/sts",
   ]
   pruneopts = "UT"
@@ -112,9 +117,12 @@
   version = "v1.38.2"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -253,8 +261,10 @@
   analyzer-version = 1
   input-imports = [
     "github.com/DataDog/datadog-go/statsd",
+    "github.com/NeowayLabs/wabbit",
     "github.com/NeowayLabs/wabbit/amqp",
     "github.com/NeowayLabs/wabbit/amqptest",
+    "github.com/NeowayLabs/wabbit/amqptest/server",
     "github.com/Nextdoor/parselogical",
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
@@ -262,9 +272,12 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/kinesis",
     "github.com/aws/aws-sdk-go/service/kinesis/kinesisiface",
+    "github.com/aws/aws-sdk-go/service/s3",
+    "github.com/aws/aws-sdk-go/service/s3/s3iface",
     "github.com/cenkalti/backoff",
     "github.com/cevaris/ordered_map",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/google/go-cmp/cmp",
     "github.com/jackc/pgx",
     "github.com/pkg/errors",

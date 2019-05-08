@@ -209,7 +209,7 @@ func (t *KinesisTransporter) transportWithRetry(ctx context.Context, pri *kinesi
 	return nil, cancelled
 }
 
-// StartTransporting reads in message batches, outputs its String to STDOUT and then sends a progress report on the batch
+// StartTransporting reads in message batches, outputs its data to Kinesis and then sends a progress report on the batch
 func (t *KinesisTransporter) StartTransporting() {
 	t.log.Info("starting transporter")
 	defer t.shutdown()

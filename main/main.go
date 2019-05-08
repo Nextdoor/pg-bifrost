@@ -19,9 +19,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/Nextdoor/pg-bifrost.git/app/config"
-	"github.com/Nextdoor/pg-bifrost.git/partitioner"
-	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
 	"os"
 	"os/signal"
 	"reflect"
@@ -31,10 +28,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Nextdoor/pg-bifrost.git/app/config"
+	"github.com/Nextdoor/pg-bifrost.git/partitioner"
+	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
+
 	"github.com/Nextdoor/pg-bifrost.git/app"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -465,6 +467,16 @@ func main() {
 	kinesisCmd.Before = altsrc.InitInputSourceWithContext(kinesis.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
 	kinesisCmd.Flags = kinesis.Flags
 
+	// Also set up s3 subcommands flags from file
+	s3Cmd := cli.Command{
+		Name:   "s3",
+		Usage:  "replicate to s3",
+		Action: replicateAction,
+	}
+
+	s3Cmd.Before = altsrc.InitInputSourceWithContext(s3.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
+	s3Cmd.Flags = s3.Flags
+
 	// Also set up rabbitmq subcommands flags from file
 	rabbitmqCmd := cli.Command{
 		Name:   "rabbitmq",
@@ -591,6 +603,7 @@ func main() {
 					Action: replicateAction,
 				},
 				kinesisCmd,
+				s3Cmd,
 				rabbitmqCmd,
 			},
 		},
