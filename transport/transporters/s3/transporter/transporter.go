@@ -38,6 +38,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -131,26 +132,26 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsSecretAccessKey *string,
 	endpoint *string,) transport.Transporter {
 
-	var sess *session.Session
-
-	creds := credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
-
-	if *endpoint != "" {
-		sess = session.Must(session.NewSession(&aws.Config{
-			Region:      		aws.String(*awsRegion),
-			Credentials: 		creds,
-			S3ForcePathStyle: 	aws.Bool(true),
-			Endpoint:    		aws.String(*endpoint),
-			MaxRetries:			aws.Int(0), // We disable the client retry policy because of our own retry logic
-		}))
-	} else {
-		sess = session.Must(session.NewSession(&aws.Config{
-			Region:      aws.String(*awsRegion),
-			Credentials: creds,
-			MaxRetries:	 aws.Int(0),
-		}))
+	awsConfig := &aws.Config{
+		Region:      		aws.String(*awsRegion),
+		S3ForcePathStyle: 	aws.Bool(true),
+		Endpoint:    		aws.String(*endpoint),
+		MaxRetries:		    aws.Int(0), // We disable the client retry policy because of our own retry logic
 	}
 
+	if *awsAccessKeyId != "" || *awsSecretAccessKey != "" {
+		// Force static credentials from pg-bifrost configuration.
+		// Note: if we expect to fail and not infer credentials if only one of the ID or Key was specified
+		awsConfig.Credentials = credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
+	}
+
+	if *endpoint != "" {
+		// If specifying a custom endpoint (such as for localstack) then configure that and use Path Style
+		awsConfig.Endpoint = aws.String(*endpoint)
+		awsConfig.S3ForcePathStyle = aws.Bool(true)
+	}
+
+	sess := session.Must(session.NewSession(awsConfig))
 	client := s3.New(sess)
 
 	return NewTransporterWithInterface(
@@ -251,7 +252,8 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 			// Rewind the reader for retries
 			_, seekErr := byteReader.Seek(0, 0)
 			if seekErr != nil {
-				t.log.Fatal("Seek error on io.Reader rewind when preparing for retry:", seekErr)
+				return errors.New(
+					fmt.Sprintf("Seek error on io.Reader rewind when preparing for retry: %s", seekErr.Error()))
 			}
 
 			return err

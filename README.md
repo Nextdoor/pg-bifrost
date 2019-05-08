@@ -134,7 +134,6 @@ Messages from the same transaction go to the same shard (ordered) | transaction-
 Messages from the same table go to the same shard (unordered) | tablename | round-robin
 Messages from the same table go to the same shard (ordered) | tablename | partition
 
-<<<<<<< HEAD
 ### Profiling
 
 pg-bifrost natively supports CPU and memory profiling via `pprof`. To start profiling of either, you can simply specify the filesystem location of each expected `pprof` file via `CPUPROFILE` and `MEMPROFILE`.
