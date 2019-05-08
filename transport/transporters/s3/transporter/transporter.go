@@ -134,7 +134,7 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		Region:      		aws.String(*awsRegion),
 		S3ForcePathStyle: 	aws.Bool(true),
 		Endpoint:    		aws.String(*endpoint),
-		MaxRetries:		    aws.Int(0), // We disable the client retry policy because of our own retry logic
+		MaxRetries:		aws.Int(0), // We disable the client retry policy because of our own retry logic
 	}
 
 	if *awsAccessKeyId != "" || *awsSecretAccessKey != "" {
