@@ -28,9 +28,15 @@ test: vendor generate vet
 	@echo "Executing tests ..."
 	go test -race -v ${GO_TEST_EXTRAS} ./...
 
-itests:
-	@echo "Running integration tests"
-	cd ./itests && ./itests_runner.sh
+itests-functional:
+	@echo "Running functional integration tests"
+	cd ./itests && ./itests_runner_functional.sh
+
+itests-postgres:
+	@echo "Running postgres integration tests"
+	cd ./itests && ./itests_runner_postgres.sh
+
+itests: itests-functional itests-postgres
 
 clean:
 	@echo "Removing vendor deps"
@@ -67,4 +73,4 @@ docker_get_binary:
 	@$(DOCKER) cp "pg-bifrost-build":/pg-bifrost target/
 	@$(DOCKER) rm "pg-bifrost-build"
 
-.PHONY: clean test itests docker_build docker_get_binary
+.PHONY: clean test itests-functional itests-postgres itests docker_build docker_get_binary

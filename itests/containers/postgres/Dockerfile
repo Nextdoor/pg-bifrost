@@ -1,4 +1,5 @@
-FROM postgres:9.6-alpine
+ARG postgres_version
+FROM postgres:${postgres_version}-alpine
 
 COPY docker-entrypoint-initdb.d /docker-entrypoint-initdb.d
 COPY bootstrap.sh /usr/local/bin/

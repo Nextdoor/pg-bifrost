@@ -19,6 +19,9 @@ set -e
 # Used to manually run itests against a single transport sink
 ITESTS_TRANSPORT_SINK=${ITESTS_TRANSPORT_SINK:-}
 
+# Set postgres version for the docker-compose file
+export POSTGRES_VERSION=${ITESTS_POSTGRES_VERSION:-9.6}
+
 get_testfiles() {
     _transport_sink=$1
 

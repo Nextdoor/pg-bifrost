@@ -2,7 +2,10 @@ version: '3'
 services:
   postgres:
     container_name: postgres
-    build: containers/postgres
+    build:
+      context: containers/postgres
+      args:
+        postgres_version: ${POSTGRES_VERSION}
     volumes:
     - "./tests/${TEST_NAME}/input:/input"
     environment:

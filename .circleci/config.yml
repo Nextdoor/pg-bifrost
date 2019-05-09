@@ -11,13 +11,33 @@ defaults_itests: &defaults_itests
     docker_layer_caching: true
 
 step_library:
-- &step_itests
+- &step_itests_setup
   run:
-    name: Run integration tests in docker
+    name: Run setup for integration tests in docker
+    command: |
+        sudo rm -rf /usr/local/go || true
+        sudo curl -L https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
+        sudo tar -xf go1.11.4.linux-amd64.tar.gz
+        sudo mv go /usr/local
+        sudo docker load < docker-cache/built-image.tar
+
+- &step_itests_functional
+  run:
+    name: Run functional integration tests in docker
     command: |
       git submodule sync
       git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
-      make itests
+      make itests-functional
+
+- &step_itests_postgres
+  run:
+    name: Run postgres integration tests in docker
+    command: |
+      git submodule sync
+      git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
+      make itests-postgres
 
 - &step_build_artifact
   run:
@@ -52,22 +72,27 @@ jobs:
         paths:
           - pg-bifrost.git
 
-  itests: &itests
+  itests_functional: &itests
     <<: *defaults_itests
     parallelism: 2
     steps:
     - attach_workspace:
         at: /tmp/workspace
     - run: cp -r /tmp/workspace/pg-bifrost.git/. .
-    - run: |
-        sudo rm -rf /usr/local/go || true
-        sudo curl -L https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
-        sudo tar -xf go1.11.4.linux-amd64.tar.gz
-        sudo mv go /usr/local
-        sudo docker load < docker-cache/built-image.tar
-    - *step_itests
+    - *step_itests_setup
+    - *step_itests_functional
+    - store_test_results:
+        path: ./itests/test_output/
+
+  itests_postgres: &itests
+    <<: *defaults_itests
+    parallelism: 1
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+    - run: cp -r /tmp/workspace/pg-bifrost.git/. .
+    - *step_itests_setup
+    - *step_itests_postgres
     - store_test_results:
         path: ./itests/test_output/
 
@@ -139,7 +164,15 @@ workflows:
           tags:
             only: /.*/
 
-    - itests:
+    - itests_functional:
+        requires: [build]
+        filters:
+          branches:
+            only: /.*/
+          tags:
+            only: /.*/
+
+    - itests_postgres:
         requires: [build]
         filters:
           branches:
@@ -148,7 +181,7 @@ workflows:
             only: /.*/
 
     - publish_binary:
-        requires: [itests]
+        requires: [itests_functional, itests_postgres]
         filters:
           branches:
             # Ignore everything except master
