@@ -3,7 +3,7 @@
 GO_LDFLAGS ?= -w -extldflags "-static"
 
 GIT_REVISION := $(shell git rev-parse --short HEAD)
-GIT_TAG_VERSION := $(shell git tag -l --points-at HEAD)
+GIT_TAG_VERSION := $(shell git tag -l --points-at HEAD | grep -v latest)
 
 ifeq ($(CI),true)
 	GO_TEST_EXTRAS ?= "-coverprofile=c.out"
