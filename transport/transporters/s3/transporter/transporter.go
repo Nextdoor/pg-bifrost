@@ -128,12 +128,10 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsRegion *string,
 	awsAccessKeyId *string,
 	awsSecretAccessKey *string,
-	endpoint *string,) transport.Transporter {
+	endpointPtr *string,) transport.Transporter {
 
 	awsConfig := &aws.Config{
 		Region:      		aws.String(*awsRegion),
-		S3ForcePathStyle: 	aws.Bool(true),
-		Endpoint:    		aws.String(*endpoint),
 		MaxRetries:		aws.Int(0), // We disable the client retry policy because of our own retry logic
 	}
 
@@ -143,9 +141,9 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		awsConfig.Credentials = credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
 	}
 
-	if *endpoint != "" {
+	if endpointPtr != nil {
 		// If specifying a custom endpoint (such as for localstack) then configure that and use Path Style
-		awsConfig.Endpoint = aws.String(*endpoint)
+		awsConfig.Endpoint = aws.String(*endpointPtr)
 		awsConfig.S3ForcePathStyle = aws.Bool(true)
 	}
 
