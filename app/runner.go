@@ -75,7 +75,8 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	partitionConfig map[string]interface{},
 	batcherConfig map[string]interface{},
 	transportType transport.TransportType,
-	transportConfig map[string]interface{}) (*Runner, error) {
+	transportConfig map[string]interface{},
+	reporterConfig map[string]interface{}) (*Runner, error) {
 
 	log.Info("replicationSlot=", replicationSlot)
 
@@ -192,7 +193,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	progressTracker := progress.New(shutdownHandler, txnsSeen, txnsWritten, statsChan)
 	statsAggregator := aggregator.New(shutdownHandler, statsChan)
 
-	reporterConfig := map[string]interface{}{}
+	//reporterConfig := map[string]interface{}{}
 
 	statsReporter, err := factory.New(shutdownHandler, statsAggregator.GetOutputChan(), reporters.DATADOG, reporterConfig)
 	return &Runner{

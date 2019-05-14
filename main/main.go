@@ -112,6 +112,12 @@ var (
 			EnvVar: "CPUPROFILE",
 			Hidden: true,
 		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:   config.VAR_NAME_DD_HOST,
+			Usage:  "datadog statsd hostname. This can either be host:port or unix:///path/to/dsd.socket",
+			Value:  "127.0.0.1:8125",
+			EnvVar: "DATADOG_HOST",
+		}),
 	}
 )
 
@@ -198,6 +204,7 @@ func runReplicate(
 	batcherConfig map[string]interface{},
 	transportType transport.TransportType,
 	transportConfig map[string]interface{},
+	reporterConfig map[string]interface{},
 	memprofile string,
 	cpuprofile string) error {
 
@@ -230,7 +237,8 @@ func runReplicate(
 		partitionerConfig,
 		batcherConfig,
 		transportType,
-		transportConfig)
+		transportConfig,
+		reporterConfig)
 
 	if err != nil {
 		log.Error("failed to start runner")
@@ -425,6 +433,14 @@ func replicateAction(c *cli.Context) error {
 	batcherConfig[config.VAR_NAME_BATCHER_ROUTING_METHOD] = batcherRoutingMethod
 
 	//
+	// Validate and create reporter config from Flags
+	//
+	datadogHost := c.GlobalString(config.VAR_NAME_DD_HOST)
+
+	reporterConfig := make(map[string]interface{}, 0)
+	reporterConfig[config.VAR_NAME_DD_HOST] = datadogHost
+
+	//
 	// Start replication
 	//
 	log.Info("Replicating to ", c.Command.Name)
@@ -438,6 +454,7 @@ func replicateAction(c *cli.Context) error {
 		batcherConfig,
 		transport.TransportType(c.Command.Name),
 		transportConfig,
+		reporterConfig,
 		c.GlobalString(config.VAR_NAME_MEM_PROFILE),
 		c.GlobalString(config.VAR_NAME_CPU_PROFILE),
 	)

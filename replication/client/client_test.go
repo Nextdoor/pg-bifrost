@@ -1272,7 +1272,7 @@ func TestOldOverallProgress(t *testing.T) {
 	go replicator.Start(progChan)
 
 	select {
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(500 * time.Millisecond):
 		assert.Fail(t, "did not pass test in time")
 	case <-expectChan:
 		// pass
