@@ -193,8 +193,6 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	progressTracker := progress.New(shutdownHandler, txnsSeen, txnsWritten, statsChan)
 	statsAggregator := aggregator.New(shutdownHandler, statsChan)
 
-	//reporterConfig := map[string]interface{}{}
-
 	statsReporter, err := factory.New(shutdownHandler, statsAggregator.GetOutputChan(), reporters.DATADOG, reporterConfig)
 	return &Runner{
 		shutdownHandler,
