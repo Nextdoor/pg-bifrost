@@ -1271,6 +1271,8 @@ func TestOldOverallProgress(t *testing.T) {
 	progChan <- progress1
 	go replicator.Start(progChan)
 
+	time.Sleep(10 * time.Millisecond)
+
 	select {
 	case <-time.After(100 * time.Millisecond):
 		assert.Fail(t, "did not pass test in time")
