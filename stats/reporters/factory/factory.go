@@ -40,7 +40,16 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		}
 		log.Info("addr=", addr)
 
-		c, err := statsd.New(addr)
+		tags, ok := reporterConfig[config.VAR_NAME_DD_TAGS].([]string)
+		if !ok {
+			log.Panic("Wrong type assertion")
+		}
+		log.Info("tags=", tags)
+
+		c, err := statsd.New(addr,
+			statsd.WithTags(tags),
+		)
+
 		if err != nil {
 			return nil, err
 		}

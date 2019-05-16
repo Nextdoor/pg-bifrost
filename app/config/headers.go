@@ -28,6 +28,7 @@ const (
 	VAR_NAME_MEM_PROFILE = "memprofile"
 	VAR_NAME_CPU_PROFILE = "cpuprofile"
 	VAR_NAME_DD_HOST     = "datadog-host"
+	VAR_NAME_DD_TAGS     = "datadog-tags"
 )
 
 // Replicate cli flag names

@@ -36,6 +36,7 @@ func (m *MockConn) EXPECT() *MockConnMockRecorder {
 
 // Close mocks base method
 func (m *MockConn) Close() error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -43,11 +44,13 @@ func (m *MockConn) Close() error {
 
 // Close indicates an expected call of Close
 func (mr *MockConnMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockConn)(nil).Close))
 }
 
 // CreateReplicationSlot mocks base method
 func (m *MockConn) CreateReplicationSlot(arg0, arg1 string) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateReplicationSlot", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -55,11 +58,13 @@ func (m *MockConn) CreateReplicationSlot(arg0, arg1 string) error {
 
 // CreateReplicationSlot indicates an expected call of CreateReplicationSlot
 func (mr *MockConnMockRecorder) CreateReplicationSlot(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReplicationSlot", reflect.TypeOf((*MockConn)(nil).CreateReplicationSlot), arg0, arg1)
 }
 
 // DropReplicationSlot mocks base method
 func (m *MockConn) DropReplicationSlot(arg0 string) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DropReplicationSlot", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -67,11 +72,13 @@ func (m *MockConn) DropReplicationSlot(arg0 string) error {
 
 // DropReplicationSlot indicates an expected call of DropReplicationSlot
 func (mr *MockConnMockRecorder) DropReplicationSlot(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropReplicationSlot", reflect.TypeOf((*MockConn)(nil).DropReplicationSlot), arg0)
 }
 
 // IsAlive mocks base method
 func (m *MockConn) IsAlive() bool {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsAlive")
 	ret0, _ := ret[0].(bool)
 	return ret0
@@ -79,11 +86,13 @@ func (m *MockConn) IsAlive() bool {
 
 // IsAlive indicates an expected call of IsAlive
 func (mr *MockConnMockRecorder) IsAlive() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAlive", reflect.TypeOf((*MockConn)(nil).IsAlive))
 }
 
 // SendStandbyStatus mocks base method
 func (m *MockConn) SendStandbyStatus(arg0 *pgx.StandbyStatus) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendStandbyStatus", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -91,11 +100,13 @@ func (m *MockConn) SendStandbyStatus(arg0 *pgx.StandbyStatus) error {
 
 // SendStandbyStatus indicates an expected call of SendStandbyStatus
 func (mr *MockConnMockRecorder) SendStandbyStatus(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendStandbyStatus", reflect.TypeOf((*MockConn)(nil).SendStandbyStatus), arg0)
 }
 
 // StartReplication mocks base method
 func (m *MockConn) StartReplication(arg0 string, arg1 uint64, arg2 int64, arg3 ...string) error {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
@@ -107,12 +118,14 @@ func (m *MockConn) StartReplication(arg0 string, arg1 uint64, arg2 int64, arg3 .
 
 // StartReplication indicates an expected call of StartReplication
 func (mr *MockConnMockRecorder) StartReplication(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartReplication", reflect.TypeOf((*MockConn)(nil).StartReplication), varargs...)
 }
 
 // WaitForReplicationMessage mocks base method
 func (m *MockConn) WaitForReplicationMessage(arg0 context.Context) (*pgx.ReplicationMessage, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitForReplicationMessage", arg0)
 	ret0, _ := ret[0].(*pgx.ReplicationMessage)
 	ret1, _ := ret[1].(error)
@@ -121,5 +134,6 @@ func (m *MockConn) WaitForReplicationMessage(arg0 context.Context) (*pgx.Replica
 
 // WaitForReplicationMessage indicates an expected call of WaitForReplicationMessage
 func (mr *MockConnMockRecorder) WaitForReplicationMessage(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForReplicationMessage", reflect.TypeOf((*MockConn)(nil).WaitForReplicationMessage), arg0)
 }

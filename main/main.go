@@ -118,6 +118,13 @@ var (
 			Value:  "127.0.0.1:8125",
 			EnvVar: "DATADOG_HOST",
 		}),
+		altsrc.NewStringFlag(cli.StringFlag{
+			Name:   config.VAR_NAME_DD_TAGS,
+			Usage:  "datadog tags to add to emitted metrics. These are specified as key:value and are " +
+				"delimited by ','. For example key1:value1,key2:value2",
+			Value:  "",
+			EnvVar: "DATADOG_TAGS",
+		}),
 	}
 )
 
@@ -436,9 +443,12 @@ func replicateAction(c *cli.Context) error {
 	// Validate and create reporter config from Flags
 	//
 	datadogHost := c.GlobalString(config.VAR_NAME_DD_HOST)
+	datadogTags := c.GlobalString(config.VAR_NAME_DD_TAGS)
+	datadogTagsList := strings.Split(datadogTags, ",")
 
 	reporterConfig := make(map[string]interface{}, 0)
 	reporterConfig[config.VAR_NAME_DD_HOST] = datadogHost
+	reporterConfig[config.VAR_NAME_DD_TAGS] = datadogTagsList
 
 	//
 	// Start replication
