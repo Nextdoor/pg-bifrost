@@ -173,7 +173,7 @@ func TestConnectionDies(t *testing.T) {
 			wg.Done()
 			return amqptest.Dial(connString)
 		},
-	).Times(3)
+	).MinTimes(3)
 	mockConn, err := connMan.GetConnection(context.Background())
 	if err != nil {
 		t.Error(err)
