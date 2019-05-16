@@ -10,12 +10,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:bd285ec20a7450d2272631284de698f2d76e923a458fee90e99cc1db4b97708d"
+  digest = "1:ebaeb414df9abd72ff910cbd5ea19a4c6c98febbbef756eb07fb6e66b8148ba2"
   name = "github.com/DataDog/datadog-go"
   packages = ["statsd"]
   pruneopts = "UT"
-  revision = "e67964b4021ad3a334e748e8811eb3cd6becbc6e"
-  version = "2.1.0"
+  revision = "8a13fa761f51039f900738876f2837198fba804f"
+  version = "2.2.0"
 
 [[projects]]
   branch = "master"
@@ -117,12 +117,9 @@
   version = "v1.38.2"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -277,7 +274,6 @@
     "github.com/cenkalti/backoff",
     "github.com/cevaris/ordered_map",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/google/go-cmp/cmp",
     "github.com/jackc/pgx",
     "github.com/pkg/errors",
