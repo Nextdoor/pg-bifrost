@@ -33,14 +33,15 @@ func (m *MockTimeSource) EXPECT() *MockTimeSourceMockRecorder {
 }
 
 // DateString mocks base method
-func (m *MockTimeSource) DateString() (string, string, string, string) {
+func (m *MockTimeSource) DateString() (string, string, string, string, string) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DateString")
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
 	ret3, _ := ret[3].(string)
-	return ret0, ret1, ret2, ret3
+	ret4, _ := ret[4].(string)
+	return ret0, ret1, ret2, ret3, ret4
 }
 
 // DateString indicates an expected call of DateString
