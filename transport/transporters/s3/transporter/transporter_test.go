@@ -157,14 +157,14 @@ func TestSinglePutOk(t *testing.T) {
 	// Expects
 	expectedInput := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInput)).Return(nil, nil)
 
-	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
+	mockTime.EXPECT().DateString().Return("2000", "01", "02", "03", "456")
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -234,14 +234,14 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	// Expects
 	expectedInput := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInput)).Return(nil, nil)
 
-	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
+	mockTime.EXPECT().DateString().Return("2000", "01", "02", "03", "456")
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -301,7 +301,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -309,7 +309,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	// We need two "identical" inputs because Body's io.Reader is mutable (reading again needs a Seek to rewind)
 	expectedInputTwo := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -317,7 +317,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputOne)).Return(nil, errors.New("some error"))
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputTwo)).Return(nil, nil)
 
-	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
+	mockTime.EXPECT().DateString().Return("2000", "01", "02", "03", "456")
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -379,7 +379,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -387,7 +387,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	// We need two "identical" inputs because Body's io.Reader is mutable (reading needs a Seek back to start offset)
 	expectedInputTwo := s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/456_1234.gz"),
+		Key: aws.String("2000/01/02/03/456_1234.gz"),
 		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
@@ -395,7 +395,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputOne)).Return(nil, errors.New("some error"))
 	mockClient.EXPECT().PutObjectWithContext(sh.TerminateCtx, EqPutObjectInputWithBufferRead(&expectedInputTwo)).Return(nil, errors.New("some error"))
 
-	mockTime.EXPECT().DateString().Return("2000", "01", "02", "456")
+	mockTime.EXPECT().DateString().Return("2000", "01", "02", "03", "456")
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
