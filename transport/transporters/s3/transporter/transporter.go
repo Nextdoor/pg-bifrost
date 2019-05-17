@@ -225,10 +225,10 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	byteArray = nil
 
 	// Partition the S3 keys into days
-	year, month, day, full := TimeSource.DateString()
+	year, month, day, hour, full := TimeSource.DateString()
 	baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
 
-	fullKey := key_join(t.keySpace, year, month, day, baseFilename)
+	fullKey := key_join(t.keySpace, year, month, day, hour, baseFilename)
 
 	// An operation that may fail.
 	operation := func() error {

@@ -25,7 +25,7 @@ import (
 //go:generate mockgen -destination mocks/mock_timesource.go -package=mocks github.com/Nextdoor/pg-bifrost.git/utils TimeSource
 type TimeSource interface {
 	UnixNano() int64
-	DateString() (string, string, string, string)
+	DateString() (string, string, string, string, string)
 }
 
 type RealTime struct{}
@@ -44,14 +44,21 @@ func intDateToNormalString(i int) string {
 	return strconv.Itoa(i)
 }
 
-// DateString return year/month/day as seperate strings and also a normalized string of datetime that is 14 characters.
-// It is intended to be used to partition PUTs on transport sinks.
-func (rt RealTime) DateString() (year string, month string, day string, full string) {
+// DateString return year/month/day/hour as seperate strings and also a normalized string of datetime that is 14
+// characters. It is intended to be used to partition PUTs on transport sinks.
+func (rt RealTime) DateString() (
+	year string, month string, day string, hour string, full string) {
 	now := time.Now()
 	yearInt, timeMonth, dayInt := now.Date()
 	monthInt := int(timeMonth)
 
+	hourInt := now.Hour()
+
 	fullFormat := now.Format("20060102150405")
 
-	return strconv.Itoa(yearInt), intDateToNormalString(monthInt), intDateToNormalString(dayInt), fullFormat
+	return strconv.Itoa(yearInt),
+	       intDateToNormalString(monthInt),
+	       intDateToNormalString(dayInt),
+	       intDateToNormalString(hourInt),
+	       fullFormat
 }
