@@ -161,7 +161,7 @@ func (b *Batcher) StartBatching() {
 	ticker := time.NewTicker(TICKER_RATE)
 	defer ticker.Stop()
 
-	var totalMsgsInTxn int // Counts messsages in transaction. Does not include BEGIN and COMMITS
+	var totalMsgsInTxn int // Counts messages in transaction. Does not include BEGIN and COMMITS
 	var curTimeBasedKey string
 
 	for {

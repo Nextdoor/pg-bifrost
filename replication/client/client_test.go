@@ -382,6 +382,97 @@ func TestTxnsMessage(t *testing.T) {
 	stats.VerifyStats(t, statsChan, expectedStats)
 }
 
+func TestNoCommit(t *testing.T) {
+	// Setup mock
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConn := mocks.NewMockConn(mockCtrl)
+	mockManager := mocks.NewMockManagerInterface(mockCtrl)
+
+	// Setup
+	progChan := make(chan uint64, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+
+	sh := shutdown.NewShutdownHandler()
+	replicator := New(sh, statsChan, mockManager, 10)
+	out := replicator.GetOutputChan()
+
+	// Begin
+	// walData.WalString:
+	// BEGIN 566
+	beginData, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY2")
+	beginWalMsg := &pgx.WalMessage{
+		WalStart:     uint64(22210920),
+		ServerWalEnd: uint64(0),
+		ServerTime:   uint64(0),
+		WalData:      beginData,
+	}
+	beginReplMsg := &pgx.ReplicationMessage{
+		WalMessage: beginWalMsg,
+	}
+
+	// Update
+	// walData.WalString:
+	// table public.customers: UPDATE: id[integer]:7 first_name[text]:'Hello' last_name[text]:'World7'
+	updateData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogVVBEQVRFOiBpZFtpbnRlZ2VyXTo3IGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkNyc=")
+	updateWalMsg := &pgx.WalMessage{
+		WalStart:     uint64(22210920),
+		ServerWalEnd: uint64(0),
+		ServerTime:   uint64(0),
+		WalData:      updateData,
+	}
+	updateReplMsg := &pgx.ReplicationMessage{
+		WalMessage: updateWalMsg,
+	}
+
+	// Begin
+	// walData.WalString:
+	// BEGIN 567
+	beginData2, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY3")
+	beginWalMsg2 := &pgx.WalMessage{
+		WalStart:     uint64(22210921),
+		ServerWalEnd: uint64(0),
+		ServerTime:   uint64(0),
+		WalData:      beginData2,
+	}
+	beginReplMsg2 := &pgx.ReplicationMessage{
+		WalMessage: beginWalMsg2,
+	}
+
+	serverWalEnd := uint64(111)
+
+	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(5)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(updateReplMsg, nil).Times(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg2, nil).Times(1)
+	mockManager.EXPECT().Close().Times(1)
+
+	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
+
+	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+		func(_ interface{}) {
+			time.Sleep(time.Millisecond * 5)
+		}).MinTimes(2)
+
+	go replicator.Start(progChan)
+
+	// Wait for replicator to run
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case _, ok := <-out:
+		if !ok {
+			assert.Fail(t, "replicator was closed unexpectedly")
+		}
+		// pass
+	case <-time.After(200 * time.Millisecond):
+		assert.Fail(t, "a WalMessage was not received from the outputChan")
+	}
+}
+
 func TestDupWalStart(t *testing.T) {
 	// Setup mock
 	mockCtrl := gomock.NewController(t)
