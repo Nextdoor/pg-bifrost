@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package client
 
@@ -202,6 +202,9 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var timeBasedKey string
 	var highestWalStart uint64
 
+	var firstIteration = true
+	var sawCommit bool
+
 	// Get a connection
 	conn, rplErr = c.connManager.GetConn()
 	if rplErr != nil {
@@ -334,6 +337,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			} else {
 				c.statsChan <- stats.NewStatCount("replication", "txns_dup", 1, time.Now().UnixNano())
 			}
+
+			sawCommit = true
 		}
 
 		// It's possible that we can see the same transaction (even partially) twice from postgres.
@@ -357,7 +362,31 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			strs = append(strs, "-")
 			strs = append(strs, strconv.FormatInt(time.Now().UnixNano(), 10))
 			timeBasedKey = strings.Join(strs, "")
+
+			// If we are at a BEGIN ensure that a COMMIT was seen. This ensures that we never
+			// progress reading until a transaction is fully "closed" on our end by having seen
+			// both BEGIN and COMMIT.
+			if !sawCommit && !firstIteration {
+				log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
+					pgx.FormatLSN(highestWalStart),
+					highestWalStart)
+
+				// Closing the connection will make postgres resend everything that hs not been
+				// acknowledged.
+				c.connManager.Close()
+
+				sawCommit = false
+				firstIteration = true
+				continue
+			}
+
+			// Reset state to look for next commit
+			sawCommit = false
+
+			// After the first begin is seen then we are no longer on the first iteration
+			firstIteration = false
 		}
+
 		wal.Pr.Transaction = transaction
 		wal.TimeBasedKey = timeBasedKey
 
