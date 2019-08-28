@@ -49,13 +49,13 @@ func _testMessage(relation string, operation string) *replication.WalMessage {
 	return &walMessage
 }
 
-func _setupFilter(whitelist bool, tablelist []string) (Filter, chan *replication.WalMessage, chan error, chan stats.Stat) {
+func _setupFilter(whitelist, regex bool, tablelist []string) (Filter, chan *replication.WalMessage, chan error, chan stats.Stat) {
 	sh := shutdown.NewShutdownHandler()
 	in := make(chan *replication.WalMessage)
 	errorChan := make(chan error)
 	statsChan := make(chan stats.Stat, 1000)
 
-	f := New(sh, in, statsChan, whitelist, tablelist)
+	f := New(sh, in, statsChan, whitelist, regex, tablelist)
 
 	return f, in, errorChan, statsChan
 }
@@ -81,10 +81,11 @@ func _collectOutput(outputChan chan *replication.WalMessage) []*replication.WalM
 func TestWhitelist(t *testing.T) {
 	// settings
 	whitelist := true
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, s := _setupFilter(whitelist, tablelist)
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 
@@ -104,13 +105,41 @@ func TestWhitelist(t *testing.T) {
 	stats.VerifyStats(t, s, expectedStats)
 }
 
-func TestBlacklist(t *testing.T) {
+func TestWhitelistRegex(t *testing.T) {
 	// settings
-	whitelist := false
+	whitelist := true
+	regex := true
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, s := _setupFilter(whitelist, tablelist)
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
+
+	go f.Start()
+
+	msgBar := _testMessage("bar", "INSERT")
+	in <- msgBar
+	msgFoo := _testMessage("foo-1234", "INSERT")
+	in <- msgFoo
+
+	actual := _collectOutput(f.OutputChan)
+	expected := []*replication.WalMessage{msgFoo}
+
+	assert.Equal(t, expected, actual)
+
+	expectedStats := []stats.Stat{
+		stats.NewStatCount("filter", "filtered", 1, time.Now().UnixNano()),
+		stats.NewStatCount("filter", "passed", 1, time.Now().UnixNano())}
+	stats.VerifyStats(t, s, expectedStats)
+}
+
+func TestBlacklist(t *testing.T) {
+	// settings
+	whitelist := false
+	regex := false
+	tablelist := []string{"foo"}
+
+	// setup filter
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 
@@ -131,12 +160,40 @@ func TestBlacklist(t *testing.T) {
 	stats.VerifyStats(t, s, expectedStats)
 }
 
+func TestBlacklistRegex(t *testing.T) {
+	// settings
+	whitelist := false
+	regex := true
+	tablelist := []string{"foo"}
+
+	// setup filter
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
+
+	go f.Start()
+
+	msgFoo := _testMessage("foo-12342", "INSERT")
+	in <- msgFoo
+	msgBar := _testMessage("bar", "INSERT")
+	in <- msgBar
+
+	actual := _collectOutput(f.OutputChan)
+	expected := []*replication.WalMessage{msgBar}
+
+	assert.Equal(t, expected, actual)
+
+	expectedStats := []stats.Stat{
+		stats.NewStatCount("filter", "filtered", 1, time.Now().UnixNano()),
+		stats.NewStatCount("filter", "passed", 1, time.Now().UnixNano()),
+	}
+	stats.VerifyStats(t, s, expectedStats)
+}
 func TestBlacklistPassThrough(t *testing.T) {
 	// settings
 	whitelist := false
+	regex := false
 
 	// setup filter
-	f, in, _, s := _setupFilter(whitelist, []string{})
+	f, in, _, s := _setupFilter(whitelist, regex, []string{})
 
 	go f.Start()
 
@@ -156,10 +213,11 @@ func TestBlacklistPassThrough(t *testing.T) {
 func TestBeginPass(t *testing.T) {
 	// settings
 	whitelist := false
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, s := _setupFilter(whitelist, tablelist)
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 
@@ -179,10 +237,11 @@ func TestBeginPass(t *testing.T) {
 func TestCommitPass(t *testing.T) {
 	// settings
 	whitelist := false
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, s := _setupFilter(whitelist, tablelist)
+	f, in, _, s := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 
@@ -201,7 +260,7 @@ func TestCommitPass(t *testing.T) {
 
 func TestInputChannelClose(t *testing.T) {
 	// Setup test
-	f, in, _, _ := _setupFilter(true, []string{})
+	f, in, _, _ := _setupFilter(true, false, []string{})
 	go f.Start()
 
 	// Close input channel
@@ -221,10 +280,11 @@ func TestInputChannelClose(t *testing.T) {
 func TestNilMessage(t *testing.T) {
 	// settings
 	whitelist := false
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, _ := _setupFilter(whitelist, tablelist)
+	f, in, _, _ := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 
@@ -239,10 +299,11 @@ func TestNilMessage(t *testing.T) {
 func TestTerminationContextInput(t *testing.T) {
 	// settings
 	whitelist := false
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, _, _, _ := _setupFilter(whitelist, tablelist)
+	f, _, _, _ := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 	time.Sleep(10 * time.Millisecond)
@@ -258,10 +319,11 @@ func TestTerminationContextInput(t *testing.T) {
 func TestTerminationContextOutput(t *testing.T) {
 	// settings
 	whitelist := true
+	regex := false
 	tablelist := []string{"foo"}
 
 	// setup filter
-	f, in, _, _ := _setupFilter(whitelist, tablelist)
+	f, in, _, _ := _setupFilter(whitelist, regex, tablelist)
 
 	go f.Start()
 

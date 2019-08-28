@@ -97,6 +97,8 @@ OPTIONS:
    --batcher-partition-count value    number of buckets to use when bucketing partitions in partition-method='transaction-bucket'. (default: 1) [$PARTITION_COUNT]
    --whitelist value                  A whitelist of tables to include. All others will be excluded. [$WHITELIST]
    --blacklist value                  A blacklist of tables to exclude. All others will be included. [$BLACKLIST]
+   --whitelist-regex value            A regex whitelist of tables to match. All others will be excluded. [$WHITELIST]
+   --blacklist-regex value            A regex blacklist of tables to exclude. All others will be included. [$BLACKLIST]
    --help, -h                         show help
 ```
 
@@ -118,6 +120,8 @@ max-memory-bytes | Maximum amount of memory to use when batching messages. Note 
 ### Filtering
 
 pg-bifrost currently supports table level filtering in both a whitelist and blacklist mode. Use `whitelist` to include specific tables and `blacklist` to exclude tables. Note these are mutually exclusive.
+
+Additionally, there is a regex mode to enable matching multiple tables at once, using `whitelist-regex` and `blacklist-regex`
 
 
 ### Partitioning

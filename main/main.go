@@ -377,10 +377,13 @@ func replicateAction(c *cli.Context) error {
 	//
 	wl := c.GlobalStringSlice(config.VAR_NAME_WHITELIST)
 	bl := c.GlobalStringSlice(config.VAR_NAME_BLACKLIST)
+	wlr := c.GlobalStringSlice(config.VAR_NAME_WHITELIST_REGEX)
+	blr := c.GlobalStringSlice(config.VAR_NAME_BLACKLIST_REGEX)
 	var tablelist []string
 	var whitelist bool
-	if len(wl) != 0 && len(bl) != 0 {
-		return errors.New("'whitelist' and 'blacklist' are mutually exclusive. Use one or the other but not both")
+	var regex bool
+	if len(wl) != 0 && len(bl) != 0 && len(wlr) != 0 && len(blr) != 0 {
+		return errors.New("'whitelist', 'whitelest-regex', 'blacklist', and 'blacklist-regex' are mutually exclusive. Use one or the other but not both")
 	} else if len(wl) != 0 {
 		whitelist = true
 		tablelist = wl
@@ -389,9 +392,12 @@ func replicateAction(c *cli.Context) error {
 		tablelist = bl
 	}
 
+	regex = (len(wlr) != 0 || len(blr) != 0)
+
 	filterConfig := make(map[string]interface{}, 0)
 	filterConfig["whitelist"] = whitelist
 	filterConfig["tablelist"] = tablelist
+	filterConfig["regex"] = regex
 
 	//
 	// Validate, construct and create partitioner config from Flags
@@ -618,9 +624,19 @@ func main() {
 					EnvVar: "WHITELIST",
 				},
 				cli.StringSliceFlag{
+					Name:   config.VAR_NAME_WHITELIST_REGEX,
+					Usage:  "A whitelist of regex tables to include. All others will be excluded.",
+					EnvVar: "WHITELIST_REGEX",
+				},
+				cli.StringSliceFlag{
 					Name:   config.VAR_NAME_BLACKLIST,
 					Usage:  "A blacklist of tables to exclude. All others will be included.",
 					EnvVar: "BLACKLIST",
+				},
+				cli.StringSliceFlag{
+					Name:   config.VAR_NAME_BLACKLIST_REGEX,
+					Usage:  "A blacklist of regex tables to exclude. All others will be included.",
+					EnvVar: "BLACKLIST_REGEX",
 				},
 			},
 			Subcommands: []cli.Command{

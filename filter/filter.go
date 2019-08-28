@@ -17,12 +17,14 @@
 package filter
 
 import (
+	"os"
+	"regexp"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (
@@ -45,6 +47,7 @@ type Filter struct {
 
 	passthrough bool
 	whitelist   bool
+	regex       bool
 	tablelist   []string
 }
 
@@ -52,6 +55,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *replication.WalMessage,
 	statsChan chan stats.Stat,
 	whitelist bool,
+	regex bool,
 	tablelist []string,
 ) Filter {
 	outputChan := make(chan *replication.WalMessage)
@@ -68,6 +72,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		statsChan,
 		passthrough,
 		whitelist,
+		regex,
 		tablelist,
 	}
 }
@@ -100,7 +105,7 @@ func (f *Filter) Start() {
 		op = "blacklist"
 	}
 
-	log.Infof("%s filter on tables %v", op, f.tablelist)
+	log.Infof("%s (regex: %v) filter on tables %v", op, f.regex, f.tablelist)
 
 	defer f.shutdown()
 
@@ -151,9 +156,14 @@ func (f *Filter) Start() {
 		// check to see if relation (table name) is found in the lsit
 		found := false
 		for _, item := range f.tablelist {
-			if msg.Pr.Relation == item {
+			if f.regex == false && msg.Pr.Relation == item {
 				found = true
 				break
+			} else if f.regex == true {
+				if matched, _ := regexp.MatchString(item, msg.Pr.Relation); matched {
+					found = true
+					break
+				}
 			}
 		}
 
