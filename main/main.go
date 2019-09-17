@@ -383,7 +383,7 @@ func replicateAction(c *cli.Context) error {
 	var whitelist bool
 	var regex bool
 	if len(wl) != 0 && len(bl) != 0 && len(wlr) != 0 && len(blr) != 0 {
-		return errors.New("'whitelist', 'whitelest-regex', 'blacklist', and 'blacklist-regex' are mutually exclusive. Use one or the other but not both")
+		return errors.New("'whitelist', 'whitelist-regex', 'blacklist', and 'blacklist-regex' are mutually exclusive. Use one or the other but not both")
 	} else if len(wl) != 0 {
 		whitelist = true
 		tablelist = wl
