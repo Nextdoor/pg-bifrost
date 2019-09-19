@@ -49,6 +49,7 @@ type Filter struct {
 	whitelist   bool
 	regex       bool
 	tablelist   []string
+	regexlist   []*regexp.Regexp
 }
 
 func New(shutdownHandler shutdown.ShutdownHandler,
@@ -66,6 +67,15 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		passthrough = true
 	}
 
+	regexlist := make([]*regexp.Regexp, len(tablelist))
+	for i, item := range tablelist {
+		regex, err := regexp.Compile(item)
+		if err != nil {
+			log.WithError(err).WithField("regexp", item).Warn("Problem compiling regular expression.")
+		}
+		regexlist[i] = regex
+	}
+
 	return Filter{shutdownHandler,
 		inputChan,
 		outputChan,
@@ -74,6 +84,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		whitelist,
 		regex,
 		tablelist,
+		regexlist,
 	}
 }
 
@@ -155,12 +166,17 @@ func (f *Filter) Start() {
 
 		// check to see if relation (table name) is found in the lsit
 		found := false
-		for _, item := range f.tablelist {
-			if f.regex == false && msg.Pr.Relation == item {
-				found = true
-				break
-			} else if f.regex == true {
-				if matched, _ := regexp.MatchString(item, msg.Pr.Relation); matched {
+		if f.regex {
+			var matched bool
+			for _, item := range f.regexlist {
+				if matched = item.MatchString(msg.Pr.Relation); matched {
+					found = true
+					break
+				}
+			}
+		} else {
+			for _, item := range f.tablelist {
+				if msg.Pr.Relation == item {
 					found = true
 					break
 				}
