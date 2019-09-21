@@ -99,6 +99,11 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	}
 	log.Info("tablelist=", tablelist)
 
+	regex, ok := filterConfig["regex"].(bool)
+	if !ok {
+		log.Panic("Wrong type assertion")
+	}
+
 	// Get partitioner configurations
 	partMethod, ok := partitionConfig[config.VAR_NAME_PARTITION_METHOD].(partitioner.PartitionMethod)
 	if !ok {
@@ -161,6 +166,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		replicationClient.GetOutputChan(),
 		statsChan,
 		whitelist,
+		regex,
 		tablelist)
 
 	partitionerInstance := partitioner.New(
