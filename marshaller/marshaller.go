@@ -17,14 +17,15 @@
 package marshaller
 
 import (
-	"encoding/json"
+	"github.com/json-iterator/go"
+
 	"os"
 	"time"
 
+	"github.com/Nextdoor/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +33,7 @@ import (
 var (
 	logger = logrus.New()
 	log    = logger.WithField("package", "marshaller")
+	json   = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 func init() {
@@ -182,7 +184,7 @@ func marshalWalToJson(msg *replication.WalMessage) ([]byte, error) {
 	lsn := pgx.FormatLSN(msg.WalStart)
 
 	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
-	time := time.Unix(0, int64(msg.ServerTime) * 1000000).Format(time.RFC3339)
+	time := time.Unix(0, int64(msg.ServerTime)*1000000).Format(time.RFC3339)
 	columns := make(map[string]map[string]map[string]string)
 
 	for k, v := range msg.Pr.Columns {
