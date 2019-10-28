@@ -42,8 +42,8 @@ const (
 
 	// Settings for exponential sleep time when there have been no seen or
 	// written transactions. This prevents a spinning.
-	initialSleep = 2 * time.Millisecond
-	maxSleep     = 5 * time.Second
+	initialSleep = 100 * time.Microsecond
+	maxSleep     = 50 * time.Millisecond
 )
 
 func init() {
