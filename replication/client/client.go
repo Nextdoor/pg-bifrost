@@ -36,6 +36,11 @@ var (
 	logger              = logrus.New()
 	log                 = logger.WithField("package", "client")
 	logProgressInterval = int64(30 * time.Second)
+
+	// Settings for exponential sleep time. This prevents spinning when
+	// there is a backlog.
+	initialSleep = 10 * time.Millisecond
+	maxSleep     = 2 * time.Second
 )
 
 func init() {
@@ -393,6 +398,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		// Attempt to write to channel. If full then send a keepalive and attempt
 		// to write to channel again.
 		err = func() error {
+			var curSleep = initialSleep
+
 			for {
 				select {
 				case c.outputChan <- wal:
@@ -405,7 +412,13 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 						return err
 					}
 
-					time.Sleep(2 * time.Second)
+					if curSleep > maxSleep {
+						curSleep = initialSleep
+					}
+
+					// Sleep here to prevent spinning.
+					time.Sleep(curSleep)
+					curSleep = curSleep * 2
 				}
 			}
 		}()
