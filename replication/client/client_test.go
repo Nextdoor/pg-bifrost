@@ -968,7 +968,7 @@ func TestDeadlineExceeded(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// test
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(40 * time.Millisecond)
 	replicator.shutdownHandler.CancelFunc()
 
 	select {
@@ -1250,7 +1250,7 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		assert.Fail(t, "did not pass test in time")
 	case <-expectChan:
-		// pass
+		replicator.shutdownHandler.CancelFunc()
 	}
 }
 
@@ -1370,4 +1370,8 @@ func TestOldOverallProgress(t *testing.T) {
 	case <-expectChan:
 		// pass
 	}
+}
+
+func TestFoo(t *testing.T) {
+	time.Sleep(5 * time.Second)
 }
