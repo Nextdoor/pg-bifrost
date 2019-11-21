@@ -1371,7 +1371,7 @@ func TestOldOverallProgress(t *testing.T) {
 		// pass
 	}
 }
-//
-//func TestFoo(t *testing.T) {
-//	time.Sleep(5 * time.Second)
-//}
+
+func TestFoo(t *testing.T) {
+	time.Sleep(5 * time.Second)
+}
