@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	//"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -77,14 +78,16 @@ func (c *Replicator) shutdown() {
 	c.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
 	if r := recover(); r != nil {
-		log.Error("recovering from panic ", r)
+		log.Error("recovering from FIRST panic ", r)
 	}
 
 	log.Debug("closing output channel")
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		if r := recover(); r != nil {
+			log.Error("recovering from SECOND panic ", r)
+		}
 	}()
 	close(c.outputChan)
 
