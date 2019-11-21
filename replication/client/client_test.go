@@ -869,7 +869,7 @@ func TestDeadlineExceededTwice(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// Wait for replicator to run
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 
 	// Verify stats
 	expectedStats := []stats.Stat{}
@@ -968,7 +968,7 @@ func TestDeadlineExceeded(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// test
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	replicator.shutdownHandler.CancelFunc()
 
 	select {
