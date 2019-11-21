@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+		"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -33,19 +34,30 @@ import (
 )
 
 var (
-	logger              = logrus.New()
-	log                 = logger.WithField("package", "client")
+
 	logProgressInterval = int64(30 * time.Second)
 
 	// Settings for exponential sleep time. This prevents spinning when
-	// there is a backlog.
+	// there is a backc.log.
 	initialSleep = 10 * time.Millisecond
 	maxSleep     = 2 * time.Second
 )
 
-func init() {
-	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.InfoLevel)
+const charset = "ABCDEFGHI0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func RandomString(length int) string {
+	return StringWithCharset(length, charset)
 }
 
 type Replicator struct {
@@ -58,6 +70,8 @@ type Replicator struct {
 	overallProgress  uint64
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
+
+	log *logrus.Entry
 }
 
 // New a simple constructor to create a replication.client with postgres configurations.
@@ -78,14 +92,14 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 
 // shutdown idempotently closes the output channels and cancels the termination context
 func (c *Replicator) shutdown() {
-	log.Info("shutting down")
+	c.log.Info("shutting down")
 	c.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
 	if r := recover(); r != nil {
-		log.Error("recovering from panic ", r)
+		c.log.Error("recovering from panic ", r)
 	}
 
-	log.Debug("closing output channel")
+	c.log.Debug("closing output channel")
 
 	defer func() {
 		// recover if channel is already closed
@@ -93,8 +107,9 @@ func (c *Replicator) shutdown() {
 	}()
 	close(c.outputChan)
 
-	log.Debug("closing replication connection")
+	c.log.Debug("closing replication connection")
 	c.connManager.Close()
+	time.Sleep(1 * time.Second)
 }
 
 // sendProgressStatus sends a StandbyStatus (heartbeat) to postgres which lets it know where it can trim off
@@ -110,6 +125,9 @@ func (c *Replicator) sendProgressStatus() error {
 
 	var conn conn.Conn
 	conn, err = c.connManager.GetConn()
+	if err != nil {
+		c.log.Infof("sendProgressStatus() err: %s", err.Error())
+	}
 
 	if err != nil {
 		return err
@@ -123,7 +141,7 @@ func (c *Replicator) sendProgressStatus() error {
 	// Only log out progress at most every logProgressInterval
 	if time.Now().UnixNano()-logProgressInterval > c.progressLastSent {
 		c.progressLastSent = time.Now().UnixNano()
-		log.Infof("sent progress LSN: %s / %d",
+		c.log.Infof("sent progress LSN: %s / %d",
 			pgx.FormatLSN(c.overallProgress),
 			c.overallProgress)
 	}
@@ -133,6 +151,7 @@ func (c *Replicator) sendProgressStatus() error {
 
 // handleProgress read all progress off progress channel and send to Postgres
 func (c *Replicator) handleProgress(force bool) error {
+	c.log.Infof("handleProgress with force: %t", force)
 
 	var progressUpdated bool
 
@@ -147,7 +166,7 @@ func (c *Replicator) handleProgress(force bool) error {
 
 				// Ensure new progress is older than the overall progress
 				if c.overallProgress >= latestProgress {
-					log.Warn("overall progress is newer than or same as latest reported progress, skipping")
+					c.log.Warn("overall progress is newer than or same as latest reported progress, skipping")
 					continue
 				}
 
@@ -196,7 +215,19 @@ func (c *Replicator) handleProgress(force bool) error {
 func (c *Replicator) Start(progressChan <-chan uint64) {
 	defer c.shutdown()
 
-	log.Info("Starting")
+
+
+
+	logger              := logrus.New()
+	log                 := logger.WithField("package", "client")
+	c.log 				= log.WithField("inst", RandomString(4))
+
+	logger.SetOutput(os.Stdout)
+	logger.SetLevel(logrus.DebugLevel)
+
+
+
+	c.log.Info("Starting")
 	c.progressChan = progressChan
 
 	var conn conn.Conn
@@ -213,7 +244,11 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	// Get a connection
 	conn, rplErr = c.connManager.GetConn()
 	if rplErr != nil {
-		log.Error(rplErr.Error())
+		c.log.Infof("Start() rplErr: %s", rplErr.Error())
+	}
+
+	if rplErr != nil {
+		c.log.Error(rplErr.Error())
 		return
 	}
 
@@ -227,12 +262,12 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	}()
 
 	if message == nil || message.ServerHeartbeat == nil {
-		log.Error("server did not send a heartbeat as the first message")
+		c.log.Error("server did not send a heartbeat as the first message")
 		return
 	}
 
 	// Set overall status to that of server's location
-	log.Infof("replication slot LSN: %s / %d",
+	c.log.Infof("replication slot LSN: %s / %d",
 		pgx.FormatLSN(message.ServerHeartbeat.ServerWalEnd),
 		message.ServerHeartbeat.ServerWalEnd)
 	c.overallProgress = message.ServerHeartbeat.ServerWalEnd
@@ -246,7 +281,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		// Check to see if a termination is initiated
 		select {
 		case <-c.shutdownHandler.TerminateCtx.Done():
-			log.Debug("received terminateCtx cancellation")
+			c.log.Debug("received terminateCtx cancellation")
 			return
 		default:
 		}
@@ -263,14 +298,14 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Check progress channel and only send an update if there is one
 		if err := c.handleProgress(forceProgress); err != nil {
-			log.Error(err)
+			c.log.Error(err)
 			return
 		}
 
 		// Get a connection
 		conn, rplErr = c.connManager.GetConn()
 		if rplErr != nil {
-			log.Error(rplErr.Error())
+			c.log.Error(rplErr.Error())
 			return
 		}
 
@@ -286,13 +321,13 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		if rplErr != nil {
 			// check if deadline was exceeded
 			if rplErr.Error() == "context deadline exceeded" {
-				log.Debug("deadline exceeded")
+				c.log.Debug("deadline exceeded")
 
 				// Send a keepalive whenever deadline is exceeded. This keeps
 				// the connection alive when there are no new messages from
 				// postgres.
 				if err := c.handleProgress(true); err != nil {
-					log.Error(err)
+					c.log.Error(err)
 					return
 				}
 				continue
@@ -300,21 +335,21 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 			// TODO(#8): what about other types of errors?
 			if !conn.IsAlive() {
-				log.Warn("connection was closed")
+				c.log.Warn("connection was closed")
 				continue
 			}
 		}
 
 		if message == nil {
-			log.Debug("message was nil")
+			c.log.Debug("message was nil")
 			continue
 		}
 
 		// Handle ServerHeartbeat and send keepalive
 		if message.ServerHeartbeat != nil && message.ServerHeartbeat.ReplyRequested == 1 {
-			log.Debug("server asked for heartbeat")
+			c.log.Debug("server asked for heartbeat")
 			if err := c.handleProgress(true); err != nil {
-				log.Error(err)
+				c.log.Error(err)
 				return
 			}
 			// TODO(#7): check if a message can contain both WalMessage and ServerHeartbeat
@@ -327,7 +362,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		wal, err := replication.PgxReplicationMessageToWalMessage(message)
 		if err != nil {
-			log.Error(err)
+			c.log.Error(err)
 			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
 			return
 		}
@@ -372,7 +407,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			// progress reading until a transaction is fully "closed" on our end by having seen
 			// both BEGIN and COMMIT.
 			if !sawCommit && !firstIteration {
-				log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
+				c.log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
 					pgx.FormatLSN(highestWalStart),
 					highestWalStart)
 
@@ -417,7 +452,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 					}
 
 					// Sleep here to prevent spinning.
-					log.Infof("sleeping for %d", curSleep)
+					c.log.Infof("sleeping for %d", curSleep)
 					time.Sleep(curSleep)
 					curSleep = curSleep * 2
 
@@ -428,7 +463,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}()
 
 		if err != nil {
-			log.Error(err)
+			c.log.Error(err)
 			return
 		}
 

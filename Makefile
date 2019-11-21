@@ -26,7 +26,7 @@ generate:
 test: vendor generate vet
 	go clean -testcache || true
 	@echo "Executing tests ..."
-	go test -race -v ${GO_TEST_EXTRAS} ./...
+	go test -p 1 -race -v ${GO_TEST_EXTRAS} ./...
 
 itests:
 	@echo "Running integration tests"
