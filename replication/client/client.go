@@ -40,19 +40,20 @@ var (
 
 func init() {
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetLevel(logrus.DebugLevel)
 }
 
 type Replicator struct {
 	shutdownHandler shutdown.ShutdownHandler
 	connManager     conn.ManagerInterface
-	stopReplication <-chan struct{}
+	stopReplication <-chan struct{} // todo: remove this
 	statsChan       chan stats.Stat
 	progressChan    <-chan uint64
 
 	overallProgress  uint64
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
+	stoppedChan     chan struct{}
 }
 
 // New a simple constructor to create a replication.client with postgres configurations.
@@ -68,6 +69,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		overallProgress:  0,
 		outputChan:       make(chan *replication.WalMessage, clientBufferSize),
 		progressLastSent: int64(0),
+		stoppedChan:      make(chan struct{}),
 	}
 }
 
@@ -80,6 +82,11 @@ func (c *Replicator) shutdown() {
 		log.Error("recovering from panic ", r)
 	}
 
+
+
+	log.Debug("closing replication connection")
+	c.connManager.Close()
+
 	log.Debug("closing output channel")
 
 	defer func() {
@@ -88,8 +95,9 @@ func (c *Replicator) shutdown() {
 	}()
 	close(c.outputChan)
 
-	log.Debug("closing replication connection")
-	c.connManager.Close()
+
+	// Close stopped channel to signal stop
+	close(c.stoppedChan)
 }
 
 // sendProgressStatus sends a StandbyStatus (heartbeat) to postgres which lets it know where it can trim off
@@ -422,4 +430,9 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 // GetOutputChan returns the outputChan
 func (c *Replicator) GetOutputChan() chan *replication.WalMessage {
 	return c.outputChan
+}
+
+// GetStoppedChan returns stoppedChan
+func (c *Replicator) GetStoppedChan() chan struct{} {
+	return c.stoppedChan
 }

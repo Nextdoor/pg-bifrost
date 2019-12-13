@@ -68,6 +68,28 @@ func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan ui
 	return mockCtrl, replicator, progChan, mockManager, mockConn
 }
 
+func waitForShutdown(t *testing.T, mockManager *mocks.MockManagerInterface, replicator Replicator) {
+	// Wait for closing cleanup
+	mockManager.EXPECT().Close().Times(1)
+	replicator.shutdownHandler.CancelFunc()
+
+	// Add a little delay to ensure shutdown ran
+	var timeout *time.Timer
+	timeout = time.NewTimer(4000 * time.Millisecond)
+
+	stoppedChannel := replicator.GetStoppedChan()
+
+	// Check to see if shutdown closed output channel
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "shutdown didn't close output chan in time")
+	case _, ok := <- stoppedChannel:
+		if ok {
+			assert.Fail(t, "shutdown didn't close output chan")
+		}
+	}
+}
+
 func TestGetBasicTestSetup(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
@@ -82,6 +104,9 @@ func TestGetBasicTestSetup(t *testing.T) {
 	go replicator.Start(progChan)
 
 	time.Sleep(10 * time.Millisecond)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 // TestWalMessage verifies that WaitForReplicationMessage is called and sends the ReplicationMessage on the output channel
@@ -143,6 +168,9 @@ func TestWalMessage(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 // TestReplicationError tests handling of error returned by WaitForReplicationMessage
@@ -182,6 +210,9 @@ func TestReplicationError(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestNilMessage(t *testing.T) {
@@ -217,6 +248,9 @@ func TestNilMessage(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestStartValidMessage(t *testing.T) {
@@ -274,6 +308,9 @@ func TestStartValidMessage(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestTxnsMessage(t *testing.T) {
@@ -380,6 +417,9 @@ func TestTxnsMessage(t *testing.T) {
 
 	}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestNoCommit(t *testing.T) {
@@ -471,6 +511,9 @@ func TestNoCommit(t *testing.T) {
 	case <-time.After(200 * time.Millisecond):
 		assert.Fail(t, "a WalMessage was not received from the outputChan")
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestDupWalStart(t *testing.T) {
@@ -548,6 +591,9 @@ func TestDupWalStart(t *testing.T) {
 		stats.NewStatCount("replication", "received", 1, time.Now().UnixNano()),
 	}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func _getWalMessage(msgStr string) *pgx.ReplicationMessage {
@@ -653,6 +699,9 @@ func TestStartNilWalMessage(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 // used to compare all fields of StandbyStatus except ClientTime
@@ -727,6 +776,9 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	case <-expectChan:
 		// pass
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestClosedProgressChan(t *testing.T) {
@@ -837,6 +889,9 @@ func TestStartOutputChannelFull(t *testing.T) {
 	case <-time.After(25 * time.Millisecond):
 		assert.Fail(t, "a WalMessage was not received from the outputChan")
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestDeadlineExceededTwice(t *testing.T) {
@@ -874,6 +929,9 @@ func TestDeadlineExceededTwice(t *testing.T) {
 	// Verify stats
 	expectedStats := []stats.Stat{}
 	stats.VerifyStats(t, statsChan, expectedStats)
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestWithMultipleProgress(t *testing.T) {
@@ -928,6 +986,9 @@ func TestWithMultipleProgress(t *testing.T) {
 	select {
 	case <-time.After(200 * time.Millisecond):
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestDeadlineExceeded(t *testing.T) {
@@ -1180,6 +1241,9 @@ func TestHeartbeatRequested(t *testing.T) {
 	case <-expectChan:
 		// pass
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestHeartbeatRequestedError(t *testing.T) {
@@ -1252,6 +1316,9 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	case <-expectChan:
 		// pass
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
 }
 
 func TestSendKeepaliveChanFullError(t *testing.T) {
@@ -1370,4 +1437,11 @@ func TestOldOverallProgress(t *testing.T) {
 	case <-expectChan:
 		// pass
 	}
+
+	// Wait for shutdown
+	waitForShutdown(t, mockManager, replicator)
+}
+
+func TestSleep(t *testing.T) {
+	time.Sleep(5000 * time.Millisecond)
 }
