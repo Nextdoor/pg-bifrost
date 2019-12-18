@@ -39,13 +39,13 @@ DELETE FROM customers WHERE first_name = 'Goodbye';
 {"time":"1970-01-01T00:00:01Z","lsn":"0/1510CA8","table":"public.customers","operation":"DELETE","columns":{"id":{"old":{"q":"false","t":"integer","v":"2"}}}}
 ```
 
-**NOTE** 
+**NOTE**
 
-`time` here is not the time this wal message has been replicated, nor is it when the time the message has been transported to the sink. It is the server time as reported in the wal binary. These appear to be uninplemented in Postgres versions 9.5 to 11.2 so they they take the epoch time in the marshalled (JSON) message. 
+`time` here is not the time this wal message has been replicated, nor is it when the time the message has been transported to the sink. It is the server time as reported in the wal binary. These appear to be uninplemented in Postgres versions 9.5 to 11.2 so they they take the epoch time in the marshalled (JSON) message.
 
 As such it does not provide any useful data. This is left in if there is support for this binary field in the future.
 
- 
+
 ## Usage
 
 ### main
@@ -71,7 +71,7 @@ GLOBAL OPTIONS:
    --version, -v     print the version
 ```
 
-### replicate 
+### replicate
 ```
 NAME:
    pg-bifrost replicate - start logical replication
@@ -240,3 +240,5 @@ This tool was inspired by [nickelser/pg_kinesis](https://github.com/nickelser/pg
 `pg-bifrost` is distributed under the terms of the Apache License (Version 2.0).
 
 See [LICENSE](LICENSE) for details.
+
+Metadata 0.1
