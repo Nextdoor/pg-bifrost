@@ -1,3 +1,3 @@
-{"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"2"}},"last_name":{"new":{"q":"true","t":"text","v":"2"}}}}
 {"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"1"}},"last_name":{"new":{"q":"true","t":"text","v":"1"}}}}
+{"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"2"}},"last_name":{"new":{"q":"true","t":"text","v":"2"}}}}
 {"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"3"}},"last_name":{"new":{"q":"true","t":"text","v":"3"}}}}
