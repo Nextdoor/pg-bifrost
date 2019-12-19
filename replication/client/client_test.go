@@ -690,7 +690,7 @@ func TestStartNilWalMessage(t *testing.T) {
 	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
-		}).MinTimes(4)
+		}).MinTimes(2)
 
 	go replicator.Start(progChan)
 
