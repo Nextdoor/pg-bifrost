@@ -1462,7 +1462,3 @@ func TestOldOverallProgress(t *testing.T) {
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
 }
-
-func TestSleep(t *testing.T) {
-	time.Sleep(5000 * time.Millisecond)
-}

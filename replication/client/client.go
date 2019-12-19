@@ -46,7 +46,6 @@ func init() {
 type Replicator struct {
 	shutdownHandler shutdown.ShutdownHandler
 	connManager     conn.ManagerInterface
-	stopReplication <-chan struct{} // todo: remove this
 	statsChan       chan stats.Stat
 	progressChan    <-chan uint64
 
