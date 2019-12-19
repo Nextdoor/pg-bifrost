@@ -97,8 +97,8 @@ OPTIONS:
    --batcher-partition-count value    number of buckets to use when bucketing partitions in partition-method='transaction-bucket'. (default: 1) [$PARTITION_COUNT]
    --whitelist value                  A whitelist of tables to include. All others will be excluded. [$WHITELIST]
    --blacklist value                  A blacklist of tables to exclude. All others will be included. [$BLACKLIST]
-   --whitelist-regex value            A regex whitelist of tables to match. All others will be excluded. [$WHITELIST]
-   --blacklist-regex value            A regex blacklist of tables to exclude. All others will be included. [$BLACKLIST]
+   --whitelist-regex value            A regex whitelist of tables to match. All others will be excluded. [$WHITELIST_REGEX]
+   --blacklist-regex value            A regex blacklist of tables to exclude. All others will be included. [$BLACKLIST_REGEX]
    --help, -h                         show help
 ```
 
