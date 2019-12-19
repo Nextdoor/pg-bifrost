@@ -54,7 +54,7 @@ jobs:
 
   itests: &itests
     <<: *defaults_itests
-    parallelism: 2
+    parallelism: 6
     steps:
     - attach_workspace:
         at: /tmp/workspace
