@@ -424,12 +424,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 					}
 
 					// Sleep here to prevent spinning.
-					log.Infof("sleeping for %d", curSleep)
 					time.Sleep(curSleep)
 					curSleep = curSleep * 2
-
-
-					//time.Sleep(2 * time.Second)
 				}
 			}
 		}()
