@@ -86,7 +86,7 @@ jobs:
 
   itests_postgres: &itests
     <<: *defaults_itests
-    parallelism: 1
+    parallelism: 2
     steps:
     - attach_workspace:
         at: /tmp/workspace
