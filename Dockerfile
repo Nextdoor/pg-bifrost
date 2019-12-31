@@ -16,6 +16,13 @@ RUN go install github.com/golang/mock/mockgen
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 
+
+# Copy over go modules and get dependencies. This will ensure
+# that we don't get the deps each time but only when the files
+# change.
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
 
 # The CI flag is used to control the auto generation of
