@@ -2,7 +2,7 @@ version: 2
 
 defaults: &defaults
   docker:
-  - image: circleci/golang:1.11.4-stretch
+  - image: circleci/golang:1.13.5-stretch
   working_directory: /go/src/github.com/Nextdoor/pg-bifrost.git
 
 defaults_itests: &defaults_itests
@@ -63,8 +63,8 @@ jobs:
         sudo rm -rf /usr/local/go || true
         sudo curl -L https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
         sudo chmod +x /usr/local/bin/docker-compose
-        sudo curl -L https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz -o go1.11.4.linux-amd64.tar.gz
-        sudo tar -xf go1.11.4.linux-amd64.tar.gz
+        sudo curl -L https://dl.google.com/go/go1.13.5.linux-amd64.tar.gz -o go1.13.5.linux-amd64.tar.gz
+        sudo tar -xf go1.13.5.linux-amd64.tar.gz
         sudo mv go /usr/local
         sudo docker load < docker-cache/built-image.tar
     - *step_itests
@@ -73,7 +73,7 @@ jobs:
 
   publish_binary:
     docker:
-      - image: circleci/golang:1.11.4
+      - image: circleci/golang:1.13.5
     steps:
       - attach_workspace:
           at: /tmp/workspace
