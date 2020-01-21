@@ -3,7 +3,7 @@ FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
 # Test and build binary
-FROM golang:1.11.4-stretch as intermediate
+FROM golang:1.13.5-stretch as intermediate
 
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf
@@ -13,16 +13,15 @@ RUN go get golang.org/x/tools/go/packages
 RUN go install golang.org/x/tools/go/packages
 RUN go get github.com/golang/mock/gomock
 RUN go install github.com/golang/mock/mockgen
-RUN go get github.com/golang/dep/cmd/dep
-RUN go install github.com/golang/dep/cmd/dep
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 
-# Copy over gopkg and get deps. This will ensure that
-# we don't get the deps each time but only when the files
+
+# Copy over go modules and get dependencies. This will ensure
+# that we don't get the deps each time but only when the files
 # change.
-COPY Gopkg.lock Gopkg.toml ./
-RUN dep ensure --vendor-only
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
 

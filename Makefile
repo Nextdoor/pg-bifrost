@@ -10,9 +10,6 @@ ifeq ($(CI),true)
 	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(GIT_TAG_VERSION)
 endif
 
-vendor:
-	dep ensure --vendor-only
-
 vet:
 	@echo "Running go vet ..."
 	go list ./...  | xargs go vet
@@ -23,7 +20,7 @@ generate:
 		go generate ./... ;\
 	fi
 
-test: vendor generate vet
+test: generate vet
 	go clean -testcache || true
 	@echo "Executing tests ..."
 	go test -race -v ${GO_TEST_EXTRAS} ./...
@@ -33,8 +30,6 @@ itests:
 	cd ./itests && ./itests_runner.sh
 
 clean:
-	@echo "Removing vendor deps"
-	rm -rf vendor
 	@echo "Cleaning build cache"
 	go clean -cache
 	@echo "Cleaning test cache"
@@ -42,12 +37,12 @@ clean:
 	@echo "Cleaning binary"
 	rm -rf target || true
 
-build: vendor generate
+build: generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
-build_mac: vendor generate
+build_mac: generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
