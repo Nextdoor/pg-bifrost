@@ -1235,8 +1235,19 @@ func TestHeartbeatRequested(t *testing.T) {
 	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
+	pgxServerHeartbeat := &pgx.ServerHeartbeat{
+		ServerWalEnd:   uint64(10),
+		ServerTime:     0,
+		ReplyRequested: 0,
+	}
+
+	rplMsg :=  &pgx.ReplicationMessage{
+		ServerHeartbeat: pgxServerHeartbeat,
+	}
+
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).MinTimes(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(rplMsg, nil).MinTimes(1)
 
 	// expect to reply
 	status0, _ := pgx.NewStandbyStatus(progress0)
@@ -1258,7 +1269,54 @@ func TestHeartbeatRequested(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+}
 
+func TestHeartbeatRequestedShutdown(t *testing.T) {
+	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
+	stoppedChan := replicator.GetStoppedChan()
+	defer mockCtrl.Finish()
+	expectChan := make(chan interface{}, 100)
+
+	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+
+	// server asks for heartbeat
+	pgxServerHeartbeat := &pgx.ServerHeartbeat{
+		ServerWalEnd:   uint64(10),
+		ServerTime:     0,
+		ReplyRequested: 1,
+	}
+
+	rplMsg :=  &pgx.ReplicationMessage{
+		ServerHeartbeat: pgxServerHeartbeat,
+	}
+
+	progress0 := uint64(10)
+	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(rplMsg, nil).MinTimes(6)
+
+	// expect to reply
+	status0, _ := pgx.NewStandbyStatus(progress0)
+	status0.ReplyRequested = 1
+	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1).Do(
+		func(_ interface{}) {
+			expectChan <- 1
+		})
+	mockManager.EXPECT().Close().Times(1)
+
+	go replicator.Start(progChan)
+
+	// Add a little delay to ensure shutdown ran
+	var timeout *time.Timer
+	timeout = time.NewTimer(1000 * time.Millisecond)
+
+	// Check to see if shutdown closed output channel
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "shutdown didn't close output chan in time")
+	case _, ok := <-stoppedChan:
+		if ok {
+			assert.Fail(t, "shutdown not called")
+		}
+	}
 }
 
 func TestHeartbeatRequestedError(t *testing.T) {
