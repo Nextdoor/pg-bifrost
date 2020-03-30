@@ -229,7 +229,7 @@ func runReplicate(
 
 	// Configure memory profiling
 	if memprofile != "" {
-		runtime.MemProfileRate = 100
+		runtime.MemProfileRate = 1
 	}
 
 	// Create a shared cancellation context for application shutdown .
