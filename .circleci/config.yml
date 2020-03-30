@@ -9,6 +9,7 @@ defaults_itests: &defaults_itests
   machine:
     enabled: true
     docker_layer_caching: true
+    resource_class: large
 
 step_library:
 - &step_itests
