@@ -217,6 +217,11 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var firstIteration = true
 	var sawCommit bool
 
+	// Tracking of heartbeat requests
+	var lastClientHeartbeatRequestTime time.Time
+	var heartbeatRequestDeltaTime time.Duration
+	var heartbeatRequestCounter int
+
 	// Get a connection
 	conn, rplErr = c.connManager.GetConn()
 	if rplErr != nil {
@@ -320,6 +325,27 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		// Handle ServerHeartbeat and send keepalive
 		if message.ServerHeartbeat != nil && message.ServerHeartbeat.ReplyRequested == 1 {
 			log.Debug("server asked for heartbeat")
+
+			// Track when the last requested client heartbeat from server was. If the server
+			// asks for heartbeats rapidly assume this is a request to shutdown.
+			//
+			// Shutdown if server asks for heartbeat more than 5 times with less than 100ms
+			// between all requests.
+			now := time.Now()
+			heartbeatRequestDeltaTime += now.Sub(lastClientHeartbeatRequestTime)
+			heartbeatRequestCounter++
+
+			if heartbeatRequestDeltaTime < time.Millisecond * 100 && heartbeatRequestCounter > 5 {
+				log.Warn("Server asked for heartbeat rapidly, assuming request to shutdown...")
+				return
+			}
+
+			if heartbeatRequestCounter > 5 {
+				heartbeatRequestCounter = 0
+				heartbeatRequestDeltaTime = 0
+			}
+			lastClientHeartbeatRequestTime = now
+
 			if err := c.handleProgress(true); err != nil {
 				log.Error(err)
 				return
