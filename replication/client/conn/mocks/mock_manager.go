@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	conn "github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
@@ -46,16 +47,16 @@ func (mr *MockManagerInterfaceMockRecorder) Close() *gomock.Call {
 }
 
 // GetConn mocks base method
-func (m *MockManagerInterface) GetConn() (conn.Conn, error) {
+func (m *MockManagerInterface) GetConn(arg0 context.Context) (conn.Conn, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConn")
+	ret := m.ctrl.Call(m, "GetConn", arg0)
 	ret0, _ := ret[0].(conn.Conn)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetConn indicates an expected call of GetConn
-func (mr *MockManagerInterfaceMockRecorder) GetConn() *gomock.Call {
+func (mr *MockManagerInterfaceMockRecorder) GetConn(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockManagerInterface)(nil).GetConn))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockManagerInterface)(nil).GetConn), arg0)
 }
