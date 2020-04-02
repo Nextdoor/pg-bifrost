@@ -31,8 +31,8 @@ type PgReplConnWrapper struct {
 }
 
 // New is a simple constructor which returns a pgx replication connection
-func New(conf *pgconn.Config) (Conn, error) {
-	pgcon, err := pgconn.ConnectConfig(context.Background(), conf)
+func New(ctx context.Context, conf *pgconn.Config) (Conn, error) {
+	pgcon, err := pgconn.ConnectConfig(ctx, conf)
 
 	conn := PgReplConnWrapper{
 		pgcon,
@@ -43,7 +43,7 @@ func New(conf *pgconn.Config) (Conn, error) {
 
 // getConnWithRetry wraps New with a retry loop. It returns a
 // new replication connection without starting replication.
-func NewConnWithRetry(sourceConfig *pgconn.Config) (Conn, error) {
+func NewConnWithRetry(ctx context.Context, sourceConfig *pgconn.Config) (Conn, error) {
 	var conn Conn
 	var err error
 
@@ -59,7 +59,7 @@ func NewConnWithRetry(sourceConfig *pgconn.Config) (Conn, error) {
 	operation := func() error {
 		log.Infof("Attempting to create a connection to %s on %d", sourceConfig.Host,
 			sourceConfig.Port)
-		conn, err = New(sourceConfig)
+		conn, err = New(ctx, sourceConfig)
 
 		return err
 	}

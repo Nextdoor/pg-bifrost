@@ -52,12 +52,12 @@ func NewManager(sourceConfig *pgconn.Config, replicationSlot string) ManagerInte
 
 // GetConn idempotently returns an instance of a connection. It will make sure to re-connect if
 // it is expired. This connection will have replication automatically started on it.
-func (m *Manager) GetConn() (Conn, error) {
+func (m *Manager) GetConn(ctx context.Context) (Conn, error) {
 	// Create a new connection
 	if m.conn == nil || m.conn.IsClosed() {
 
 		// Get a new connection
-		conn, err := NewConnWithRetry(m.sourceConfig)
+		conn, err := NewConnWithRetry(ctx, m.sourceConfig)
 
 		if err != nil {
 			return nil, err

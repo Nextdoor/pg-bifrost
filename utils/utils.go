@@ -36,7 +36,7 @@ func QuickHash(s string, i int) int {
 
 // PgCreateReplicationSlot is a util to create a replication slot
 func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
-	rplConn, err := conn.NewConnWithRetry(sourceConfig)
+	rplConn, err := conn.NewConnWithRetry(ctx, sourceConfig)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, s
 
 // PgDropReplicationSlot is a util to drop a replication slot
 func PgDropReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
-	rplConn, err := conn.NewConnWithRetry(sourceConfig)
+	rplConn, err := conn.NewConnWithRetry(ctx, sourceConfig)
 	if err != nil {
 		return err
 	}

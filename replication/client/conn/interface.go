@@ -28,21 +28,38 @@ import (
 //go:generate mockgen -destination=mocks/mock_client.go -package=mocks github.com/Nextdoor/pg-bifrost.git/replication/client/conn Conn
 type Conn interface {
 	IsClosed() bool
-	SendStandbyStatus(ctx context.Context, status pglogrepl.StandbyStatusUpdate) error
-	ReceiveMessage(ctx context.Context) (pgproto3.BackendMessage, error)
-	StartReplication(ctx context.Context, slotName string, startLSN pglogrepl.LSN, options pglogrepl.StartReplicationOptions) error
+
+	SendStandbyStatus(
+		ctx context.Context,
+		status pglogrepl.StandbyStatusUpdate) error
+
+	ReceiveMessage(
+		ctx context.Context) (pgproto3.BackendMessage, error)
+	StartReplication(
+		ctx context.Context,
+		slotName string,
+		startLSN pglogrepl.LSN,
+		options pglogrepl.StartReplicationOptions) error
+
 	Close(ctx context.Context) error
+
 	CreateReplicationSlot(
 		ctx context.Context,
 		slotName string,
 		outputPlugin string,
 		options pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error)
-	IdentifySystem(ctx context.Context) (pglogrepl.IdentifySystemResult, error)
-	DropReplicationSlot(ctx context.Context, slotName string, options pglogrepl.DropReplicationSlotOptions) error
+
+	IdentifySystem(
+		ctx context.Context) (pglogrepl.IdentifySystemResult, error)
+
+	DropReplicationSlot(
+		ctx context.Context,
+		slotName string,
+		options pglogrepl.DropReplicationSlotOptions) error
 }
 
 //go:generate mockgen -destination=mocks/mock_manager.go -package=mocks github.com/Nextdoor/pg-bifrost.git/replication/client/conn ManagerInterface
 type ManagerInterface interface {
-	GetConn() (Conn, error)
+	GetConn(ctx context.Context) (Conn, error)
 	Close()
 }
