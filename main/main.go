@@ -133,7 +133,7 @@ var (
 // sourceConfig is a helper to create a ConnConfig from from the cli.Context
 func sourceConfig(c *cli.Context) *pgconn.Config {
 	// postgresql://replication:nextdoor@127.0.0.1:5432/postgres
-	sourceURI := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
+	sourceURI := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?replication=database",
 		c.GlobalString(config.VAR_NAME_USER),
 		c.GlobalString(config.VAR_NAME_PASSWD),
 		c.GlobalString(config.VAR_NAME_HOST),

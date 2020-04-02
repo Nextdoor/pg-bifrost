@@ -36,11 +36,16 @@ func QuickHash(s string, i int) int {
 
 // PgCreateReplicationSlot is a util to create a replication slot
 func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
-	rplConn, err := conn.New(sourceConfig)
+	rplConn, err := conn.NewConnWithRetry(sourceConfig)
 	if err != nil {
 		return err
 	}
 	defer rplConn.Close(ctx)
+
+	_, err = rplConn.IdentifySystem(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to Identify System")
+	}
 
 	_, err = rplConn.CreateReplicationSlot(ctx, slot, "test_decoding", pglogrepl.CreateReplicationSlotOptions{Temporary: false})
 	if err != nil {
@@ -52,11 +57,16 @@ func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, s
 
 // PgDropReplicationSlot is a util to drop a replication slot
 func PgDropReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
-	rplConn, err := conn.New(sourceConfig)
+	rplConn, err := conn.NewConnWithRetry(sourceConfig)
 	if err != nil {
 		return err
 	}
 	defer rplConn.Close(ctx)
+
+	_, err = rplConn.IdentifySystem(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to Identify System")
+	}
 
 	err = rplConn.DropReplicationSlot(ctx, slot, pglogrepl.DropReplicationSlotOptions{Wait: true})
 	if err != nil {

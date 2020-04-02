@@ -18,9 +18,11 @@ package conn
 
 import (
 	"context"
+	"github.com/cenkalti/backoff"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3"
+	"github.com/jackc/pgproto3/v2"
+	"time"
 )
 
 // PgReplConnWrapper is a wrapper struct around pgx.ReplicationConn to help with gomocks
@@ -39,9 +41,41 @@ func New(conf *pgconn.Config) (Conn, error) {
 	return conn, err
 }
 
+// getConnWithRetry wraps New with a retry loop. It returns a
+// new replication connection without starting replication.
+func NewConnWithRetry(sourceConfig *pgconn.Config) (Conn, error) {
+	var conn Conn
+	var err error
+
+	retryPolicy := &backoff.ExponentialBackOff{
+		InitialInterval:     backoff.DefaultInitialInterval,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+		MaxInterval:         backoff.DefaultMaxInterval,
+		MaxElapsedTime:      time.Second * 20,
+		Clock:               backoff.SystemClock,
+	}
+
+	operation := func() error {
+		log.Infof("Attempting to create a connection to %s on %d", sourceConfig.Host,
+			sourceConfig.Port)
+		conn, err = New(sourceConfig)
+
+		return err
+	}
+
+	err = backoff.Retry(operation, retryPolicy)
+	if err != nil {
+		// Handle error.
+		return nil, err
+	}
+
+	return conn, err
+}
+
 // IsClosed wraps pgconn.PgConn.IsClosed
 func (c PgReplConnWrapper) IsClosed() bool {
-	return c.IsClosed()
+	return c.conn.IsClosed()
 }
 
 // SendStandbyStatus wraps pglogrepl.SendStandbyStatusUpdate
@@ -71,6 +105,11 @@ func (c PgReplConnWrapper) CreateReplicationSlot(
 	outputPlugin string,
 	options pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error) {
 	return pglogrepl.CreateReplicationSlot(ctx, c.conn, slotName, outputPlugin, options)
+}
+
+// IdentifySystem wraps pglogrepl.IdentifySystem
+func (c PgReplConnWrapper) IdentifySystem(ctx context.Context) (pglogrepl.IdentifySystemResult, error) {
+	return pglogrepl.IdentifySystem(ctx, c.conn)
 }
 
 // DropReplicationSlot wraps pglogrepl.DropReplicationSlot

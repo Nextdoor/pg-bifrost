@@ -18,7 +18,6 @@ package conn
 
 import (
 	"context"
-	"github.com/cenkalti/backoff"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
 	"github.com/sirupsen/logrus"
@@ -58,7 +57,7 @@ func (m *Manager) GetConn() (Conn, error) {
 	if m.conn == nil || m.conn.IsClosed() {
 
 		// Get a new connection
-		conn, err := getConnWithRetry(m.sourceConfig)
+		conn, err := NewConnWithRetry(m.sourceConfig)
 
 		if err != nil {
 			return nil, err
@@ -86,34 +85,3 @@ func (m *Manager) Close() {
 	m.conn = nil
 }
 
-// getConnWithRetry wraps New with a retry loop. It returns a
-// new replication connection without starting replication.
-func getConnWithRetry(sourceConfig *pgconn.Config) (Conn, error) {
-	var conn Conn
-	var err error
-
-	retryPolicy := &backoff.ExponentialBackOff{
-		InitialInterval:     backoff.DefaultInitialInterval,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          backoff.DefaultMultiplier,
-		MaxInterval:         backoff.DefaultMaxInterval,
-		MaxElapsedTime:      time.Second * 20,
-		Clock:               backoff.SystemClock,
-	}
-
-	operation := func() error {
-		log.Infof("Attempting to create a connection to %s on %d", sourceConfig.Host,
-			sourceConfig.Port)
-		conn, err = New(sourceConfig)
-
-		return err
-	}
-
-	err = backoff.Retry(operation, retryPolicy)
-	if err != nil {
-		// Handle error.
-		return nil, err
-	}
-
-	return conn, err
-}

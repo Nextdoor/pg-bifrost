@@ -18,9 +18,9 @@ package client
 
 import (
 	"context"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgproto3/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -47,7 +47,7 @@ var (
 
 func init() {
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetLevel(logrus.DebugLevel)
 }
 
 type Replicator struct {
@@ -113,7 +113,6 @@ func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 
 	lsn := pglogrepl.LSN(c.overallProgress)
 	status := pglogrepl.StandbyStatusUpdate{
-		ReplyRequested: true,
 		WALWritePosition: lsn,
 	}
 
@@ -130,13 +129,15 @@ func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 	}
 
 	// Only log out progress at most every logProgressInterval
-	if time.Now().UnixNano()-logProgressInterval > c.progressLastSent {
-		c.progressLastSent = time.Now().UnixNano()
-		log.Infof("sent progress LSN: %s / %d",
-			lsn,
-			c.overallProgress)
-	}
-
+	//if time.Now().UnixNano()-logProgressInterval > c.progressLastSent {
+	//	c.progressLastSent = time.Now().UnixNano()
+	//	log.Infof("sent progress LSN: %s / %d",
+	//		lsn,
+	//		c.overallProgress)
+	//}
+	log.Infof("sent progress LSN: %s / %d",
+		lsn,
+		c.overallProgress)
 	return nil
 }
 
@@ -208,7 +209,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	log.Info("Starting")
 	c.progressChan = progressChan
 
-	var pgconn conn.Conn
+	var pgConn conn.Conn
 	var message pgproto3.BackendMessage
 	var rplErr error
 
@@ -219,13 +220,13 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var firstIteration = true
 	var sawCommit bool
 
-	// Tracking of heartbeat requests
-	var lastClientHeartbeatRequestTime time.Time
-	var heartbeatRequestDeltaTime time.Duration
-	var heartbeatRequestCounter int
+	//// Tracking of heartbeat requests
+	//var lastClientHeartbeatRequestTime time.Time
+	//var heartbeatRequestDeltaTime time.Duration
+	//var heartbeatRequestCounter int
 
 	// Get a connection
-	pgconn, rplErr = c.connManager.GetConn()
+	pgConn, rplErr = c.connManager.GetConn()
 	if rplErr != nil {
 		log.Error(rplErr.Error())
 		return
@@ -237,7 +238,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second)
 		defer cancelFn()
 
-		message, rplErr = pgconn.ReceiveMessage(replicationCtx)
+		message, rplErr = pgConn.ReceiveMessage(replicationCtx)
 	}()
 
 
@@ -294,7 +295,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		pgconn, rplErr = c.connManager.GetConn()
+		pgConn, rplErr = c.connManager.GetConn()
 		if rplErr != nil {
 			log.Error(rplErr.Error())
 			return
@@ -302,33 +303,30 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Setup a timeout and then read from replication slot on server
 		func() {
-			replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second) // TODO should this branch from our context?
+			replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second)
 			defer cancelFn()
 
-			message, rplErr = pgconn.ReceiveMessage(replicationCtx)
+			message, rplErr = pgConn.ReceiveMessage(replicationCtx)
 		}()
 
 		// Check for error and connection status
 		if rplErr != nil {
-			// check if deadline was exceeded
-			if rplErr.Error() == "context deadline exceeded" {
-				log.Debug("deadline exceeded")
-
-				// Send a keepalive whenever deadline is exceeded. This keeps
-				// the connection alive when there are no new messages from
-				// postgres.
+			if pgconn.Timeout(rplErr) {
 				if err := c.handleProgress(true); err != nil {
 					log.Error(err)
 					return
 				}
+
 				continue
 			}
 
 			// TODO(#8): what about other types of errors?
-			if pgconn.IsClosed() {
+			if pgConn.IsClosed() {
 				log.Warn("connection was closed")
 				continue
 			}
+
+			return
 		}
 
 		// Begin reading message
@@ -345,33 +343,25 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Handle ServerHeartbeat and send keepalive
 		if cd.Data[0] == pglogrepl.PrimaryKeepaliveMessageByteID {
-			log.Debug("server asked for heartbeat")
+			log.Debug("server sent a heartbeat")
 
-			// Track when the last requested client heartbeat from server was. If the server
-			// asks for heartbeats rapidly assume this is a request to shutdown.
-			//
-			// Shutdown if server asks for heartbeat more than 5 times with less than 100ms
-			// between all requests.
-			now := time.Now()
-			heartbeatRequestDeltaTime += now.Sub(lastClientHeartbeatRequestTime)
-			heartbeatRequestCounter++
-
-			if heartbeatRequestDeltaTime < time.Millisecond * 100 && heartbeatRequestCounter > 5 {
-				log.Warn("Server asked for heartbeat rapidly, assuming request to shutdown...")
+			pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(cd.Data[1:])
+			if err != nil {
+				log.WithError(err).Error("unable to parse keepalive")
 				return
 			}
 
-			if heartbeatRequestCounter > 5 {
-				heartbeatRequestCounter = 0
-				heartbeatRequestDeltaTime = 0
-			}
-			lastClientHeartbeatRequestTime = now
+			//if pkm.ReplyRequested {
+			//	nextStandbyMessageDeadline = time.Time{}
+			//}
 
-			if err := c.handleProgress(true); err != nil {
-				log.Error(err)
-				return
+			if pkm.ReplyRequested {
+				log.Debug("server asked for a heartbeat")
+				if err := c.handleProgress(true); err != nil {
+					log.Error(err)
+					return
+				}
 			}
-
 			continue
 		}
 
@@ -429,7 +419,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			// both BEGIN and COMMIT.
 			if !sawCommit && !firstIteration {
 				log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
-					pgx.FormatLSN(highestWalStart),
+					pglogrepl.LSN(highestWalStart),
 					highestWalStart)
 
 				// Closing the connection will make postgres resend everything that hs not been

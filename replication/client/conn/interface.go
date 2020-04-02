@@ -19,7 +19,7 @@ package conn
 import (
 	"context"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3"
+	"github.com/jackc/pgproto3/v2"
 )
 
 // Conn is a interface which both our PgReplConnWrapper and pgx.ReplicationConn implement to help with gomocks
@@ -37,6 +37,7 @@ type Conn interface {
 		slotName string,
 		outputPlugin string,
 		options pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error)
+	IdentifySystem(ctx context.Context) (pglogrepl.IdentifySystemResult, error)
 	DropReplicationSlot(ctx context.Context, slotName string, options pglogrepl.DropReplicationSlotOptions) error
 }
 

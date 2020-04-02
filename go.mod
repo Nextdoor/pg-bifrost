@@ -26,7 +26,6 @@ require (
 	github.com/jackc/pglogrepl v0.0.0-20200309144228-32ec418076b3
 	github.com/jackc/pgmock v0.0.0-20190831213851-13a1b77aafa2
 	github.com/jackc/pgpassfile v1.0.0
-	github.com/jackc/pgproto3 v1.1.0
 	github.com/jackc/pgproto3/v2 v2.0.0
 	github.com/jackc/pgtype v0.0.0-20190828014616-a8802b16cc59
 	github.com/jackc/pgx v3.6.2+incompatible
