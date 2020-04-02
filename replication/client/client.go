@@ -88,8 +88,6 @@ func (c *Replicator) shutdown() {
 		log.Error("recovering from panic ", r)
 	}
 
-
-
 	log.Debug("closing replication connection")
 	c.connManager.Close()
 
@@ -117,14 +115,14 @@ func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 		ReplyRequested: true,
 	}
 
-	var pgconn conn.Conn
-	pgconn, err = c.connManager.GetConn(ctx)
+	var pgConn conn.Conn
+	pgConn, err = c.connManager.GetConn(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	err = pgconn.SendStandbyStatus(ctx, status)
+	err = pgConn.SendStandbyStatus(ctx, status)
 	if err != nil {
 		return err
 	}
@@ -243,7 +241,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 	cd, ok := message.(*pgproto3.CopyData)
 	if !ok {
-		log.Error("Received unexpected message: %#v\n", message)
+		log.Errorf("Received unexpected message: %#v", message)
 		return
 	}
 
@@ -338,8 +336,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		cd, ok := message.(*pgproto3.CopyData)
 		if !ok {
-			log.Error("Received unexpected message: %#v\n", message)
-			return
+			log.Errorf("Received unexpected message: %#v", message)
+			continue
 		}
 
 		// Handle ServerHeartbeat and send keepalive
@@ -389,6 +387,12 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		xld, err := pglogrepl.ParseXLogData(cd.Data[1:])
+		if err != nil {
+			log.Error(err)
+			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
+			return
+		}
+
 		wal, err := replication.PgxReplicationMessageToWalMessage(xld)
 		if err != nil {
 			log.Error(err)

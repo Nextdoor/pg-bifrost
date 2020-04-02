@@ -17,30 +17,70 @@
 package client
 
 import (
+	"context"
 	"encoding/base64"
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/golang/mock/gomock"
-	"github.com/jackc/pgx"
-	"github.com/pkg/errors"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgproto3/v2"
 	"github.com/stretchr/testify/assert"
-	"testing"
 	"time"
+
+	"testing"
 )
 
-func getServerHeartbeatMessage(serverWalEnd uint64) *pgx.ReplicationMessage {
-	pgxServerHeartbeat := &pgx.ServerHeartbeat{
-		ServerWalEnd:   serverWalEnd,
-		ServerTime:     0,
-		ReplyRequested: 1,
-	}
+func getPrimaryKeepaliveMessage(serverWalEnd uint64) pgproto3.BackendMessage {
+	data := make([]byte, 18)
+	data[0] = pglogrepl.PrimaryKeepaliveMessageByteID
+	binary.BigEndian.PutUint64(data[1:9], serverWalEnd)
+	binary.BigEndian.PutUint64(data[9:17], uint64(0))
+	data[17] = 1 // Reply Requested = true
 
-	return &pgx.ReplicationMessage{
-		ServerHeartbeat: pgxServerHeartbeat,
-	}
+	return &pgproto3.CopyData{Data: data}
+}
+
+const microsecFromUnixEpochToY2K = 946684800 * 1000000
+
+func timeToPgTime(unixSeconds int64) int64 {
+	microsecSinceUnixEpoch := unixSeconds * 1000000
+	return microsecSinceUnixEpoch - microsecFromUnixEpochToY2K
+}
+
+func getXLogData(walData []byte, walStart uint64, serverWalEnd uint64, serverTime int64) pgproto3.BackendMessage {
+	data := make([]byte, 25+len(walData))
+
+	data[0] = pglogrepl.XLogDataByteID
+	binary.BigEndian.PutUint64(data[1:9], walStart)
+	binary.BigEndian.PutUint64(data[9:17], serverWalEnd)
+	binary.BigEndian.PutUint64(data[17:25], uint64(timeToPgTime(serverTime)))
+	copy(data[25:], walData)
+
+	return &pgproto3.CopyData{Data: data}
+}
+
+func TestGetXLogData(t *testing.T) {
+	walData := []byte("foobar")
+	walStart := uint64(100)
+	serverWalEnd := uint64(200)
+	serverTime := time.Now().Unix()
+
+	message := getXLogData(walData, walStart, serverWalEnd, serverTime)
+
+	cd, ok := message.(*pgproto3.CopyData)
+	assert.Equal(t, true, ok, "Failed to cast message to pgproto3.CopyData")
+
+	xld, err := pglogrepl.ParseXLogData(cd.Data[1:])
+	assert.NoError(t, err, "failed to parse message as XLogData")
+
+	assert.Equal(t, pglogrepl.LSN(walStart), xld.WALStart)
+	assert.Equal(t, pglogrepl.LSN(serverWalEnd), xld.ServerWALEnd)
+	assert.Equal(t, serverTime, xld.ServerTime.Unix())
 }
 
 func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan uint64, *mocks.MockManagerInterface, *mocks.MockConn) {
@@ -57,13 +97,11 @@ func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan ui
 	replicator := New(sh, statsChan, mockManager, 2)
 
 	// Setup return
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
 
 	return mockCtrl, replicator, progChan, mockManager, mockConn
 }
@@ -95,8 +133,8 @@ func TestGetBasicTestSetup(t *testing.T) {
 	stoppedChan := replicator.GetStoppedChan()
 	defer mockCtrl.Finish()
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(1)
@@ -129,26 +167,21 @@ func TestWalMessage(t *testing.T) {
 	// Setup return
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	walReplMsg := &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
-	expected, _ := replication.PgxReplicationMessageToWalMessage(walReplMsg)
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
+	cd, _ := backendMessage.(*pgproto3.CopyData)
+	xld, _ := pglogrepl.ParseXLogData(cd.Data[1:])
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	expected, _ := replication.PgxReplicationMessageToWalMessage(xld)
+
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	serverWalEnd := uint64(111)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(1)
@@ -196,13 +229,13 @@ func TestReplicationError(t *testing.T) {
 	serverWalEnd := uint64(111)
 
 	err := errors.New("expected context error")
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, err).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, err).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(2)
-	mockConn.EXPECT().IsAlive().Return(false).MinTimes(2)
+	mockConn.EXPECT().IsClosed().Return(true).MinTimes(2)
 
 	// Do test
 	go replicator.Start(progChan)
@@ -236,9 +269,9 @@ func TestNilMessage(t *testing.T) {
 	// Setup return
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(2)
@@ -276,21 +309,13 @@ func TestStartValidMessage(t *testing.T) {
 	// walData.WalString:
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	walReplMsg := &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(1)
@@ -338,55 +363,31 @@ func TestTxnsMessage(t *testing.T) {
 	// walData.WalString:
 	// BEGIN 566
 	beginData, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY2")
-	beginWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210920),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      beginData,
-	}
-	beginReplMsg := &pgx.ReplicationMessage{
-		WalMessage: beginWalMsg,
-	}
+	beginMessage := getXLogData(beginData, uint64(22210920), uint64(0), int64(0))
 
 	// Update
 	// walData.WalString:
 	// table public.customers: UPDATE: id[integer]:7 first_name[text]:'Hello' last_name[text]:'World7'
 	updateData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogVVBEQVRFOiBpZFtpbnRlZ2VyXTo3IGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkNyc=")
-	updateWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210920),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      updateData,
-	}
-	updateReplMsg := &pgx.ReplicationMessage{
-		WalMessage: updateWalMsg,
-	}
+	updateMessage := getXLogData(updateData, uint64(22210920), uint64(0), int64(0))
 
 	// Commit
 	// walData.WalString:
 	// COMMIT 566
-	commitnData, _ := base64.StdEncoding.DecodeString("Q09NTUlUIDU2Ng==")
-	commitWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210921),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      commitnData,
-	}
-	commitReplMsg := &pgx.ReplicationMessage{
-		WalMessage: commitWalMsg,
-	}
+	commitData, _ := base64.StdEncoding.DecodeString("Q09NTUlUIDU2Ng==")
+	commitMessage := getXLogData(commitData, uint64(22210921), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(8)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(updateReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(commitReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(updateReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(commitReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(8)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(commitMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(commitMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(2)
@@ -446,59 +447,35 @@ func TestNoCommit(t *testing.T) {
 	// Begin
 	// walData.WalString:
 	// BEGIN 566
-	beginData, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY2")
-	beginWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210920),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      beginData,
-	}
-	beginReplMsg := &pgx.ReplicationMessage{
-		WalMessage: beginWalMsg,
-	}
+	beginData, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY3")
+	beginMessage := getXLogData(beginData, uint64(22210920), uint64(0), int64(0))
 
 	// Update
 	// walData.WalString:
 	// table public.customers: UPDATE: id[integer]:7 first_name[text]:'Hello' last_name[text]:'World7'
 	updateData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogVVBEQVRFOiBpZFtpbnRlZ2VyXTo3IGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkNyc=")
-	updateWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210920),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      updateData,
-	}
-	updateReplMsg := &pgx.ReplicationMessage{
-		WalMessage: updateWalMsg,
-	}
+	updateMessage := getXLogData(updateData, uint64(22210920), uint64(0), int64(0))
 
 	// Begin
 	// walData.WalString:
 	// BEGIN 567
 	beginData2, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY3")
-	beginWalMsg2 := &pgx.WalMessage{
-		WalStart:     uint64(22210921),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      beginData2,
-	}
-	beginReplMsg2 := &pgx.ReplicationMessage{
-		WalMessage: beginWalMsg2,
-	}
+	beginMessage2 := getXLogData(beginData2, uint64(22210921), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(5)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(updateReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg2, nil).Times(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(5)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage2, nil).Times(1)
 	mockManager.EXPECT().Close().Times(1)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(2)
@@ -542,37 +519,21 @@ func TestDupWalStart(t *testing.T) {
 	// walData.WalString:
 	// BEGIN 566
 	beginData, _ := base64.StdEncoding.DecodeString("QkVHSU4gNTY2")
-	beginWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      beginData,
-	}
-	beginReplMsg := &pgx.ReplicationMessage{
-		WalMessage: beginWalMsg,
-	}
+	beginMessage := getXLogData(beginData, uint64(22210928), uint64(0), int64(0))
 
 	// Update
 	// walData.WalString:
 	// table public.customers: UPDATE: id[integer]:7 first_name[text]:'Hello' last_name[text]:'World7'
 	updateData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogVVBEQVRFOiBpZFtpbnRlZ2VyXTo3IGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkNyc=")
-	updateWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      updateData,
-	}
-	updateReplMsg := &pgx.ReplicationMessage{
-		WalMessage: updateWalMsg,
-	}
+	updateMessage := getXLogData(updateData, uint64(22210928), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(4)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(beginReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(updateReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(4)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(3)
@@ -603,19 +564,6 @@ func TestDupWalStart(t *testing.T) {
 	waitForShutdown(t, mockManager, sh, stoppedChan)
 }
 
-func _getWalMessage(msgStr string) *pgx.ReplicationMessage {
-	walData, _ := base64.StdEncoding.DecodeString(msgStr)
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	return &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
-}
-
 func TestStartInvalidWalString(t *testing.T) {
 	// Setup mock
 	mockCtrl := gomock.NewController(t)
@@ -633,13 +581,14 @@ func TestStartInvalidWalString(t *testing.T) {
 
 	// walData.WalString:
 	// some invalid wal data
-	walReplMsg := _getWalMessage("c29tZSBpbnZhbGlkIHdhbCBkYXRh")
+	walData, _ := base64.StdEncoding.DecodeString("c29tZSBpbnZhbGlkIHdhbCBkYXRh")
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(2)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil)
 	mockManager.EXPECT().Close().Times(1)
 
 	go replicator.Start(progChan)
@@ -685,9 +634,9 @@ func TestStartNilWalMessage(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(serverWalEnd), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 		}).MinTimes(2)
@@ -714,33 +663,34 @@ func TestStartNilWalMessage(t *testing.T) {
 
 // used to compare all fields of StandbyStatus except ClientTime
 type standbyStatusMatcher struct {
-	WalWritePosition uint64
-	WalFlushPosition uint64
-	WalApplyPosition uint64
-	ReplyRequested   byte
+	WalWritePosition pglogrepl.LSN
+	WalFlushPosition pglogrepl.LSN
+	WalApplyPosition pglogrepl.LSN
+	ReplyRequested   bool
 }
 
 // Matches uses standbyStatusMatcher to do a specific comparison
 func (s *standbyStatusMatcher) Matches(x interface{}) bool {
-	ss := x.(*pgx.StandbyStatus)
+	ss := x.(pglogrepl.StandbyStatusUpdate)
 
-	return ss.WalWritePosition == s.WalWritePosition &&
-		ss.WalFlushPosition == s.WalFlushPosition &&
-		ss.WalApplyPosition == s.WalApplyPosition &&
+	return ss.WALWritePosition == s.WalWritePosition &&
+		ss.WALFlushPosition == s.WalFlushPosition &&
+		ss.WALApplyPosition == s.WalApplyPosition &&
 		ss.ReplyRequested == s.ReplyRequested
 }
 
 func (s *standbyStatusMatcher) String() string {
-	return fmt.Sprintf("WalWritePosition: %d, WalFlushPosition: %d, WalApplyPosition: %d, ReplyRequested: %d",
+	return fmt.Sprintf("WalWritePosition: %d, WalFlushPosition: %d, WalApplyPosition: %d, ReplyRequested: %v",
 		s.WalWritePosition, s.WalFlushPosition, s.WalApplyPosition, s.ReplyRequested)
 }
 
 // EqStatusWithoutTime is a gomock.Matcher that we can pass to matcher as arguments
-func EqStatusWithoutTime(status *pgx.StandbyStatus) gomock.Matcher {
+func EqStatusWithoutTime(status pglogrepl.StandbyStatusUpdate) gomock.Matcher {
+
 	return &standbyStatusMatcher{
-		status.WalWritePosition,
-		status.WalFlushPosition,
-		status.WalApplyPosition,
+		status.WALWritePosition,
+		status.WALFlushPosition,
+		status.WALApplyPosition,
 		status.ReplyRequested,
 	}
 }
@@ -761,20 +711,23 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	replicator := New(sh, statsChan, mockManager, 10)
 	stoppedChan := replicator.GetStoppedChan()
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(uint64(10)), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(uint64(10)), nil).Times(1)
 
 	standbyWalStart := uint64(11111111)
-	status, _ := pgx.NewStandbyStatus(standbyWalStart)
-	status.ReplyRequested = 1
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(3)
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status)).MinTimes(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	status := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(standbyWalStart),
+		ReplyRequested:   true,
+	}
+
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status)).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
 			expectChan <- 1
 		}).MinTimes(1)
 
-	progChan <- uint64(standbyWalStart)
+	progChan <- standbyWalStart
 	go replicator.Start(progChan)
 
 	// Wait a little bit for replicator to process progress
@@ -794,7 +747,7 @@ func TestClosedProgressChan(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConn := mocks.NewMockConn(mockCtrl)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Times(1)
 	mockManager := mocks.NewMockManagerInterface(mockCtrl)
 
 	// Setup
@@ -802,7 +755,7 @@ func TestClosedProgressChan(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	// Expects
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
@@ -863,26 +816,21 @@ func TestStartOutputChannelFull(t *testing.T) {
 	// walData.WalString:
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	walReplMsg := &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	initalWalStart := uint64(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(initalWalStart), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(initalWalStart), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).MinTimes(1)
 
-	status, _ := pgx.NewStandbyStatus(initalWalStart)
-	status.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status)).MinTimes(1)
+	status := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(initalWalStart),
+		ReplyRequested:   true,
+	}
+
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status)).MinTimes(1)
 
 	go replicator.Start(progChan)
 
@@ -919,16 +867,19 @@ func TestDeadlineExceededTwice(t *testing.T) {
 	stoppedChan := replicator.GetStoppedChan()
 
 	// Setup return
-	err := errors.New("context deadline exceeded")
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(3)
+	err := context.DeadlineExceeded
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
 
 	initalWalStart := uint64(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(initalWalStart), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, err).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(initalWalStart), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, err).MinTimes(2)
 
-	status, _ := pgx.NewStandbyStatus(initalWalStart)
-	status.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status)).MinTimes(1)
+	status := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(initalWalStart),
+		ReplyRequested:   true,
+	}
+
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status)).MinTimes(1)
 
 	// Do test
 	go replicator.Start(progChan)
@@ -962,23 +913,27 @@ func TestWithMultipleProgress(t *testing.T) {
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
 
 	// Our progress
 	progress1 := uint64(20)
 	progress2 := uint64(30)
 	progress3 := uint64(40)
-	status3, _ := pgx.NewStandbyStatus(progress3)
-	status3.ReplyRequested = 1
+	status3 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress3),
+		ReplyRequested:   true,
+	}
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(3)
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1)
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status3)).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).MinTimes(1)
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status3)).MinTimes(1)
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil,
-		errors.New("context deadline exceeded")).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
+		context.DeadlineExceeded).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 20)
 		}).MinTimes(2)
@@ -1014,23 +969,26 @@ func TestDeadlineExceeded(t *testing.T) {
 	progChan := make(chan uint64, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
+
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
 
 	// repl messages
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil,
-		errors.New("context deadline exceeded")).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
+		context.DeadlineExceeded).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 		}).MinTimes(1)
 
 	// status
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1)
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).MinTimes(1)
 
 	// shutdown
 	mockManager.EXPECT().Close().Times(1)
@@ -1058,9 +1016,9 @@ func TestTerminationContext(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil,
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
 		nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
@@ -1096,7 +1054,7 @@ func TestGetConnectionError(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn().Return(nil, err).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).MinTimes(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
@@ -1119,7 +1077,7 @@ func TestGetConnectionErrorInLoop(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn().Return(nil, err).Times(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	go replicator.Start(progChan)
@@ -1139,7 +1097,7 @@ func TestPanic(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn().Return(nil, err).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 			panic("TestPanic")
@@ -1173,11 +1131,11 @@ func TestProgressChanClosed(t *testing.T) {
 	sh := shutdown.NewShutdownHandler()
 	replicator := New(sh, statsChan, mockManager, 10)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
 
 	mockManager.EXPECT().Close().Times(1)
 
@@ -1201,9 +1159,9 @@ func TestProgressChanClosedDeadline(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	// Close progress channel before returning of WaitForReplicationMessage
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil,
-		errors.New("context deadline exceeded")).Do(
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
+		context.DeadlineExceeded).Do(
 		func(_ interface{}) {
 			close(progChan)
 			time.Sleep(time.Millisecond * 1)
@@ -1232,28 +1190,20 @@ func TestHeartbeatRequested(t *testing.T) {
 	defer mockCtrl.Finish()
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
-	pgxServerHeartbeat := &pgx.ServerHeartbeat{
-		ServerWalEnd:   uint64(10),
-		ServerTime:     0,
-		ReplyRequested: 0,
-	}
-
-	rplMsg :=  &pgx.ReplicationMessage{
-		ServerHeartbeat: pgxServerHeartbeat,
-	}
-
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).Times(1)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(rplMsg, nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).MinTimes(1)
 
 	// expect to reply
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1).Do(
-		func(_ interface{}) {
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).MinTimes(1).Do(
+		func(_, _ interface{}) {
 			expectChan <- 1
 		})
 
@@ -1277,27 +1227,19 @@ func TestHeartbeatRequestedShutdown(t *testing.T) {
 	defer mockCtrl.Finish()
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
-	pgxServerHeartbeat := &pgx.ServerHeartbeat{
-		ServerWalEnd:   uint64(10),
-		ServerTime:     0,
-		ReplyRequested: 1,
-	}
-
-	rplMsg :=  &pgx.ReplicationMessage{
-		ServerHeartbeat: pgxServerHeartbeat,
-	}
-
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(rplMsg, nil).MinTimes(6)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(10), nil).MinTimes(6)
 
 	// expect to reply
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).MinTimes(1).Do(
-		func(_ interface{}) {
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).MinTimes(1).Do(
+		func(_, _ interface{}) {
 			expectChan <- 1
 		})
 	mockManager.EXPECT().Close().Times(1)
@@ -1322,14 +1264,13 @@ func TestHeartbeatRequestedShutdown(t *testing.T) {
 func TestHeartbeatRequestedError(t *testing.T) {
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
 
-	err := errors.New("error")
-	mockManager.EXPECT().GetConn().Return(nil, err).Times(1)
+	err := errors.New("expected err")
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
 
 	// server asks for heartbeat
-	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(10), nil).MinTimes(1)
 
 	mockManager.EXPECT().Close().Times(1)
 
@@ -1351,33 +1292,27 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	sh := replicator.shutdownHandler
 	stoppedChan := replicator.GetStoppedChan()
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(4)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(4)
 	expectChan := make(chan interface{}, 100)
 
 	// Setup return
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	walReplMsg := &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 		}).MinTimes(2)
 
 	// expect to reply
-	progress0 := uint64(10)
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Times(1).Do(
-		func(_ interface{}) {
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(10),
+		ReplyRequested:   true,
+	}
+
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).Times(1).Do(
+		func(_, _ interface{}) {
 			expectChan <- 1
 		})
 
@@ -1394,7 +1329,6 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
-
 }
 
 func TestSendKeepaliveChanFullError(t *testing.T) {
@@ -1404,27 +1338,19 @@ func TestSendKeepaliveChanFullError(t *testing.T) {
 
 	expectChan := make(chan interface{}, 1)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).Times(3)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(3)
 
 	// Setup return
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
-	pgxWalMsg := &pgx.WalMessage{
-		WalStart:     uint64(22210928),
-		ServerWalEnd: uint64(0),
-		ServerTime:   uint64(0),
-		WalData:      walData,
-	}
-	walReplMsg := &pgx.ReplicationMessage{
-		WalMessage: pgxWalMsg,
-	}
+	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 		}).Times(2)
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(walReplMsg, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Do(
 		func(_ interface{}) {
 			replicator.shutdownHandler.CancelFunc()
 			time.Sleep(time.Millisecond * 1)
@@ -1451,18 +1377,20 @@ func TestSendStandbyStatusError(t *testing.T) {
 
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
 	progress0 := uint64(10)
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(getServerHeartbeatMessage(progress0), nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).MinTimes(1)
 
 	// expect to reply
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
 
 	err := errors.New("expected error")
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Return(err).Times(1)
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).Return(err).Times(1)
 	mockManager.EXPECT().Close().Times(1).Do(func() {
 		expectChan <- 1
 	})
@@ -1484,9 +1412,9 @@ func TestOldOverallProgress(t *testing.T) {
 
 	expectChan := make(chan interface{}, 1)
 
-	mockManager.EXPECT().GetConn().Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
-	mockConn.EXPECT().WaitForReplicationMessage(gomock.Any()).Return(nil, nil).Do(
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 		}).MinTimes(1)
@@ -1494,12 +1422,14 @@ func TestOldOverallProgress(t *testing.T) {
 	progress0 := uint64(1000)
 	progress1 := uint64(999)
 
-	status0, _ := pgx.NewStandbyStatus(progress0)
-	status0.ReplyRequested = 1
-	mockConn.EXPECT().SendStandbyStatus(EqStatusWithoutTime(status0)).Times(1).Do(
-		func(_ interface{}) {
-			expectChan <- 1
-		})
+	status0 := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: pglogrepl.LSN(progress0),
+		ReplyRequested:   true,
+	}
+
+	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).Times(1).Do(func(_, _ interface{}) {
+		expectChan <- 1
+	})
 
 	progChan <- progress0
 	progChan <- progress1
