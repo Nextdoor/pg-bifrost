@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -40,7 +41,8 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgconn"
+
 	"github.com/sirupsen/logrus"
 	"gopkg.in/Nextdoor/cli.v1"
 	"gopkg.in/Nextdoor/cli.v1/altsrc"
@@ -129,7 +131,7 @@ var (
 )
 
 // sourceConfig is a helper to create a ConnConfig from from the cli.Context
-func sourceConfig(c *cli.Context) pgx.ConnConfig {
+func sourceConfig(c *cli.Context) *pgconn.Config {
 	// postgresql://replication:nextdoor@127.0.0.1:5432/postgres
 	sourceURI := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s",
 		c.GlobalString(config.VAR_NAME_USER),
@@ -138,7 +140,7 @@ func sourceConfig(c *cli.Context) pgx.ConnConfig {
 		c.GlobalString(config.VAR_NAME_PORT),
 		c.GlobalString(config.VAR_NAME_DB))
 
-	sourceConfig, err := pgx.ParseConnectionString(sourceURI)
+	sourceConfig, err := pgconn.ParseConfig(sourceURI)
 	if err != nil {
 		log.Error("unable to parse source uri", err)
 		os.Exit(1)
@@ -148,9 +150,10 @@ func sourceConfig(c *cli.Context) pgx.ConnConfig {
 }
 
 // runCreate creates a replication slot
-func runCreate(sourceConfig pgx.ConnConfig, replicationSlot string) error {
-	err := utils.PgCreateReplicationSlot(sourceConfig, replicationSlot)
+func runCreate(sourceConfig *pgconn.Config, replicationSlot string) error {
+	err := utils.PgCreateReplicationSlot(context.Background(), sourceConfig, replicationSlot)
 
+	// TODO proper error handling
 	if err != nil {
 		if strings.HasSuffix(err.Error(), "(SQLSTATE 42710)") {
 			fmt.Printf("Replication slot '%s' already exists.\n", replicationSlot)
@@ -166,8 +169,8 @@ func runCreate(sourceConfig pgx.ConnConfig, replicationSlot string) error {
 }
 
 // runDrop drops a replication slot
-func runDrop(sourceConfig pgx.ConnConfig, replicationSlot string) error {
-	err := utils.PgDropReplicationSlot(sourceConfig, replicationSlot)
+func runDrop(sourceConfig *pgconn.Config, replicationSlot string) error {
+	err := utils.PgDropReplicationSlot(context.Background(), sourceConfig, replicationSlot)
 
 	if err != nil {
 		log.Errorf("Unable to drop replication slot '%s'", replicationSlot)
@@ -203,7 +206,7 @@ func memProfile(filename string) {
 
 // runReplicate starts the replication routine
 func runReplicate(
-	sourceConfig pgx.ConnConfig,
+	sourceConfig *pgconn.Config,
 	replicationSlot string,
 	clientConfig map[string]interface{},
 	filterConfig map[string]interface{},

@@ -12,23 +12,25 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package conn
 
 import (
 	"context"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgproto3"
 )
 
 // PgReplConnWrapper is a wrapper struct around pgx.ReplicationConn to help with gomocks
 type PgReplConnWrapper struct {
-	conn *pgx.ReplicationConn
+	conn *pgconn.PgConn
 }
 
 // New is a simple constructor which returns a pgx replication connection
-func New(conf pgx.ConnConfig) (Conn, error) {
-	pgcon, err := pgx.ReplicationConnect(conf)
+func New(conf *pgconn.Config) (Conn, error) {
+	pgcon, err := pgconn.ConnectConfig(context.Background(), conf)
 
 	conn := PgReplConnWrapper{
 		pgcon,
@@ -37,49 +39,41 @@ func New(conf pgx.ConnConfig) (Conn, error) {
 	return conn, err
 }
 
-// IsAlive wraps pgx.ReplicationConn.IsAlive
-func (c PgReplConnWrapper) IsAlive() bool {
-	return c.IsAlive()
+// IsClosed wraps pgconn.PgConn.IsClosed
+func (c PgReplConnWrapper) IsClosed() bool {
+	return c.IsClosed()
 }
 
-// SendStandbyStatus wraps pgx.ReplicationConn.SendStandbyStatus
-func (c PgReplConnWrapper) SendStandbyStatus(status *pgx.StandbyStatus) error {
-	return c.conn.SendStandbyStatus(status)
+// SendStandbyStatus wraps pglogrepl.SendStandbyStatusUpdate
+func (c PgReplConnWrapper) SendStandbyStatus(ctx context.Context, status pglogrepl.StandbyStatusUpdate) error {
+	return pglogrepl.SendStandbyStatusUpdate(ctx, c.conn, status)
 }
 
-// WaitForReplicationMessage wraps pgx.ReplicationConn.WaitForReplicationMessage
-func (c PgReplConnWrapper) WaitForReplicationMessage(ctx context.Context) (*pgx.ReplicationMessage, error) {
-	return c.conn.WaitForReplicationMessage(ctx)
+// WaitForReplicationMessage wraps pgconn.PgConn.ReceiveMessage
+func (c PgReplConnWrapper) ReceiveMessage(ctx context.Context) (pgproto3.BackendMessage, error) {
+	return c.conn.ReceiveMessage(ctx)
 }
 
-// StartReplication wraps pgx.ReplicationConn.StartReplication
-func (c PgReplConnWrapper) StartReplication(slotName string, startLsn uint64, timeline int64, pluginArguments ...string) (err error) {
-	return c.conn.StartReplication(slotName, startLsn, timeline, pluginArguments...)
+// StartReplication wraps pglogrepl.StartReplication
+func (c PgReplConnWrapper) StartReplication(ctx context.Context, slotName string, startLSN pglogrepl.LSN, options pglogrepl.StartReplicationOptions) error {
+	return pglogrepl.StartReplication(ctx, c.conn, slotName, startLSN, options)
 }
 
 // Close the connection
-func (c PgReplConnWrapper) Close() error {
-	return c.conn.Close()
+func (c PgReplConnWrapper) Close(ctx context.Context) error {
+	return c.conn.Close(ctx)
 }
 
-// CreateReplicationSlot wraps pgx.ReplicationConn.CreateReplicationSlot
-func (c PgReplConnWrapper) CreateReplicationSlot(slotName, outputPlugin string) (err error) {
-	return c.conn.CreateReplicationSlot(slotName, outputPlugin)
+// CreateReplicationSlot wraps pglogrepl.CreateReplicationSlot
+func (c PgReplConnWrapper) CreateReplicationSlot(
+	ctx context.Context,
+	slotName string,
+	outputPlugin string,
+	options pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error) {
+	return pglogrepl.CreateReplicationSlot(ctx, c.conn, slotName, outputPlugin, options)
 }
 
-// DropReplicationSlot wraps pgx.ReplicationConn.DropReplicationSlot
-func (c PgReplConnWrapper) DropReplicationSlot(slotName string) (err error) {
-	return c.conn.DropReplicationSlot(slotName)
-}
-
-// pgConnValid is merely used for testing whether a simple database connection can be established.
-func pgConnValid(sourceConfig pgx.ConnConfig) error {
-	conn, err := pgx.Connect(sourceConfig)
-	defer conn.Close()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+// DropReplicationSlot wraps pglogrepl.DropReplicationSlot
+func (c PgReplConnWrapper) DropReplicationSlot(ctx context.Context, slotName string, options pglogrepl.DropReplicationSlotOptions) error {
+	return pglogrepl.DropReplicationSlot(ctx, c.conn, slotName, options)
 }

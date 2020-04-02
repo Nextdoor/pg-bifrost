@@ -20,6 +20,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
+	"github.com/jackc/pgconn"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/filter"
@@ -35,7 +36,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/manager"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/cevaris/ordered_map"
-	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -68,7 +68,7 @@ type Runner struct {
 // New initializes replication connection with Postgres and sets up internal pipeline.
 
 func New(shutdownHandler shutdown.ShutdownHandler,
-	sourceConfig pgx.ConnConfig,
+	sourceConfig *pgconn.Config,
 	replicationSlot string,
 	clientConfig map[string]interface{},
 	filterConfig map[string]interface{},

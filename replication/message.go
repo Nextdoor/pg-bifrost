@@ -18,8 +18,7 @@ package replication
 
 import (
 	"github.com/Nextdoor/parselogical"
-	"github.com/jackc/pgx"
-	"github.com/pkg/errors"
+	"github.com/jackc/pglogrepl"
 )
 
 // WalMessage is the bifrost wal message struct we pass with stripped down fields.
@@ -34,16 +33,8 @@ type WalMessage struct {
 
 // PgxReplicationMessageToWalMessage is a converter and validator to turn pgx ReplicationMessages to the bifrost
 // format (which is stripped down).
-func PgxReplicationMessageToWalMessage(pgxMsg *pgx.ReplicationMessage) (*WalMessage, error) {
-	if pgxMsg == nil {
-		return &WalMessage{}, errors.New("pgx.ReplicationMessage is nil")
-	}
-
-	if pgxMsg.WalMessage == nil {
-		return &WalMessage{}, errors.New("pgx.ReplicationMessage.WalMessage is nil")
-	}
-
-	walString := string(pgxMsg.WalMessage.WalData)
+func PgxReplicationMessageToWalMessage(xld pglogrepl.XLogData) (*WalMessage, error) {
+	walString := string(xld.WALData)
 	pr := parselogical.NewParseResult(walString)
 
 	// Validate the ParseResult
@@ -59,10 +50,10 @@ func PgxReplicationMessageToWalMessage(pgxMsg *pgx.ReplicationMessage) (*WalMess
 	}
 
 	walMsg := WalMessage{
-		pgxMsg.WalMessage.WalStart,
-		pgxMsg.WalMessage.ServerWalEnd,
+		uint64(xld.WALStart),
+		uint64(xld.ServerWALEnd),
 		// Note that in current postgres versions (9,10,11) ServerTime is unset and comes through as 0
-		int64(pgxMsg.WalMessage.ServerTime),
+		int64(xld.ServerTime.Second()),
 		"",
 		pr,
 		"",

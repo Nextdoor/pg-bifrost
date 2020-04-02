@@ -12,14 +12,14 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package conn
 
 import (
 	"context"
-
-	"github.com/jackc/pgx"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgproto3"
 )
 
 // Conn is a interface which both our PgReplConnWrapper and pgx.ReplicationConn implement to help with gomocks
@@ -27,13 +27,17 @@ import (
 
 //go:generate mockgen -destination=mocks/mock_client.go -package=mocks github.com/Nextdoor/pg-bifrost.git/replication/client/conn Conn
 type Conn interface {
-	IsAlive() bool
-	SendStandbyStatus(status *pgx.StandbyStatus) error
-	WaitForReplicationMessage(ctx context.Context) (*pgx.ReplicationMessage, error)
-	StartReplication(slotName string, startLsn uint64, timeline int64, pluginArguments ...string) (err error)
-	CreateReplicationSlot(slotName, outputPlugin string) (err error)
-	DropReplicationSlot(slotName string) (err error)
-	Close() error
+	IsClosed() bool
+	SendStandbyStatus(ctx context.Context, status pglogrepl.StandbyStatusUpdate) error
+	ReceiveMessage(ctx context.Context) (pgproto3.BackendMessage, error)
+	StartReplication(ctx context.Context, slotName string, startLSN pglogrepl.LSN, options pglogrepl.StartReplicationOptions) error
+	Close(ctx context.Context) error
+	CreateReplicationSlot(
+		ctx context.Context,
+		slotName string,
+		outputPlugin string,
+		options pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error)
+	DropReplicationSlot(ctx context.Context, slotName string, options pglogrepl.DropReplicationSlotOptions) error
 }
 
 //go:generate mockgen -destination=mocks/mock_manager.go -package=mocks github.com/Nextdoor/pg-bifrost.git/replication/client/conn ManagerInterface
