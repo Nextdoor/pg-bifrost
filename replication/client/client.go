@@ -47,7 +47,7 @@ var (
 
 func init() {
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(logrus.InfoLevel)
 }
 
 type Replicator struct {
@@ -350,6 +350,19 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 				return
 			}
 
+			// If server isn't asking for a reply it's likely sending us a heartbeat
+			// that we requested. In this case we can ignore any heartbeats that
+			// don't ask for a reply.
+			if !pkm.ReplyRequested {
+				continue
+			}
+
+			log.Debug("server asked for a heartbeat")
+			if err := c.handleProgress(true); err != nil {
+				log.Error(err)
+				return
+			}
+
 			// Track when the last requested client heartbeat from server was. If the server
 			// asks for heartbeats rapidly assume this is a request to shutdown.
 			//
@@ -370,14 +383,6 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			}
 			lastClientHeartbeatRequestTime = now
 
-			// Send back a status if server asked for a keepalive
-			if pkm.ReplyRequested {
-				log.Debug("server asked for a heartbeat")
-				if err := c.handleProgress(true); err != nil {
-					log.Error(err)
-					return
-				}
-			}
 			continue
 		}
 
@@ -487,6 +492,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 					// Sleep here to prevent spinning.
 					time.Sleep(curSleep)
 					curSleep = curSleep * 2
+
 				}
 			}
 		}()
