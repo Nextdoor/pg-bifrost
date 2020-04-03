@@ -1194,8 +1194,11 @@ func TestHeartbeatRequested(t *testing.T) {
 
 	// server asks for heartbeat
 	progress0 := uint64(10)
-	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(1)
-	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).MinTimes(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Times(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(progress0), nil).Do(
+		func(_ interface{}) {
+			time.Sleep(1 * time.Second)
+		})
 
 	// expect to reply
 	status0 := pglogrepl.StandbyStatusUpdate{
@@ -1208,6 +1211,8 @@ func TestHeartbeatRequested(t *testing.T) {
 		})
 
 	go replicator.Start(progChan)
+
+	time.Sleep(10 * time.Millisecond)
 
 	// Wait for test to run
 	select {

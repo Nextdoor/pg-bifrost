@@ -43,6 +43,7 @@ require (
 	github.com/mattn/go-isatty v0.0.7
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rs/xid v1.2.1
