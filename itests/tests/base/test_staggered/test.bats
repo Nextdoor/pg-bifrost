@@ -1,5 +1,5 @@
 load ../../../common
 
 @test "base/test_staggered" {
-  do_test
+  SORT=false do_test
 }
