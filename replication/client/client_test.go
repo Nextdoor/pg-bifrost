@@ -205,7 +205,6 @@ func TestWalMessage(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
-
 }
 
 // TestReplicationError tests handling of error returned by WaitForReplicationMessage
@@ -249,6 +248,52 @@ func TestReplicationError(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+}
+
+// TestMsgNotCopyData tests handling of when the message is not of CopyData type.
+func TestMsgNotCopyData(t *testing.T) {
+	// Setup mock
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockConn := mocks.NewMockConn(mockCtrl)
+	mockManager := mocks.NewMockManagerInterface(mockCtrl)
+
+	// Setup channels
+	progChan := make(chan uint64, 10)
+	statsChan := make(chan stats.Stat, 1000)
+
+	sh := shutdown.NewShutdownHandler()
+	replicator := New(sh, statsChan, mockManager, 10)
+
+	// Setup return
+	serverWalEnd := uint64(111)
+
+	// Unexpected data
+	msg := pgproto3.AuthenticationSASL{}
+
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(&msg, nil).Times(1)
+	mockManager.EXPECT().Close().Times(1)
+
+	// Do test
+	go replicator.Start(progChan)
+
+	// Wait for replicator to run
+	time.Sleep(20 * time.Millisecond)
+
+	// Verify stats
+	expectedStats := []stats.Stat{}
+	stats.VerifyStats(t, statsChan, expectedStats)
+
+	select {
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "did not pass test in time")
+	case _, ok := <-replicator.outputChan:
+		if ok {
+			assert.Fail(t, "output channel not properly closed")
+		}
+	}
 }
 
 func TestNilMessage(t *testing.T) {

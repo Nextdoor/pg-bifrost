@@ -59,7 +59,7 @@ type Replicator struct {
 	overallProgress  uint64
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
-	stoppedChan     chan struct{}
+	stoppedChan      chan struct{}
 }
 
 // New a simple constructor to create a replication.client with postgres configurations.
@@ -99,7 +99,6 @@ func (c *Replicator) shutdown() {
 	}()
 	close(c.outputChan)
 
-
 	// Close stopped channel to signal stop
 	close(c.stoppedChan)
 }
@@ -112,7 +111,7 @@ func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 	lsn := pglogrepl.LSN(c.overallProgress)
 	status := pglogrepl.StandbyStatusUpdate{
 		WALWritePosition: lsn,
-		ReplyRequested: true,
+		ReplyRequested:   true,
 	}
 
 	var pgConn conn.Conn
@@ -237,7 +236,6 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		message, rplErr = pgConn.ReceiveMessage(replicationCtx)
 	}()
-
 
 	cd, ok := message.(*pgproto3.CopyData)
 	if !ok {
@@ -372,7 +370,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			heartbeatRequestDeltaTime += now.Sub(lastClientHeartbeatRequestTime)
 			heartbeatRequestCounter++
 
-			if heartbeatRequestDeltaTime < time.Millisecond * 100 && heartbeatRequestCounter > 5 {
+			if heartbeatRequestDeltaTime < time.Millisecond*100 && heartbeatRequestCounter > 5 {
 				log.Warnf("Server asked for heartbeat rapidly, assuming request to shutdown... request delta: %v", heartbeatRequestDeltaTime)
 				return
 			}
