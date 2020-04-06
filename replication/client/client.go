@@ -337,7 +337,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		cd, ok := message.(*pgproto3.CopyData)
 		if !ok {
 			log.Errorf("Received unexpected message: %#v", message)
-			continue
+			return
 		}
 
 		// Handle ServerHeartbeat and send keepalive
@@ -386,7 +386,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			continue
 		}
 
-		// Handle WalMessage
+		// Handle Wal Log data only. If it's anything else skip.
 		if cd.Data[0] != pglogrepl.XLogDataByteID {
 			continue
 		}
