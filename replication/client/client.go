@@ -18,6 +18,9 @@ package client
 
 import (
 	"context"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgproto3/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -27,7 +30,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/jackc/pgx"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -57,7 +59,7 @@ type Replicator struct {
 	overallProgress  uint64
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
-	stoppedChan     chan struct{}
+	stoppedChan      chan struct{}
 }
 
 // New a simple constructor to create a replication.client with postgres configurations.
@@ -86,8 +88,6 @@ func (c *Replicator) shutdown() {
 		log.Error("recovering from panic ", r)
 	}
 
-
-
 	log.Debug("closing replication connection")
 	c.connManager.Close()
 
@@ -99,30 +99,29 @@ func (c *Replicator) shutdown() {
 	}()
 	close(c.outputChan)
 
-
 	// Close stopped channel to signal stop
 	close(c.stoppedChan)
 }
 
 // sendProgressStatus sends a StandbyStatus (heartbeat) to postgres which lets it know where it can trim off
 // the wal replication slot, based on the overallProgress that this struct maintains.
-func (c *Replicator) sendProgressStatus() error {
+func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 	var err error
 
-	status, err := pgx.NewStandbyStatus(c.overallProgress)
-	status.ReplyRequested = 1
+	lsn := pglogrepl.LSN(c.overallProgress)
+	status := pglogrepl.StandbyStatusUpdate{
+		WALWritePosition: lsn,
+		ReplyRequested:   true,
+	}
+
+	var pgConn conn.Conn
+	pgConn, err = c.connManager.GetConn(ctx)
+
 	if err != nil {
 		return err
 	}
 
-	var conn conn.Conn
-	conn, err = c.connManager.GetConn()
-
-	if err != nil {
-		return err
-	}
-
-	err = conn.SendStandbyStatus(status)
+	err = pgConn.SendStandbyStatus(ctx, status)
 	if err != nil {
 		return err
 	}
@@ -131,7 +130,7 @@ func (c *Replicator) sendProgressStatus() error {
 	if time.Now().UnixNano()-logProgressInterval > c.progressLastSent {
 		c.progressLastSent = time.Now().UnixNano()
 		log.Infof("sent progress LSN: %s / %d",
-			pgx.FormatLSN(c.overallProgress),
+			lsn,
 			c.overallProgress)
 	}
 
@@ -187,7 +186,7 @@ func (c *Replicator) handleProgress(force bool) error {
 		}
 
 		// Send the progress
-		if err := c.sendProgressStatus(); err != nil {
+		if err := c.sendProgressStatus(c.shutdownHandler.TerminateCtx); err != nil {
 			return err
 		}
 	}
@@ -195,7 +194,7 @@ func (c *Replicator) handleProgress(force bool) error {
 	return nil
 }
 
-// Start loops on serially updating overallProgress from the progress channel, reading in a pgx.ReplicationMessages
+// Start loops on serially updating overallProgress from the progress channel, reading in a pglogrepl.XLogData
 // from the API, and sending out converted replication.WalMessages on the output Channel. Additionally it sends back a
 // StandbyStatus when requested from postgres.
 // Start needs to be provided a progressChan because we need to initialize all the modules first to produce a
@@ -206,8 +205,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	log.Info("Starting")
 	c.progressChan = progressChan
 
-	var conn conn.Conn
-	var message *pgx.ReplicationMessage
+	var pgConn conn.Conn
+	var message pgproto3.BackendMessage
 	var rplErr error
 
 	var transaction string
@@ -218,12 +217,12 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var sawCommit bool
 
 	// Tracking of heartbeat requests
-	var lastClientHeartbeatRequestTime time.Time
+	var lastClientHeartbeatRequestTime = time.Now()
 	var heartbeatRequestDeltaTime time.Duration
 	var heartbeatRequestCounter int
 
 	// Get a connection
-	conn, rplErr = c.connManager.GetConn()
+	pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
 	if rplErr != nil {
 		log.Error(rplErr.Error())
 		return
@@ -235,19 +234,30 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second)
 		defer cancelFn()
 
-		message, rplErr = conn.WaitForReplicationMessage(replicationCtx)
+		message, rplErr = pgConn.ReceiveMessage(replicationCtx)
 	}()
 
-	if message == nil || message.ServerHeartbeat == nil {
+	cd, ok := message.(*pgproto3.CopyData)
+	if !ok {
+		log.Errorf("Received unexpected message: %#v", message)
+		return
+	}
+
+	if cd.Data[0] != pglogrepl.PrimaryKeepaliveMessageByteID {
 		log.Error("server did not send a heartbeat as the first message")
 		return
 	}
 
+	pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(cd.Data[1:])
+	if err != nil {
+		log.WithError(err).Error("unable to parse keepalive")
+	}
+
 	// Set overall status to that of server's location
 	log.Infof("replication slot LSN: %s / %d",
-		pgx.FormatLSN(message.ServerHeartbeat.ServerWalEnd),
-		message.ServerHeartbeat.ServerWalEnd)
-	c.overallProgress = message.ServerHeartbeat.ServerWalEnd
+		pkm.ServerWALEnd,
+		uint64(pkm.ServerWALEnd))
+	c.overallProgress = uint64(pkm.ServerWALEnd)
 
 	// Ticker to force update of progress
 	ticker := time.NewTicker(10 * time.Second)
@@ -280,7 +290,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		conn, rplErr = c.connManager.GetConn()
+		pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
 		if rplErr != nil {
 			log.Error(rplErr.Error())
 			return
@@ -288,43 +298,78 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Setup a timeout and then read from replication slot on server
 		func() {
-			replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second) // TODO should this branch from our context?
+			replicationCtx, cancelFn := context.WithTimeout(c.shutdownHandler.TerminateCtx, 5*time.Second)
 			defer cancelFn()
 
-			message, rplErr = conn.WaitForReplicationMessage(replicationCtx)
+			message, rplErr = pgConn.ReceiveMessage(replicationCtx)
 		}()
 
 		// Check for error and connection status
 		if rplErr != nil {
-			// check if deadline was exceeded
-			if rplErr.Error() == "context deadline exceeded" {
-				log.Debug("deadline exceeded")
-
-				// Send a keepalive whenever deadline is exceeded. This keeps
-				// the connection alive when there are no new messages from
-				// postgres.
+			if pgconn.Timeout(rplErr) {
 				if err := c.handleProgress(true); err != nil {
 					log.Error(err)
 					return
 				}
+
 				continue
 			}
 
+			log.WithError(rplErr).Warn("handling replication error")
+
 			// TODO(#8): what about other types of errors?
-			if !conn.IsAlive() {
+			if pgConn.IsClosed() {
 				log.Warn("connection was closed")
 				continue
 			}
+
+			return
 		}
 
+		// Begin reading message
 		if message == nil {
 			log.Debug("message was nil")
 			continue
 		}
 
+		// Handle different types of messages
+		switch t := message.(type) {
+		case *pgproto3.CopyData:
+			cd = t
+		case *pgproto3.ParameterStatus:
+			continue
+		case *pgproto3.ParameterDescription:
+			continue
+		case *pgproto3.ErrorResponse:
+			log.Errorf("Received error: %#v", t)
+			return
+		default:
+			log.Errorf("Received unexpected message: %#v", message)
+			return
+		}
+
 		// Handle ServerHeartbeat and send keepalive
-		if message.ServerHeartbeat != nil && message.ServerHeartbeat.ReplyRequested == 1 {
-			log.Debug("server asked for heartbeat")
+		if cd.Data[0] == pglogrepl.PrimaryKeepaliveMessageByteID {
+			log.Debug("server sent a heartbeat")
+
+			pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(cd.Data[1:])
+			if err != nil {
+				log.WithError(err).Error("unable to parse keepalive")
+				return
+			}
+
+			// If server isn't asking for a reply it's likely sending us a heartbeat
+			// that we requested. In this case we can ignore any heartbeats that
+			// don't ask for a reply.
+			if !pkm.ReplyRequested {
+				continue
+			}
+
+			log.Debug("server asked for a heartbeat")
+			if err := c.handleProgress(true); err != nil {
+				log.Error(err)
+				return
+			}
 
 			// Track when the last requested client heartbeat from server was. If the server
 			// asks for heartbeats rapidly assume this is a request to shutdown.
@@ -335,8 +380,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			heartbeatRequestDeltaTime += now.Sub(lastClientHeartbeatRequestTime)
 			heartbeatRequestCounter++
 
-			if heartbeatRequestDeltaTime < time.Millisecond * 100 && heartbeatRequestCounter > 5 {
-				log.Warn("Server asked for heartbeat rapidly, assuming request to shutdown...")
+			if heartbeatRequestDeltaTime < time.Millisecond*100 && heartbeatRequestCounter > 5 {
+				log.Warnf("Server asked for heartbeat rapidly, assuming request to shutdown... request delta: %v", heartbeatRequestDeltaTime)
 				return
 			}
 
@@ -346,19 +391,22 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			}
 			lastClientHeartbeatRequestTime = now
 
-			if err := c.handleProgress(true); err != nil {
-				log.Error(err)
-				return
-			}
-			// TODO(#7): check if a message can contain both WalMessage and ServerHeartbeat
-		}
-
-		// Handle WalMessage
-		if message.WalMessage == nil {
 			continue
 		}
 
-		wal, err := replication.PgxReplicationMessageToWalMessage(message)
+		// Handle Wal Log data only. If it's anything else skip.
+		if cd.Data[0] != pglogrepl.XLogDataByteID {
+			continue
+		}
+
+		xld, err := pglogrepl.ParseXLogData(cd.Data[1:])
+		if err != nil {
+			log.Error(err)
+			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
+			return
+		}
+
+		wal, err := replication.XLogDataToWalMessage(xld)
 		if err != nil {
 			log.Error(err)
 			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
@@ -406,7 +454,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			// both BEGIN and COMMIT.
 			if !sawCommit && !firstIteration {
 				log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
-					pgx.FormatLSN(highestWalStart),
+					pglogrepl.LSN(highestWalStart),
 					highestWalStart)
 
 				// Closing the connection will make postgres resend everything that hs not been
@@ -452,6 +500,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 					// Sleep here to prevent spinning.
 					time.Sleep(curSleep)
 					curSleep = curSleep * 2
+
 				}
 			}
 		}()

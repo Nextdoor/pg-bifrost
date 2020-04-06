@@ -17,8 +17,9 @@
 package conn
 
 import (
-	"github.com/cenkalti/backoff"
-	"github.com/jackc/pgx"
+	"context"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pglogrepl"
 	"github.com/sirupsen/logrus"
 	"os"
 	"time"
@@ -37,13 +38,13 @@ func init() {
 
 // Manager here allows us to wrap our postgres connection for connection refreshes and ease of testing.
 type Manager struct {
-	sourceConfig    pgx.ConnConfig
+	sourceConfig    *pgconn.Config
 	conn            Conn
 	replicationSlot string
 }
 
 // NewManager simply returns a new Manager with the provided configuration.
-func NewManager(sourceConfig pgx.ConnConfig, replicationSlot string) ManagerInterface {
+func NewManager(sourceConfig *pgconn.Config, replicationSlot string) ManagerInterface {
 	return &Manager{sourceConfig: sourceConfig,
 		conn:            nil,
 		replicationSlot: replicationSlot}
@@ -51,20 +52,19 @@ func NewManager(sourceConfig pgx.ConnConfig, replicationSlot string) ManagerInte
 
 // GetConn idempotently returns an instance of a connection. It will make sure to re-connect if
 // it is expired. This connection will have replication automatically started on it.
-func (m *Manager) GetConn() (Conn, error) {
+func (m *Manager) GetConn(ctx context.Context) (Conn, error) {
 	// Create a new connection
-	if m.conn == nil || !m.conn.IsAlive() {
+	if m.conn == nil || m.conn.IsClosed() {
 
 		// Get a new connection
-		conn, err := GetRawConn(m.sourceConfig)
+		conn, err := NewConnWithRetry(ctx, m.sourceConfig)
 
 		if err != nil {
 			return nil, err
 		}
 
 		// Start replication on the connection
-		err = conn.StartReplication(m.replicationSlot, 0, -1)
-
+		err = conn.StartReplication(context.Background(), m.replicationSlot, 0, pglogrepl.StartReplicationOptions{PluginArgs: []string{}})
 		if err != nil {
 			return nil, err
 		}
@@ -81,38 +81,7 @@ func (m *Manager) Close() {
 		return
 	}
 
-	m.conn.Close()
+	m.conn.Close(context.Background())
 	m.conn = nil
 }
 
-// GetRawConn wraps pgx.ReplicationConnect with a retry loop. It returns a
-// new replication connection without starting replication.
-func GetRawConn(sourceConfig pgx.ConnConfig) (Conn, error) {
-	var conn *pgx.ReplicationConn
-	var err error
-
-	retryPolicy := &backoff.ExponentialBackOff{
-		InitialInterval:     backoff.DefaultInitialInterval,
-		RandomizationFactor: backoff.DefaultRandomizationFactor,
-		Multiplier:          backoff.DefaultMultiplier,
-		MaxInterval:         backoff.DefaultMaxInterval,
-		MaxElapsedTime:      time.Second * 20,
-		Clock:               backoff.SystemClock,
-	}
-
-	operation := func() error {
-		log.Infof("Attempting to create a connection to %s on %d", sourceConfig.Host,
-			sourceConfig.Port)
-
-		conn, err = pgx.ReplicationConnect(sourceConfig)
-		return err
-	}
-
-	err = backoff.Retry(operation, retryPolicy)
-	if err != nil {
-		// Handle error.
-		return nil, err
-	}
-
-	return conn, err
-}

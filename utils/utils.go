@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/cevaris/ordered_map"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pglogrepl"
 	"github.com/pkg/errors"
 	"hash/crc32"
+
+	"context"
 )
 
 // QuickHash buckets the string into i buckets based on crc32 hashing
@@ -32,14 +35,19 @@ func QuickHash(s string, i int) int {
 }
 
 // PgCreateReplicationSlot is a util to create a replication slot
-func PgCreateReplicationSlot(sourceConfig pgx.ConnConfig, slot string) error {
-	rplConn, err := conn.GetRawConn(sourceConfig)
+func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
+	rplConn, err := conn.NewConnWithRetry(ctx, sourceConfig)
 	if err != nil {
 		return err
 	}
-	defer rplConn.Close()
+	defer rplConn.Close(ctx)
 
-	err = rplConn.CreateReplicationSlot(slot, "test_decoding")
+	_, err = rplConn.IdentifySystem(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to Identify System")
+	}
+
+	_, err = rplConn.CreateReplicationSlot(ctx, slot, "test_decoding", pglogrepl.CreateReplicationSlotOptions{Temporary: false})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create slot %s", slot)
 	}
@@ -48,14 +56,19 @@ func PgCreateReplicationSlot(sourceConfig pgx.ConnConfig, slot string) error {
 }
 
 // PgDropReplicationSlot is a util to drop a replication slot
-func PgDropReplicationSlot(sourceConfig pgx.ConnConfig, slot string) error {
-	rplConn, err := conn.GetRawConn(sourceConfig)
+func PgDropReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, slot string) error {
+	rplConn, err := conn.NewConnWithRetry(ctx, sourceConfig)
 	if err != nil {
 		return err
 	}
-	defer rplConn.Close()
+	defer rplConn.Close(ctx)
 
-	err = rplConn.DropReplicationSlot(slot)
+	_, err = rplConn.IdentifySystem(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to Identify System")
+	}
+
+	err = rplConn.DropReplicationSlot(ctx, slot, pglogrepl.DropReplicationSlotOptions{Wait: true})
 	if err != nil {
 		return errors.Wrapf(err, "unable to drop slot %s", slot)
 	}
