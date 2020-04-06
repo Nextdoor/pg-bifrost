@@ -334,6 +334,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Handle different types of messages
 		switch t := message.(type) {
+		case *pgproto3.CopyData:
+			cd = t
 		case *pgproto3.ParameterStatus:
 			continue
 		case *pgproto3.ParameterDescription:
@@ -341,8 +343,6 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		case *pgproto3.ErrorResponse:
 			log.Errorf("Received error: %#v", t)
 			return
-		case *pgproto3.CopyData:
-			cd = t
 		default:
 			log.Errorf("Received unexpected message: %#v", message)
 			return
@@ -406,7 +406,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			return
 		}
 
-		wal, err := replication.PgxReplicationMessageToWalMessage(xld)
+		wal, err := replication.XLogDataToWalMessage(xld)
 		if err != nil {
 			log.Error(err)
 			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())

@@ -171,7 +171,7 @@ func TestWalMessage(t *testing.T) {
 	cd, _ := backendMessage.(*pgproto3.CopyData)
 	xld, _ := pglogrepl.ParseXLogData(cd.Data[1:])
 
-	expected, _ := replication.PgxReplicationMessageToWalMessage(xld)
+	expected, _ := replication.XLogDataToWalMessage(xld)
 
 	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
 

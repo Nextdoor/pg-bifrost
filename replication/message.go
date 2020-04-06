@@ -31,9 +31,9 @@ type WalMessage struct {
 	PartitionKey string
 }
 
-// PgxReplicationMessageToWalMessage is a converter and validator to turn pgx ReplicationMessages to the bifrost
+// XLogDataToWalMessage is a converter and validator to turn pglogrepl.XLogData to the bifrost
 // format (which is stripped down).
-func PgxReplicationMessageToWalMessage(xld pglogrepl.XLogData) (*WalMessage, error) {
+func XLogDataToWalMessage(xld pglogrepl.XLogData) (*WalMessage, error) {
 	walString := string(xld.WALData)
 	pr := parselogical.NewParseResult(walString)
 

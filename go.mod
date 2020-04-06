@@ -26,11 +26,8 @@ require (
 	github.com/jackc/pglogrepl v0.0.0-20200309144228-32ec418076b3
 	github.com/jackc/pgmock v0.0.0-20190831213851-13a1b77aafa2
 	github.com/jackc/pgpassfile v1.0.0
-	github.com/jackc/pgproto3 v1.1.0
 	github.com/jackc/pgproto3/v2 v2.0.0
 	github.com/jackc/pgtype v0.0.0-20190828014616-a8802b16cc59
-	github.com/jackc/pgx v3.6.2+incompatible
-	github.com/jackc/pgx/v4 v4.0.0-pre1.0.20190824185557-6972a5742186
 	github.com/jackc/puddle v0.0.0-20190608224051-11cab39313c9
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
 	github.com/json-iterator/go v1.1.8
