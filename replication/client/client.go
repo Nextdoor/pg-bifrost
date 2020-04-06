@@ -332,8 +332,18 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			continue
 		}
 
-		cd, ok := message.(*pgproto3.CopyData)
-		if !ok {
+		// Handle different types of messages
+		switch t := message.(type) {
+		case *pgproto3.ParameterStatus:
+			continue
+		case *pgproto3.ParameterDescription:
+			continue
+		case *pgproto3.ErrorResponse:
+			log.Errorf("Received error: %#v", t)
+			return
+		case *pgproto3.CopyData:
+			cd = t
+		default:
 			log.Errorf("Received unexpected message: %#v", message)
 			return
 		}
