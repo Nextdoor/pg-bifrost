@@ -1,5 +1,5 @@
 load ../../../common
 
-@test "system/test_basic" {
+@test "base/test_repl_error" {
   do_test
 }

@@ -135,7 +135,7 @@ func (c *Replicator) sendProgressStatus(ctx context.Context) error {
 	}
 
 	var pgConn conn.Conn
-	pgConn, err = c.connManager.GetConn(ctx)
+	pgConn, err = c.connManager.GetConnWithStartLsn(ctx, c.highestWalStart)
 
 	if err != nil {
 		return err
@@ -230,7 +230,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var rplErr error
 
 	// Get a connection
-	pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+	pgConn, rplErr = c.connManager.GetConnWithStartLsn(c.shutdownHandler.TerminateCtx, 0)
 	if rplErr != nil {
 		log.Error(rplErr.Error())
 		return
@@ -298,7 +298,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+		pgConn, rplErr = c.connManager.GetConnWithStartLsn(c.shutdownHandler.TerminateCtx, c.highestWalStart)
 		if rplErr != nil {
 			log.WithError(rplErr).Error("fatal")
 			return
@@ -356,8 +356,15 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		case *pgproto3.ParameterDescription:
 			continue
 		case *pgproto3.ErrorResponse:
-			log.Errorf("Received error: %#v", t)
-			return
+			log.Errorf("Attempting to recover after error: %#v", t)
+
+			err := c.recoverFromErrorResponse()
+			if err != nil {
+				log.WithError(err).Error("unable to recover...")
+				return
+			}
+
+			continue
 		default:
 			log.Errorf("Received unexpected message: %#v", message)
 			return
@@ -368,6 +375,42 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			return
 		}
 	}
+}
+
+// recoverFromErrorResponse attempts to recover from fatal replication errors by
+// advancing the replication to the current LSN the server is on. Note that this
+// will cause a gap in data if new data has come in after the replication error
+// but before we've had a chance to recover.
+func (c *Replicator) recoverFromErrorResponse() error {
+	// Close the old connection first because it's broken at this point
+	c.connManager.Close()
+
+	// Request a new connection that will be used just during recovery
+	tmpConn, err := c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+
+	if err != nil {
+		return err
+	}
+
+	// Calling IdentifySystem tells us what the LSN the server is on
+	sysident, err := tmpConn.IdentifySystem(c.shutdownHandler.TerminateCtx)
+	if err != nil {
+		return err
+	}
+
+	log.Warnf("Advancing WAL location from %s to %s",
+		pglogrepl.LSN(c.highestWalStart),
+		sysident.XLogPos)
+
+	c.highestWalStart = uint64(sysident.XLogPos)
+	c.sawCommit = false
+	c.firstIteration = true
+
+	// It's critical to close the connection provided by the connection manager because
+	// we don't want to have it re-used by the replication portion of the client.
+	c.connManager.Close()
+
+	return nil
 }
 
 func (c *Replicator) handlePrimaryKeepaliveMessage(data []byte) error {
@@ -515,7 +558,6 @@ func (c *Replicator) handleXLogData(data []byte) error {
 				// Sleep here to prevent spinning.
 				time.Sleep(curSleep)
 				curSleep = curSleep * 2
-
 			}
 		}
 	}()
