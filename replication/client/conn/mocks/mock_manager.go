@@ -60,3 +60,18 @@ func (mr *MockManagerInterfaceMockRecorder) GetConn(arg0 interface{}) *gomock.Ca
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockManagerInterface)(nil).GetConn), arg0)
 }
+
+// GetConnWithStartLsn mocks base method
+func (m *MockManagerInterface) GetConnWithStartLsn(arg0 context.Context, arg1 uint64) (conn.Conn, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConnWithStartLsn", arg0, arg1)
+	ret0, _ := ret[0].(conn.Conn)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConnWithStartLsn indicates an expected call of GetConnWithStartLsn
+func (mr *MockManagerInterfaceMockRecorder) GetConnWithStartLsn(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnWithStartLsn", reflect.TypeOf((*MockManagerInterface)(nil).GetConnWithStartLsn), arg0, arg1)
+}
