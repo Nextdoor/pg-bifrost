@@ -53,6 +53,15 @@ func NewManager(sourceConfig *pgconn.Config, replicationSlot string) ManagerInte
 // GetConn idempotently returns an instance of a connection. It will make sure to re-connect if
 // it is expired. This connection will have replication automatically started on it.
 func (m *Manager) GetConn(ctx context.Context) (Conn, error) {
+	return m.getConn(ctx, 0)
+}
+
+// GetConnWithStartLsn is the same as GetConn but allows setting the start LSN location
+func (m *Manager) GetConnWithStartLsn(ctx context.Context, startLsn uint64) (Conn, error) {
+	return m.getConn(ctx, startLsn)
+}
+
+func (m *Manager) getConn(ctx context.Context, startLsn uint64) (Conn, error) {
 	// Create a new connection
 	if m.conn == nil || m.conn.IsClosed() {
 
@@ -64,7 +73,7 @@ func (m *Manager) GetConn(ctx context.Context) (Conn, error) {
 		}
 
 		// Start replication on the connection
-		err = conn.StartReplication(context.Background(), m.replicationSlot, 0, pglogrepl.StartReplicationOptions{PluginArgs: []string{}})
+		err = conn.StartReplication(context.Background(), m.replicationSlot, pglogrepl.LSN(startLsn), pglogrepl.StartReplicationOptions{PluginArgs: []string{}})
 		if err != nil {
 			return nil, err
 		}

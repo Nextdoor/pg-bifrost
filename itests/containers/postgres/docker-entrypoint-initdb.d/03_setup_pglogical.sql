@@ -1,0 +1,1 @@
+ALTER system SET shared_preload_libraries = 'pglogical';

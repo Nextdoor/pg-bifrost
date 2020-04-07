@@ -51,15 +51,26 @@ func init() {
 }
 
 type Replicator struct {
-	shutdownHandler shutdown.ShutdownHandler
-	connManager     conn.ManagerInterface
-	statsChan       chan stats.Stat
-	progressChan    <-chan uint64
-
+	shutdownHandler  shutdown.ShutdownHandler
+	connManager      conn.ManagerInterface
+	statsChan        chan stats.Stat
+	progressChan     <-chan uint64
 	overallProgress  uint64
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
 	stoppedChan      chan struct{}
+
+	// handlePrimaryKeepaliveMessage
+	lastClientHeartbeatRequestTime time.Time
+	heartbeatRequestDeltaTime      time.Duration
+	heartbeatRequestCounter        int
+
+	// handleXLogData
+	transaction     string
+	timeBasedKey    string
+	highestWalStart uint64
+	firstIteration  bool
+	sawCommit       bool
 }
 
 // New a simple constructor to create a replication.client with postgres configurations.
@@ -76,6 +87,15 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		outputChan:       make(chan *replication.WalMessage, clientBufferSize),
 		progressLastSent: int64(0),
 		stoppedChan:      make(chan struct{}),
+
+		// handlePrimaryKeepaliveMessage
+		lastClientHeartbeatRequestTime: time.Now(),
+		heartbeatRequestCounter:        0,
+		heartbeatRequestDeltaTime:      0,
+
+		// handleXLogData
+		firstIteration: true,
+		sawCommit:      false,
 	}
 }
 
@@ -209,18 +229,6 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	var message pgproto3.BackendMessage
 	var rplErr error
 
-	var transaction string
-	var timeBasedKey string
-	var highestWalStart uint64
-
-	var firstIteration = true
-	var sawCommit bool
-
-	// Tracking of heartbeat requests
-	var lastClientHeartbeatRequestTime = time.Now()
-	var heartbeatRequestDeltaTime time.Duration
-	var heartbeatRequestCounter int
-
 	// Get a connection
 	pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
 	if rplErr != nil {
@@ -290,7 +298,8 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+		//pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+		pgConn, _ = c.connManager.GetConnWithStartLsn(c.shutdownHandler.TerminateCtx, c.highestWalStart)
 		if rplErr != nil {
 			log.Error(rplErr.Error())
 			return
@@ -335,7 +344,14 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		// Handle different types of messages
 		switch t := message.(type) {
 		case *pgproto3.CopyData:
-			cd = t
+			switch t.Data[0] {
+			case pglogrepl.PrimaryKeepaliveMessageByteID:
+				err = c.handlePrimaryKeepaliveMessage(t.Data[1:])
+			case pglogrepl.XLogDataByteID:
+				err = c.handleXLogData(t.Data[1:])
+			default:
+				continue
+			}
 		case *pgproto3.ParameterStatus:
 			continue
 		case *pgproto3.ParameterDescription:
@@ -348,170 +364,169 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			return
 		}
 
-		// Handle ServerHeartbeat and send keepalive
-		if cd.Data[0] == pglogrepl.PrimaryKeepaliveMessageByteID {
-			log.Debug("server sent a heartbeat")
-
-			pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(cd.Data[1:])
-			if err != nil {
-				log.WithError(err).Error("unable to parse keepalive")
-				return
-			}
-
-			// If server isn't asking for a reply it's likely sending us a heartbeat
-			// that we requested. In this case we can ignore any heartbeats that
-			// don't ask for a reply.
-			if !pkm.ReplyRequested {
-				continue
-			}
-
-			log.Debug("server asked for a heartbeat")
-			if err := c.handleProgress(true); err != nil {
-				log.Error(err)
-				return
-			}
-
-			// Track when the last requested client heartbeat from server was. If the server
-			// asks for heartbeats rapidly assume this is a request to shutdown.
-			//
-			// Shutdown if server asks for heartbeat more than 5 times with less than 100ms
-			// between all requests.
-			now := time.Now()
-			heartbeatRequestDeltaTime += now.Sub(lastClientHeartbeatRequestTime)
-			heartbeatRequestCounter++
-
-			if heartbeatRequestDeltaTime < time.Millisecond*100 && heartbeatRequestCounter > 5 {
-				log.Warnf("Server asked for heartbeat rapidly, assuming request to shutdown... request delta: %v", heartbeatRequestDeltaTime)
-				return
-			}
-
-			if heartbeatRequestCounter > 5 {
-				heartbeatRequestCounter = 0
-				heartbeatRequestDeltaTime = 0
-			}
-			lastClientHeartbeatRequestTime = now
-
-			continue
-		}
-
-		// Handle Wal Log data only. If it's anything else skip.
-		if cd.Data[0] != pglogrepl.XLogDataByteID {
-			continue
-		}
-
-		xld, err := pglogrepl.ParseXLogData(cd.Data[1:])
 		if err != nil {
-			log.Error(err)
-			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
+			log.WithError(err).Error("fatal")
 			return
 		}
-
-		wal, err := replication.XLogDataToWalMessage(xld)
-		if err != nil {
-			log.Error(err)
-			c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
-			return
-		}
-
-		// Keep track of the latest seen CommitWalStart of the COMMITs. This should be increasing
-		// but in the case postgres re-sends data this will tell us number of duplicate
-		// transactions it has sent.
-		if wal.Pr.Operation == "COMMIT" {
-			c.statsChan <- stats.NewStatCount("replication", "txns", 1, time.Now().UnixNano())
-			if highestWalStart < wal.WalStart {
-				highestWalStart = wal.WalStart
-			} else {
-				c.statsChan <- stats.NewStatCount("replication", "txns_dup", 1, time.Now().UnixNano())
-			}
-
-			sawCommit = true
-		}
-
-		// It's possible that we can see the same transaction (even partially) twice from postgres.
-		//
-		// Transaction ids are only sent on BEGIN/COMMIT. Here we keep track of the
-		// latest BEGIN and set the transaction id for the subsequent messages to
-		// that of the BEGIN.
-		//
-		// Additionally, we stamp a timeBasedKey on all messages in any given transaction
-		// from the nanosecond time of the BEGIN so that we can identify temporally different
-		// instances of the same transaction. This allows us to see later down the line whether
-		// we are receiving the same transaction again so that we can update our ledger to the
-		// latest instance of the transaction, and ignore the ledger entries from the old instance.
-		if wal.Pr.Operation == "BEGIN" {
-			// Update the transaction marker
-			transaction = wal.Pr.Transaction
-
-			// Update the time marker
-			var strs []string
-			strs = append(strs, transaction)
-			strs = append(strs, "-")
-			strs = append(strs, strconv.FormatInt(time.Now().UnixNano(), 10))
-			timeBasedKey = strings.Join(strs, "")
-
-			// If we are at a BEGIN ensure that a COMMIT was seen. This ensures that we never
-			// progress reading until a transaction is fully "closed" on our end by having seen
-			// both BEGIN and COMMIT.
-			if !sawCommit && !firstIteration {
-				log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
-					pglogrepl.LSN(highestWalStart),
-					highestWalStart)
-
-				// Closing the connection will make postgres resend everything that hs not been
-				// acknowledged.
-				c.connManager.Close()
-
-				sawCommit = false
-				firstIteration = true
-				continue
-			}
-
-			// Reset state to look for next commit
-			sawCommit = false
-
-			// After the first begin is seen then we are no longer on the first iteration
-			firstIteration = false
-		}
-
-		wal.Pr.Transaction = transaction
-		wal.TimeBasedKey = timeBasedKey
-
-		// Attempt to write to channel. If full then send a keepalive and attempt
-		// to write to channel again.
-		err = func() error {
-			var curSleep = initialSleep
-
-			for {
-				select {
-				case c.outputChan <- wal:
-					// Break out to read the next message
-					return nil
-				default:
-					// Send keepalive if channel is full
-					if err := c.handleProgress(true); err != nil {
-						// propagate error
-						return err
-					}
-
-					if curSleep > maxSleep {
-						curSleep = initialSleep
-					}
-
-					// Sleep here to prevent spinning.
-					time.Sleep(curSleep)
-					curSleep = curSleep * 2
-
-				}
-			}
-		}()
-
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		c.statsChan <- stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())
 	}
+}
+
+func (c *Replicator) handlePrimaryKeepaliveMessage(data []byte) error {
+	// Handle ServerHeartbeat and send keepalive
+	log.Debug("server sent a heartbeat")
+
+	pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(data)
+	if err != nil {
+		log.WithError(err).Error("unable to parse keepalive")
+		return err
+	}
+
+	// If server isn't asking for a reply it's likely sending us a heartbeat
+	// that we requested. In this case we can ignore any heartbeats that
+	// don't ask for a reply.
+	if !pkm.ReplyRequested {
+		return nil
+	}
+
+	log.Debug("server asked for a heartbeat")
+	if err := c.handleProgress(true); err != nil {
+		return err
+	}
+
+	// Track when the last requested client heartbeat from server was. If the server
+	// asks for heartbeats rapidly assume this is a request to shutdown.
+	//
+	// Shutdown if server asks for heartbeat more than 5 times with less than 100ms
+	// between all requests.
+	now := time.Now()
+	c.heartbeatRequestDeltaTime += now.Sub(c.lastClientHeartbeatRequestTime)
+	c.heartbeatRequestCounter++
+
+	if c.heartbeatRequestDeltaTime < time.Millisecond*100 && c.heartbeatRequestCounter > 5 {
+		return errors.New("Server asked for heartbeat rapidly, assuming request to shutdown...")
+	}
+
+	if c.heartbeatRequestCounter > 5 {
+		c.heartbeatRequestCounter = 0
+		c.heartbeatRequestDeltaTime = 0
+	}
+	c.lastClientHeartbeatRequestTime = now
+
+	return nil
+}
+
+func (c *Replicator) handleXLogData(data []byte) error {
+	xld, err := pglogrepl.ParseXLogData(data)
+	if err != nil {
+		log.Error(err)
+		c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
+		return nil
+	}
+
+	wal, err := replication.XLogDataToWalMessage(xld)
+	if err != nil {
+		c.statsChan <- stats.NewStatCount("replication", "invalid_msg", 1, time.Now().UnixNano())
+		return err
+	}
+
+	// Keep track of the latest seen CommitWalStart of the COMMITs. This should be increasing
+	// but in the case postgres re-sends data this will tell us number of duplicate
+	// transactions it has sent.
+	if wal.Pr.Operation == "COMMIT" {
+		c.statsChan <- stats.NewStatCount("replication", "txns", 1, time.Now().UnixNano())
+		if c.highestWalStart < wal.WalStart {
+			c.highestWalStart = wal.WalStart
+		} else {
+			c.statsChan <- stats.NewStatCount("replication", "txns_dup", 1, time.Now().UnixNano())
+		}
+
+		c.sawCommit = true
+	}
+
+	// It's possible that we can see the same transaction (even partially) twice from postgres.
+	//
+	// Transaction ids are only sent on BEGIN/COMMIT. Here we keep track of the
+	// latest BEGIN and set the transaction id for the subsequent messages to
+	// that of the BEGIN.
+	//
+	// Additionally, we stamp a timeBasedKey on all messages in any given transaction
+	// from the nanosecond time of the BEGIN so that we can identify temporally different
+	// instances of the same transaction. This allows us to see later down the line whether
+	// we are receiving the same transaction again so that we can update our ledger to the
+	// latest instance of the transaction, and ignore the ledger entries from the old instance.
+	if wal.Pr.Operation == "BEGIN" {
+		// Update the transaction marker
+		c.transaction = wal.Pr.Transaction
+
+		// Update the time marker
+		var strs []string
+		strs = append(strs, c.transaction)
+		strs = append(strs, "-")
+		strs = append(strs, strconv.FormatInt(time.Now().UnixNano(), 10))
+		c.timeBasedKey = strings.Join(strs, "")
+
+		// If we are at a BEGIN ensure that a COMMIT was seen. This ensures that we never
+		// progress reading until a transaction is fully "closed" on our end by having seen
+		// both BEGIN and COMMIT.
+		if !c.sawCommit && !c.firstIteration {
+			log.Errorf("Saw a BEGIN but no associated commit. Highest COMMIT lsn seen was %s / %d",
+				pglogrepl.LSN(c.highestWalStart),
+				c.highestWalStart)
+
+			// Closing the connection will make postgres resend everything that hs not been
+			// acknowledged.
+			c.connManager.Close()
+
+			c.sawCommit = false
+			c.firstIteration = true
+			return nil
+		}
+
+		// Reset state to look for next commit
+		c.sawCommit = false
+
+		// After the first begin is seen then we are no longer on the first iteration
+		c.firstIteration = false
+	}
+
+	wal.Pr.Transaction = c.transaction
+	wal.TimeBasedKey = c.timeBasedKey
+
+	// Attempt to write to channel. If full then send a keepalive and attempt
+	// to write to channel again.
+	err = func() error {
+		var curSleep = initialSleep
+
+		for {
+			select {
+			case c.outputChan <- wal:
+				// Break out to read the next message
+				return nil
+			default:
+				// Send keepalive if channel is full
+				if err := c.handleProgress(true); err != nil {
+					// propagate error
+					return err
+				}
+
+				if curSleep > maxSleep {
+					curSleep = initialSleep
+				}
+
+				// Sleep here to prevent spinning.
+				time.Sleep(curSleep)
+				curSleep = curSleep * 2
+
+			}
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	c.statsChan <- stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())
+	return nil
 }
 
 // GetOutputChan returns the outputChan
