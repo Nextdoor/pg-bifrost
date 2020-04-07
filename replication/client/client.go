@@ -47,7 +47,7 @@ var (
 
 func init() {
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetLevel(logrus.DebugLevel)
 }
 
 type Replicator struct {
@@ -298,8 +298,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		//pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
-		pgConn, _ = c.connManager.GetConnWithStartLsn(c.shutdownHandler.TerminateCtx, c.highestWalStart)
+		pgConn, _ = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
 		if rplErr != nil {
 			log.Error(rplErr.Error())
 			return
