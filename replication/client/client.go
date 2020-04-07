@@ -298,9 +298,9 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 		}
 
 		// Get a connection
-		pgConn, _ = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
+		pgConn, rplErr = c.connManager.GetConn(c.shutdownHandler.TerminateCtx)
 		if rplErr != nil {
-			log.Error(rplErr.Error())
+			log.WithError(rplErr).Error("fatal")
 			return
 		}
 
