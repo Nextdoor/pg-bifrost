@@ -97,7 +97,7 @@ func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan ui
 	replicator := New(sh, statsChan, mockManager, 2)
 
 	// Setup return
-	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(),uint64(0)).Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).Times(1)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
@@ -1499,4 +1499,79 @@ func TestOldOverallProgress(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+}
+
+func TestRecovery(t *testing.T) {
+	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
+	defer mockCtrl.Finish()
+	sh := replicator.shutdownHandler
+	stoppedChan := replicator.GetStoppedChan()
+
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
+
+	// Replication error
+	errResp := &pgproto3.ErrorResponse{Severity: "ERROR", Code: "XX000", Message: "could not find pg_class entry for 16398", Detail: "", Hint: "", Position: 0, InternalPosition: 0, InternalQuery: "", Where: "", SchemaName: "", TableName: "", ColumnName: "", DataTypeName: "", ConstraintName: "", File: "relcache.c", Line: 1145, Routine: "RelationInitPhysicalAddr", UnknownFields: map[uint8]string{0x56: "ERROR"}}
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(errResp, nil).Times(1)
+	mockManager.EXPECT().Close()
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+
+	// Recovery
+	ident := pglogrepl.IdentifySystemResult{XLogPos: pglogrepl.LSN(100)}
+	mockConn.EXPECT().IdentifySystem(gomock.Any()).Return(ident, nil).Times(1)
+	mockManager.EXPECT().Close()
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(100)).Return(mockConn, nil).MinTimes(1)
+
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
+		func(_ interface{}) {
+			time.Sleep(time.Millisecond * 5)
+		}).MinTimes(2)
+
+	go replicator.Start(progChan)
+
+	time.Sleep(20 * time.Millisecond)
+
+	waitForShutdown(t, mockManager, sh, stoppedChan)
+}
+
+func TestRecoveryFailed(t *testing.T) {
+	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
+	defer mockCtrl.Finish()
+	sh := replicator.shutdownHandler
+	stoppedChan := replicator.GetStoppedChan()
+
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
+
+	// Replication error
+	errResp := &pgproto3.ErrorResponse{Severity: "ERROR", Code: "XX000", Message: "could not find pg_class entry for 16398", Detail: "", Hint: "", Position: 0, InternalPosition: 0, InternalQuery: "", Where: "", SchemaName: "", TableName: "", ColumnName: "", DataTypeName: "", ConstraintName: "", File: "relcache.c", Line: 1145, Routine: "RelationInitPhysicalAddr", UnknownFields: map[uint8]string{0x56: "ERROR"}}
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(errResp, nil).Times(1)
+
+	// Recovery
+	mockManager.EXPECT().Close().Do(
+		func() {
+			time.Sleep(time.Millisecond * 5)
+		}).Times(1)
+	err := errors.New("expected error")
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
+
+	// Run
+	go replicator.Start(progChan)
+	time.Sleep(5 * time.Millisecond)
+
+	// Wait for closing cleanup
+	mockManager.EXPECT().Close().Times(1)
+	sh.CancelFunc()
+
+	// Add a little delay to ensure shutdown ran
+	var timeout *time.Timer
+	timeout = time.NewTimer(100 * time.Millisecond)
+
+	// Check to see if shutdown closed output channel
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "shutdown didn't close output chan in time")
+	case _, ok := <-stoppedChan:
+		if ok {
+			assert.Fail(t, "shutdown didn't close output chan")
+		}
+	}
 }
