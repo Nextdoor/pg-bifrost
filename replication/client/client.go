@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgproto3/v2"
@@ -382,6 +383,14 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 // will cause a gap in data if new data has come in after the replication error
 // but before we've had a chance to recover.
 func (c *Replicator) recoverFromErrorResponse() error {
+	// Emitting fake COMMIT wal message to close out this transaction so
+	// that there are no gaps in data from the ledger's perspective because
+	// at this point we have already seen a BEGIN before the corrupt data.
+	log.Warnf("Emitting fake COMMIT wal message to close out transaction %s", c.transaction)
+	pr := parselogical.ParseResult{Transaction: c.transaction, Operation: "COMMIT"}
+	msg := replication.WalMessage{Pr: &pr, TimeBasedKey: c.timeBasedKey, ServerWalEnd: c.highestWalStart, WalStart: c.highestWalStart}
+	c.outputChan <- &msg
+
 	// Close the old connection first because it's broken at this point
 	c.connManager.Close()
 

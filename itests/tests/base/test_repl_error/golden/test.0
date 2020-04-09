@@ -1,6 +1,3 @@
-{"table":"public.actions","operation":"INSERT","columns":{"id":{"new":{"q":"false","t":"integer","v":"1"}},"msg":{"new":{"q":"true","t":"text","v":"Before create extension"}}}}
-{"table":"public.actions","operation":"INSERT","columns":{"id":{"new":{"q":"false","t":"integer","v":"2"}},"msg":{"new":{"q":"true","t":"text","v":"After create extension"}}}}
-{"table":"public.actions","operation":"INSERT","columns":{"id":{"new":{"q":"false","t":"integer","v":"3"}},"msg":{"new":{"q":"true","t":"text","v":"Before pglogical.create_node"}}}}
 {"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"Hello"}},"id":{"new":{"q":"false","t":"integer","v":"1"}},"last_name":{"new":{"q":"true","t":"text","v":"World"}}}}
 {"table":"public.customers","operation":"INSERT","columns":{"first_name":{"new":{"q":"true","t":"text","v":"Goodbye"}},"id":{"new":{"q":"false","t":"integer","v":"2"}},"last_name":{"new":{"q":"true","t":"text","v":"World"}}}}
 {"table":"public.customers","operation":"UPDATE","columns":{"first_name":{"new":{"q":"true","t":"text","v":"Hello"}},"id":{"new":{"q":"false","t":"integer","v":"1"}},"last_name":{"new":{"q":"true","t":"text","v":"Friends"}}}}

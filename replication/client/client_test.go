@@ -894,6 +894,7 @@ func TestStartOutputChannelFull(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+
 }
 
 func TestDeadlineExceededTwice(t *testing.T) {
@@ -1507,19 +1508,28 @@ func TestRecovery(t *testing.T) {
 	sh := replicator.shutdownHandler
 	stoppedChan := replicator.GetStoppedChan()
 
-	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
+	// COMMIT 565
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).Times(1)
+	commitMessage := getXLogData([]byte("COMMIT 565"), uint64(11), uint64(0), int64(0))
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(commitMessage, nil).Times(1)
+
+	// BEGIN 566
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(11)).Return(mockConn, nil).Times(1)
+	beginMessage := getXLogData([]byte("BEGIN 566"), uint64(12), uint64(0), int64(0))
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 
 	// Replication error
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(11)).Return(mockConn, nil).Times(1)
 	errResp := &pgproto3.ErrorResponse{Severity: "ERROR", Code: "XX000", Message: "could not find pg_class entry for 16398", Detail: "", Hint: "", Position: 0, InternalPosition: 0, InternalQuery: "", Where: "", SchemaName: "", TableName: "", ColumnName: "", DataTypeName: "", ConstraintName: "", File: "relcache.c", Line: 1145, Routine: "RelationInitPhysicalAddr", UnknownFields: map[uint8]string{0x56: "ERROR"}}
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(errResp, nil).Times(1)
 	mockManager.EXPECT().Close()
 	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
 
 	// Recovery
-	ident := pglogrepl.IdentifySystemResult{XLogPos: pglogrepl.LSN(100)}
+	ident := pglogrepl.IdentifySystemResult{XLogPos: pglogrepl.LSN(20)}
 	mockConn.EXPECT().IdentifySystem(gomock.Any()).Return(ident, nil).Times(1)
 	mockManager.EXPECT().Close()
-	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(100)).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(20)).Return(mockConn, nil).MinTimes(1)
 
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
@@ -1527,10 +1537,19 @@ func TestRecovery(t *testing.T) {
 		}).MinTimes(2)
 
 	go replicator.Start(progChan)
+	<-replicator.GetOutputChan()           // COMMIT 565
+	begin := <-replicator.GetOutputChan()  // BEGIN 566
+	commit := <-replicator.GetOutputChan() // COMMIT 566
 
-	time.Sleep(20 * time.Millisecond)
+	// Add a little delay to ensure shutdown ran
+	time.Sleep(40 * time.Millisecond)
 
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+
+	assert.Equal(t, "BEGIN", begin.Pr.Operation)
+	assert.Equal(t, "COMMIT", commit.Pr.Operation)
+	assert.Equal(t, uint64(11), commit.WalStart)
+	assert.Equal(t, uint64(11), commit.ServerWalEnd)
 }
 
 func TestRecoveryFailed(t *testing.T) {

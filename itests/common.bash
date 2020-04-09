@@ -43,7 +43,7 @@ _startup() {
   FAILED=0
 
   log "Running docker-compose down"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down -v
 
   log "Running docker-compose build"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose build
