@@ -48,7 +48,7 @@ var (
 
 func init() {
 	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(logrus.InfoLevel)
 }
 
 type Replicator struct {
