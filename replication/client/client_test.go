@@ -97,7 +97,7 @@ func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan ui
 	replicator := New(sh, statsChan, mockManager, 2)
 
 	// Setup return
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).Times(1)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
@@ -133,7 +133,7 @@ func TestGetBasicTestSetup(t *testing.T) {
 	stoppedChan := replicator.GetStoppedChan()
 	defer mockCtrl.Finish()
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
@@ -173,7 +173,7 @@ func TestWalMessage(t *testing.T) {
 
 	expected, _ := replication.XLogDataToWalMessage(xld)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(2)
 
 	serverWalEnd := uint64(111)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
@@ -228,7 +228,7 @@ func TestReplicationError(t *testing.T) {
 	serverWalEnd := uint64(111)
 
 	err := errors.New("expected context error")
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, err).Do(
 		func(_ interface{}) {
@@ -271,7 +271,7 @@ func TestMsgNotCopyData(t *testing.T) {
 	// Unexpected data
 	msg := pgproto3.AuthenticationSASL{}
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(&msg, nil).Times(1)
 	mockManager.EXPECT().Close().Times(1)
@@ -314,7 +314,7 @@ func TestNilMessage(t *testing.T) {
 	// Setup return
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
@@ -357,7 +357,7 @@ func TestStartValidMessage(t *testing.T) {
 	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
 	serverWalEnd := uint64(111)
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).MinTimes(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
@@ -424,7 +424,7 @@ func TestTxnsMessage(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(8)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(8)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
@@ -509,17 +509,17 @@ func TestNoCommit(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(5)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(5)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage2, nil).Times(1)
 	mockManager.EXPECT().Close().Times(1)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 5)
@@ -574,7 +574,7 @@ func TestDupWalStart(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(4)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(4)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(updateMessage, nil).Times(1)
@@ -631,7 +631,7 @@ func TestStartInvalidWalString(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(backendMessage, nil)
 	mockManager.EXPECT().Close().Times(1)
@@ -679,7 +679,7 @@ func TestStartNilWalMessage(t *testing.T) {
 
 	serverWalEnd := uint64(111)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(serverWalEnd), nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
@@ -764,7 +764,7 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 		ReplyRequested:   true,
 	}
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(3)
 	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status)).MinTimes(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
@@ -800,7 +800,7 @@ func TestClosedProgressChan(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	// Expects
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
@@ -863,7 +863,7 @@ func TestStartOutputChannelFull(t *testing.T) {
 	walData, _ := base64.StdEncoding.DecodeString("dGFibGUgcHVibGljLmN1c3RvbWVyczogSU5TRVJUOiBpZFtpbnRlZ2VyXToxIGZpcnN0X25hbWVbdGV4dF06J0hlbGxvJyBsYXN0X25hbWVbdGV4dF06J1dvcmxkJw==")
 	backendMessage := getXLogData(walData, uint64(22210928), uint64(0), int64(0))
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	initalWalStart := uint64(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(initalWalStart), nil).Times(1)
@@ -894,6 +894,7 @@ func TestStartOutputChannelFull(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+
 }
 
 func TestDeadlineExceededTwice(t *testing.T) {
@@ -913,7 +914,7 @@ func TestDeadlineExceededTwice(t *testing.T) {
 
 	// Setup return
 	err := context.DeadlineExceeded
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(3)
 
 	initalWalStart := uint64(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(initalWalStart), nil).Times(1)
@@ -973,7 +974,7 @@ func TestWithMultipleProgress(t *testing.T) {
 		ReplyRequested:   true,
 	}
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(3)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(3)
 	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status0)).MinTimes(1)
 	mockConn.EXPECT().SendStandbyStatus(gomock.Any(), EqStatusWithoutTime(status3)).MinTimes(1)
 
@@ -1014,7 +1015,7 @@ func TestDeadlineExceeded(t *testing.T) {
 	progChan := make(chan uint64, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
@@ -1061,7 +1062,7 @@ func TestTerminationContext(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
 		nil).Do(
@@ -1099,7 +1100,7 @@ func TestGetConnectionError(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(nil, err).MinTimes(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
@@ -1122,7 +1123,7 @@ func TestGetConnectionErrorInLoop(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(nil, err).Times(1)
 	mockManager.EXPECT().Close().Times(1)
 
 	go replicator.Start(progChan)
@@ -1142,7 +1143,7 @@ func TestPanic(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	err := errors.New("expected error")
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Do(
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(nil, err).Do(
 		func(_ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 			panic("TestPanic")
@@ -1176,7 +1177,7 @@ func TestProgressChanClosed(t *testing.T) {
 	sh := shutdown.NewShutdownHandler()
 	replicator := New(sh, statsChan, mockManager, 10)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
 	// CommitWalStart from server
 	progress0 := uint64(10)
@@ -1204,7 +1205,7 @@ func TestProgressChanClosedDeadline(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	// Close progress channel before returning of WaitForReplicationMessage
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil,
 		context.DeadlineExceeded).Do(
 		func(_ interface{}) {
@@ -1235,7 +1236,7 @@ func TestHeartbeatRequested(t *testing.T) {
 	defer mockCtrl.Finish()
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
 	progress0 := uint64(10)
@@ -1277,7 +1278,7 @@ func TestHeartbeatRequestedShutdown(t *testing.T) {
 	defer mockCtrl.Finish()
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
 	progress0 := uint64(10)
@@ -1314,10 +1315,10 @@ func TestHeartbeatRequestedShutdown(t *testing.T) {
 func TestHeartbeatRequestedError(t *testing.T) {
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
 
 	err := errors.New("expected err")
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(nil, err).Times(1)
 
 	// server asks for heartbeat
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(10), nil).MinTimes(1)
@@ -1342,7 +1343,7 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	sh := replicator.shutdownHandler
 	stoppedChan := replicator.GetStoppedChan()
 	defer mockCtrl.Finish()
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(4)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(4)
 	expectChan := make(chan interface{}, 100)
 
 	// Setup return
@@ -1388,7 +1389,7 @@ func TestSendKeepaliveChanFullError(t *testing.T) {
 
 	expectChan := make(chan interface{}, 1)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(3)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(3)
 
 	// Setup return
 	// table public.customers: INSERT: id[integer]:1 first_name[text]:'Hello' last_name[text]:'World'
@@ -1427,7 +1428,7 @@ func TestSendStandbyStatusError(t *testing.T) {
 
 	expectChan := make(chan interface{}, 100)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(2)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(2)
 
 	// server asks for heartbeat
 	progress0 := uint64(10)
@@ -1462,7 +1463,7 @@ func TestOldOverallProgress(t *testing.T) {
 
 	expectChan := make(chan interface{}, 1)
 
-	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).MinTimes(1)
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
 		func(_ interface{}) {
@@ -1499,4 +1500,97 @@ func TestOldOverallProgress(t *testing.T) {
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
+}
+
+func TestRecovery(t *testing.T) {
+	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
+	defer mockCtrl.Finish()
+	sh := replicator.shutdownHandler
+	stoppedChan := replicator.GetStoppedChan()
+
+	// COMMIT 565
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).Times(1)
+	commitMessage := getXLogData([]byte("COMMIT 565"), uint64(11), uint64(0), int64(0))
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(commitMessage, nil).Times(1)
+
+	// BEGIN 566
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(11)).Return(mockConn, nil).Times(1)
+	beginMessage := getXLogData([]byte("BEGIN 566"), uint64(12), uint64(0), int64(0))
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(beginMessage, nil).Times(1)
+
+	// Replication error
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(11)).Return(mockConn, nil).Times(1)
+	errResp := &pgproto3.ErrorResponse{Severity: "ERROR", Code: "XX000", Message: "could not find pg_class entry for 16398", Detail: "", Hint: "", Position: 0, InternalPosition: 0, InternalQuery: "", Where: "", SchemaName: "", TableName: "", ColumnName: "", DataTypeName: "", ConstraintName: "", File: "relcache.c", Line: 1145, Routine: "RelationInitPhysicalAddr", UnknownFields: map[uint8]string{0x56: "ERROR"}}
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(errResp, nil).Times(1)
+	mockManager.EXPECT().Close()
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(mockConn, nil).Times(1)
+
+	// Recovery
+	ident := pglogrepl.IdentifySystemResult{XLogPos: pglogrepl.LSN(20)}
+	mockConn.EXPECT().IdentifySystem(gomock.Any()).Return(ident, nil).Times(1)
+	mockManager.EXPECT().Close()
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(20)).Return(mockConn, nil).MinTimes(1)
+
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(nil, nil).Do(
+		func(_ interface{}) {
+			time.Sleep(time.Millisecond * 5)
+		}).MinTimes(2)
+
+	go replicator.Start(progChan)
+	<-replicator.GetOutputChan()           // COMMIT 565
+	begin := <-replicator.GetOutputChan()  // BEGIN 566
+	commit := <-replicator.GetOutputChan() // COMMIT 566
+
+	// Add a little delay to ensure shutdown ran
+	time.Sleep(40 * time.Millisecond)
+
+	waitForShutdown(t, mockManager, sh, stoppedChan)
+
+	assert.Equal(t, "BEGIN", begin.Pr.Operation)
+	assert.Equal(t, "COMMIT", commit.Pr.Operation)
+	assert.Equal(t, uint64(11), commit.WalStart)
+	assert.Equal(t, uint64(11), commit.ServerWalEnd)
+}
+
+func TestRecoveryFailed(t *testing.T) {
+	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
+	defer mockCtrl.Finish()
+	sh := replicator.shutdownHandler
+	stoppedChan := replicator.GetStoppedChan()
+
+	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
+
+	// Replication error
+	errResp := &pgproto3.ErrorResponse{Severity: "ERROR", Code: "XX000", Message: "could not find pg_class entry for 16398", Detail: "", Hint: "", Position: 0, InternalPosition: 0, InternalQuery: "", Where: "", SchemaName: "", TableName: "", ColumnName: "", DataTypeName: "", ConstraintName: "", File: "relcache.c", Line: 1145, Routine: "RelationInitPhysicalAddr", UnknownFields: map[uint8]string{0x56: "ERROR"}}
+	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(errResp, nil).Times(1)
+
+	// Recovery
+	mockManager.EXPECT().Close().Do(
+		func() {
+			time.Sleep(time.Millisecond * 5)
+		}).Times(1)
+	err := errors.New("expected error")
+	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
+
+	// Run
+	go replicator.Start(progChan)
+	time.Sleep(5 * time.Millisecond)
+
+	// Wait for closing cleanup
+	mockManager.EXPECT().Close().Times(1)
+	sh.CancelFunc()
+
+	// Add a little delay to ensure shutdown ran
+	var timeout *time.Timer
+	timeout = time.NewTimer(100 * time.Millisecond)
+
+	// Check to see if shutdown closed output channel
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "shutdown didn't close output chan in time")
+	case _, ok := <-stoppedChan:
+		if ok {
+			assert.Fail(t, "shutdown didn't close output chan")
+		}
+	}
 }

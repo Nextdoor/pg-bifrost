@@ -43,7 +43,7 @@ _startup() {
   FAILED=0
 
   log "Running docker-compose down"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down -v
 
   log "Running docker-compose build"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose build
@@ -120,7 +120,7 @@ _insert_data() {
     fi
 
     log "Loading $file"
-    TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres wait_ready.sh /usr/local/bin/psql -f "/input/$file" &
+    TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres wait_ready.sh /usr/bin/psql -f "/input/$file" &
   done
 }
 
@@ -153,7 +153,7 @@ function _retry {
 
 _check_lsn() {
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s HUP postgres
-  confirmed_flush_lsn=$(TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres /usr/local/bin/psql -c "select confirmed_flush_lsn from pg_replication_slots" -P "footer=off" -t | head -n1 | awk '{$1=$1};1' | cut -c -9)
+  confirmed_flush_lsn=$(TEST_NAME=$BATS_TEST_DESCRIPTION docker exec -u postgres -t postgres /usr/bin/psql -c "select confirmed_flush_lsn from pg_replication_slots" -P "footer=off" -t | head -n1 | awk '{$1=$1};1' | cut -c -9)
   confirmed_flush_lsn_int=$(echo $confirmed_flush_lsn | cut -c 3- | xargs echo ibase=16\; | bc)
 
   latest_lsn=$(cat tests/$BATS_TEST_DESCRIPTION/output/* | jq '.lsn' -r | sort | tail -n1)
@@ -269,7 +269,7 @@ teardown() {
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs data-poller
 
   log "Running docker-compose down"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose down -v
 
   _write_junit_xml
 }

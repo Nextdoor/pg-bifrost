@@ -61,5 +61,6 @@ type Conn interface {
 //go:generate mockgen -destination=mocks/mock_manager.go -package=mocks github.com/Nextdoor/pg-bifrost.git/replication/client/conn ManagerInterface
 type ManagerInterface interface {
 	GetConn(ctx context.Context) (Conn, error)
+	GetConnWithStartLsn(ctx context.Context, startLsn uint64) (Conn, error)
 	Close()
 }
