@@ -96,8 +96,6 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsSecretAccessKey *string,
 	endpoint *string) transport.Transporter {
 
-	var sess *session.Session
-
 	awsConfig := &aws.Config{
 		Region:      aws.String(*awsRegion),
 		Endpoint:    endpoint,
