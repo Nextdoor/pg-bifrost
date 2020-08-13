@@ -96,14 +96,18 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsSecretAccessKey *string,
 	endpoint *string) transport.Transporter {
 
-	var sess *session.Session
-
-	creds := credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
-	sess = session.Must(session.NewSession(&aws.Config{
+	awsConfig := &aws.Config{
 		Region:      aws.String(*awsRegion),
-		Credentials: creds,
 		Endpoint:    endpoint,
-	}))
+	}
+
+	if *awsAccessKeyId != "" || *awsSecretAccessKey != "" {
+		// Force static credentials from pg-bifrost configuration.
+		// Note: if we expect to fail and not infer credentials if only one of the ID or Key was specified
+		awsConfig.Credentials = credentials.NewStaticCredentials(*awsAccessKeyId, *awsSecretAccessKey, "")
+	}
+
+	sess := session.Must(session.NewSession(awsConfig))
 
 	client := kinesis.New(sess)
 
