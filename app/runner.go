@@ -72,6 +72,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	replicationSlot string,
 	clientConfig map[string]interface{},
 	filterConfig map[string]interface{},
+	marshallerConfig map[string]interface{},
 	partitionConfig map[string]interface{},
 	batcherConfig map[string]interface{},
 	transportType transport.TransportType,
@@ -103,6 +104,13 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	if !ok {
 		log.Panic("Wrong type assertion")
 	}
+
+	// Get marshaller configurations
+	noMarshalOldValue, ok := marshallerConfig[config.VAR_NAME_NO_MARSHAL_OLD_VALUE].(bool)
+	if !ok {
+		log.Panic("Wrong type assertion")
+	}
+	log.Info("noMarshalOldValue=", noMarshalOldValue)
 
 	// Get partitioner configurations
 	partMethod, ok := partitionConfig[config.VAR_NAME_PARTITION_METHOD].(partitioner.PartitionMethod)
@@ -180,7 +188,8 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	marshallerInstance := marshaller.New(
 		shutdownHandler,
 		partitionerInstance.OutputChan,
-		statsChan)
+		statsChan,
+		noMarshalOldValue)
 
 	transportManager := manager.New(
 		shutdownHandler,

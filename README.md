@@ -123,6 +123,13 @@ pg-bifrost currently supports table level filtering in both a whitelist and blac
 
 Additionally, there is a regex mode to enable matching multiple tables at once, using `whitelist-regex` and `blacklist-regex`
 
+### Marshalling
+
+Config Var | Description
+-- | --
+no-marshal-old-value | Disable marshalling of the old value. This can help with performance by only writing the new values.
+
+In order for pg-bifrost to replicate TOAST-ed columns you must set `REPLICA IDENTITY FULL` on the table containing TOAST columns. Postgres will then send the old and new values for each row written instead of just the current value. If you do not wish to include both the old and new values in your output then you can use `no-marshal-old-value` to disable outputting old values. It is important to note that setting replicate identity to `FULL` can cause severe performance implications. See https://www.postgresql.org/docs/10/logical-replication-publication.html for details.
 
 ### Partitioning
 

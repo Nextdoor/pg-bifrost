@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package marshaller
 
@@ -48,16 +48,19 @@ type Marshaller struct {
 	OutputChan chan *MarshalledMessage
 
 	statsChan chan stats.Stat
+
+	noMarshalOldValue bool
 }
 
 // New is a simple constructor which create a marshaller.
 func New(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *replication.WalMessage,
-	statsChan chan stats.Stat) Marshaller {
+	statsChan chan stats.Stat,
+	noMarshalOldValue bool) Marshaller {
 
 	outputChan := make(chan *MarshalledMessage)
 
-	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan}
+	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan, noMarshalOldValue}
 }
 
 // jsonWalEntry is a helper struct which has json field tags
@@ -118,7 +121,7 @@ func (m Marshaller) Start() {
 			return
 		}
 
-		byteMessage, err := marshalWalToJson(walMessage)
+		byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
 
 		if err != nil {
 			m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
@@ -180,11 +183,11 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 }
 
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
-func marshalWalToJson(msg *replication.WalMessage) ([]byte, error) {
+func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
 	lsn := pglogrepl.LSN(msg.WalStart).String()
 
 	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
-	time := time.Unix(0, int64(msg.ServerTime)*1000000).Format(time.RFC3339)
+	t := time.Unix(0, int64(msg.ServerTime)*1000000).Format(time.RFC3339)
 	columns := make(map[string]map[string]map[string]string)
 
 	for k, v := range msg.Pr.Columns {
@@ -192,17 +195,32 @@ func marshalWalToJson(msg *replication.WalMessage) ([]byte, error) {
 
 		if msg.Pr.Operation == "DELETE" {
 			columns[k] = marshalColumnValuePair(nil, &v)
-		} else {
-			if ok && v.Value != oldV.Value {
-				columns[k] = marshalColumnValuePair(&v, &oldV)
-			} else {
-				columns[k] = marshalColumnValuePair(&v, nil)
+			continue
+		}
+
+		if ok && v.Value != oldV.Value {
+			// When column is TOAST-ed use the previous value instead of "unchanged-toast-datum"
+			if v.Value == "unchanged-toast-datum" {
+				if noMarshalOldValue {
+					columns[k] = marshalColumnValuePair(&oldV, nil)
+				} else {
+					columns[k] = marshalColumnValuePair(&oldV, &oldV)
+				}
+				continue
 			}
+
+			if noMarshalOldValue {
+				columns[k] = marshalColumnValuePair(&v, nil)
+			} else {
+				columns[k] = marshalColumnValuePair(&v, &oldV)
+			}
+		} else {
+			columns[k] = marshalColumnValuePair(&v, nil)
 		}
 	}
 
 	return json.Marshal(&jsonWalEntry{
-		Time:      &time,
+		Time:      &t,
 		Lsn:       &lsn,
 		Table:     &msg.Pr.Relation,
 		Operation: &msg.Pr.Operation,
