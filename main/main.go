@@ -210,6 +210,7 @@ func runReplicate(
 	replicationSlot string,
 	clientConfig map[string]interface{},
 	filterConfig map[string]interface{},
+	marshallerConfig map[string]interface{},
 	partitionerConfig map[string]interface{},
 	batcherConfig map[string]interface{},
 	transportType transport.TransportType,
@@ -244,6 +245,7 @@ func runReplicate(
 		replicationSlot,
 		clientConfig,
 		filterConfig,
+		marshallerConfig,
 		partitionerConfig,
 		batcherConfig,
 		transportType,
@@ -403,6 +405,12 @@ func replicateAction(c *cli.Context) error {
 	filterConfig["regex"] = regex
 
 	//
+	// Validate, construct and create marshaller config from Flags
+	//
+	marshallerConfig := make(map[string]interface{}, 0)
+	marshallerConfig[config.VAR_NAME_NO_MARSHAL_OLD_VALUE] = c.GlobalBool(config.VAR_NAME_NO_MARSHAL_OLD_VALUE)
+
+	//
 	// Validate, construct and create partitioner config from Flags
 	//
 	partMethod := partitioner.GetPartitionMethod(c.GlobalString(config.VAR_NAME_PARTITION_METHOD))
@@ -469,6 +477,7 @@ func replicateAction(c *cli.Context) error {
 		c.GlobalString(config.VAR_NAME_SLOT),
 		clientConfig,
 		filterConfig,
+		marshallerConfig,
 		partitionerConfig,
 		batcherConfig,
 		transport.TransportType(c.Command.Name),
@@ -640,6 +649,11 @@ func main() {
 					Name:   config.VAR_NAME_BLACKLIST_REGEX,
 					Usage:  "A blacklist of regex tables to exclude. All others will be included.",
 					EnvVar: "BLACKLIST_REGEX",
+				},
+				cli.BoolFlag{
+					Name:   config.VAR_NAME_NO_MARSHAL_OLD_VALUE,
+					Usage:  "Disable marshalling of the old value. This can help with performance by only writing the new values.",
+					EnvVar: "NO_MARSHAL_OLD_VALUE",
 				},
 			},
 			Subcommands: []cli.Command{
