@@ -392,12 +392,20 @@ func replicateAction(c *cli.Context) error {
 	} else if len(wl) != 0 {
 		whitelist = true
 		tablelist = wl
-	} else {
+		regex = false
+	} else if len(wlr) != 0 {
+		whitelist = true
+		tablelist = wlr
+		regex = true
+	} else if len(bl) != 0 {
 		whitelist = false
 		tablelist = bl
+		regex = false
+	} else if len(blr) != 0 {
+		whitelist = false
+		tablelist = blr
+		regex = true
 	}
-
-	regex = (len(wlr) != 0 || len(blr) != 0)
 
 	filterConfig := make(map[string]interface{}, 0)
 	filterConfig["whitelist"] = whitelist
