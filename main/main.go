@@ -387,24 +387,31 @@ func replicateAction(c *cli.Context) error {
 	var tablelist []string
 	var whitelist bool
 	var regex bool
-	if len(wl) != 0 && len(bl) != 0 && len(wlr) != 0 && len(blr) != 0 {
-		return errors.New("'whitelist', 'whitelist-regex', 'blacklist', and 'blacklist-regex' are mutually exclusive. Use one or the other but not both")
-	} else if len(wl) != 0 {
+	filterConfigCount := 0
+	if len(wl) != 0 {
 		whitelist = true
 		tablelist = wl
 		regex = false
+		filterConfigCount++
 	} else if len(wlr) != 0 {
 		whitelist = true
 		tablelist = wlr
 		regex = true
+		filterConfigCount++
 	} else if len(bl) != 0 {
 		whitelist = false
 		tablelist = bl
 		regex = false
+		filterConfigCount++
 	} else if len(blr) != 0 {
 		whitelist = false
 		tablelist = blr
 		regex = true
+		filterConfigCount++
+	}
+
+	if filterConfigCount > 1 {
+		return errors.New("'whitelist', 'whitelist-regex', 'blacklist', and 'blacklist-regex' are mutually exclusive. Use only one at a time")
 	}
 
 	filterConfig := make(map[string]interface{}, 0)
