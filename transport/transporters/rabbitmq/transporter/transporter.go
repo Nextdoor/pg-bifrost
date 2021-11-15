@@ -33,8 +33,8 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/cenkalti/backoff"
 	"github.com/cevaris/ordered_map"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
 )
 
 var (

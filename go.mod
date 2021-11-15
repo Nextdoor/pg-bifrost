@@ -16,8 +16,8 @@ require (
 	github.com/jackc/pgproto3/v2 v2.1.1
 	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
+	github.com/rabbitmq/amqp091-go v1.1.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/Nextdoor/cli.v1 v1.20.2
 )
@@ -37,7 +37,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rabbitmq/amqp091-go v1.1.0 // indirect
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
 	golang.org/x/sys v0.0.0-20211113001501-0c823b97ae02 // indirect
