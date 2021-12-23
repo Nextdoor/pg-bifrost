@@ -8,19 +8,19 @@ FROM golang:1.17.3-stretch as intermediate
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf
 
+WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
+
+# Copy over go modules and get dependencies. This will ensure
+# that we don't get the deps each time but only when the files
+# change.
+COPY go.mod go.sum ./
+
 # Build dependencies
 RUN go get golang.org/x/tools/go/packages
 RUN go install golang.org/x/tools/go/packages
 RUN go get github.com/golang/mock/gomock
 RUN go install github.com/golang/mock/mockgen
 
-WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
-
-
-# Copy over go modules and get dependencies. This will ensure
-# that we don't get the deps each time but only when the files
-# change.
-COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
