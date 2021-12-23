@@ -6,35 +6,36 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	wabbit "github.com/NeowayLabs/wabbit"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockConnectionGetter is a mock of ConnectionGetter interface
+// MockConnectionGetter is a mock of ConnectionGetter interface.
 type MockConnectionGetter struct {
 	ctrl     *gomock.Controller
 	recorder *MockConnectionGetterMockRecorder
 }
 
-// MockConnectionGetterMockRecorder is the mock recorder for MockConnectionGetter
+// MockConnectionGetterMockRecorder is the mock recorder for MockConnectionGetter.
 type MockConnectionGetterMockRecorder struct {
 	mock *MockConnectionGetter
 }
 
-// NewMockConnectionGetter creates a new mock instance
+// NewMockConnectionGetter creates a new mock instance.
 func NewMockConnectionGetter(ctrl *gomock.Controller) *MockConnectionGetter {
 	mock := &MockConnectionGetter{ctrl: ctrl}
 	mock.recorder = &MockConnectionGetterMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConnectionGetter) EXPECT() *MockConnectionGetterMockRecorder {
 	return m.recorder
 }
 
-// GetConnection mocks base method
+// GetConnection mocks base method.
 func (m *MockConnectionGetter) GetConnection(arg0 context.Context) (wabbit.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", arg0)
@@ -43,7 +44,7 @@ func (m *MockConnectionGetter) GetConnection(arg0 context.Context) (wabbit.Conn,
 	return ret0, ret1
 }
 
-// GetConnection indicates an expected call of GetConnection
+// GetConnection indicates an expected call of GetConnection.
 func (mr *MockConnectionGetterMockRecorder) GetConnection(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnection", reflect.TypeOf((*MockConnectionGetter)(nil).GetConnection), arg0)

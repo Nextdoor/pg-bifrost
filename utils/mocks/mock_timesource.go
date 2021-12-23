@@ -5,34 +5,35 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockTimeSource is a mock of TimeSource interface
+// MockTimeSource is a mock of TimeSource interface.
 type MockTimeSource struct {
 	ctrl     *gomock.Controller
 	recorder *MockTimeSourceMockRecorder
 }
 
-// MockTimeSourceMockRecorder is the mock recorder for MockTimeSource
+// MockTimeSourceMockRecorder is the mock recorder for MockTimeSource.
 type MockTimeSourceMockRecorder struct {
 	mock *MockTimeSource
 }
 
-// NewMockTimeSource creates a new mock instance
+// NewMockTimeSource creates a new mock instance.
 func NewMockTimeSource(ctrl *gomock.Controller) *MockTimeSource {
 	mock := &MockTimeSource{ctrl: ctrl}
 	mock.recorder = &MockTimeSourceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTimeSource) EXPECT() *MockTimeSourceMockRecorder {
 	return m.recorder
 }
 
-// DateString mocks base method
+// DateString mocks base method.
 func (m *MockTimeSource) DateString() (string, string, string, string, string) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DateString")
@@ -44,13 +45,13 @@ func (m *MockTimeSource) DateString() (string, string, string, string, string) {
 	return ret0, ret1, ret2, ret3, ret4
 }
 
-// DateString indicates an expected call of DateString
+// DateString indicates an expected call of DateString.
 func (mr *MockTimeSourceMockRecorder) DateString() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DateString", reflect.TypeOf((*MockTimeSource)(nil).DateString))
 }
 
-// UnixNano mocks base method
+// UnixNano mocks base method.
 func (m *MockTimeSource) UnixNano() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnixNano")
@@ -58,7 +59,7 @@ func (m *MockTimeSource) UnixNano() int64 {
 	return ret0
 }
 
-// UnixNano indicates an expected call of UnixNano
+// UnixNano indicates an expected call of UnixNano.
 func (mr *MockTimeSourceMockRecorder) UnixNano() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnixNano", reflect.TypeOf((*MockTimeSource)(nil).UnixNano))

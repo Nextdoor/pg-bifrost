@@ -6,36 +6,37 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	pglogrepl "github.com/jackc/pglogrepl"
-	v2 "github.com/jackc/pgproto3/v2"
-	reflect "reflect"
+	pgproto3 "github.com/jackc/pgproto3/v2"
 )
 
-// MockConn is a mock of Conn interface
+// MockConn is a mock of Conn interface.
 type MockConn struct {
 	ctrl     *gomock.Controller
 	recorder *MockConnMockRecorder
 }
 
-// MockConnMockRecorder is the mock recorder for MockConn
+// MockConnMockRecorder is the mock recorder for MockConn.
 type MockConnMockRecorder struct {
 	mock *MockConn
 }
 
-// NewMockConn creates a new mock instance
+// NewMockConn creates a new mock instance.
 func NewMockConn(ctrl *gomock.Controller) *MockConn {
 	mock := &MockConn{ctrl: ctrl}
 	mock.recorder = &MockConnMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConn) EXPECT() *MockConnMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method
+// Close mocks base method.
 func (m *MockConn) Close(arg0 context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close", arg0)
@@ -43,13 +44,13 @@ func (m *MockConn) Close(arg0 context.Context) error {
 	return ret0
 }
 
-// Close indicates an expected call of Close
+// Close indicates an expected call of Close.
 func (mr *MockConnMockRecorder) Close(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockConn)(nil).Close), arg0)
 }
 
-// CreateReplicationSlot mocks base method
+// CreateReplicationSlot mocks base method.
 func (m *MockConn) CreateReplicationSlot(arg0 context.Context, arg1, arg2 string, arg3 pglogrepl.CreateReplicationSlotOptions) (pglogrepl.CreateReplicationSlotResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateReplicationSlot", arg0, arg1, arg2, arg3)
@@ -58,13 +59,13 @@ func (m *MockConn) CreateReplicationSlot(arg0 context.Context, arg1, arg2 string
 	return ret0, ret1
 }
 
-// CreateReplicationSlot indicates an expected call of CreateReplicationSlot
+// CreateReplicationSlot indicates an expected call of CreateReplicationSlot.
 func (mr *MockConnMockRecorder) CreateReplicationSlot(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReplicationSlot", reflect.TypeOf((*MockConn)(nil).CreateReplicationSlot), arg0, arg1, arg2, arg3)
 }
 
-// DropReplicationSlot mocks base method
+// DropReplicationSlot mocks base method.
 func (m *MockConn) DropReplicationSlot(arg0 context.Context, arg1 string, arg2 pglogrepl.DropReplicationSlotOptions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DropReplicationSlot", arg0, arg1, arg2)
@@ -72,13 +73,13 @@ func (m *MockConn) DropReplicationSlot(arg0 context.Context, arg1 string, arg2 p
 	return ret0
 }
 
-// DropReplicationSlot indicates an expected call of DropReplicationSlot
+// DropReplicationSlot indicates an expected call of DropReplicationSlot.
 func (mr *MockConnMockRecorder) DropReplicationSlot(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropReplicationSlot", reflect.TypeOf((*MockConn)(nil).DropReplicationSlot), arg0, arg1, arg2)
 }
 
-// IdentifySystem mocks base method
+// IdentifySystem mocks base method.
 func (m *MockConn) IdentifySystem(arg0 context.Context) (pglogrepl.IdentifySystemResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IdentifySystem", arg0)
@@ -87,13 +88,13 @@ func (m *MockConn) IdentifySystem(arg0 context.Context) (pglogrepl.IdentifySyste
 	return ret0, ret1
 }
 
-// IdentifySystem indicates an expected call of IdentifySystem
+// IdentifySystem indicates an expected call of IdentifySystem.
 func (mr *MockConnMockRecorder) IdentifySystem(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentifySystem", reflect.TypeOf((*MockConn)(nil).IdentifySystem), arg0)
 }
 
-// IsClosed mocks base method
+// IsClosed mocks base method.
 func (m *MockConn) IsClosed() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsClosed")
@@ -101,28 +102,28 @@ func (m *MockConn) IsClosed() bool {
 	return ret0
 }
 
-// IsClosed indicates an expected call of IsClosed
+// IsClosed indicates an expected call of IsClosed.
 func (mr *MockConnMockRecorder) IsClosed() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClosed", reflect.TypeOf((*MockConn)(nil).IsClosed))
 }
 
-// ReceiveMessage mocks base method
-func (m *MockConn) ReceiveMessage(arg0 context.Context) (v2.BackendMessage, error) {
+// ReceiveMessage mocks base method.
+func (m *MockConn) ReceiveMessage(arg0 context.Context) (pgproto3.BackendMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReceiveMessage", arg0)
-	ret0, _ := ret[0].(v2.BackendMessage)
+	ret0, _ := ret[0].(pgproto3.BackendMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReceiveMessage indicates an expected call of ReceiveMessage
+// ReceiveMessage indicates an expected call of ReceiveMessage.
 func (mr *MockConnMockRecorder) ReceiveMessage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveMessage", reflect.TypeOf((*MockConn)(nil).ReceiveMessage), arg0)
 }
 
-// SendStandbyStatus mocks base method
+// SendStandbyStatus mocks base method.
 func (m *MockConn) SendStandbyStatus(arg0 context.Context, arg1 pglogrepl.StandbyStatusUpdate) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendStandbyStatus", arg0, arg1)
@@ -130,13 +131,13 @@ func (m *MockConn) SendStandbyStatus(arg0 context.Context, arg1 pglogrepl.Standb
 	return ret0
 }
 
-// SendStandbyStatus indicates an expected call of SendStandbyStatus
+// SendStandbyStatus indicates an expected call of SendStandbyStatus.
 func (mr *MockConnMockRecorder) SendStandbyStatus(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendStandbyStatus", reflect.TypeOf((*MockConn)(nil).SendStandbyStatus), arg0, arg1)
 }
 
-// StartReplication mocks base method
+// StartReplication mocks base method.
 func (m *MockConn) StartReplication(arg0 context.Context, arg1 string, arg2 pglogrepl.LSN, arg3 pglogrepl.StartReplicationOptions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartReplication", arg0, arg1, arg2, arg3)
@@ -144,7 +145,7 @@ func (m *MockConn) StartReplication(arg0 context.Context, arg1 string, arg2 pglo
 	return ret0
 }
 
-// StartReplication indicates an expected call of StartReplication
+// StartReplication indicates an expected call of StartReplication.
 func (mr *MockConnMockRecorder) StartReplication(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartReplication", reflect.TypeOf((*MockConn)(nil).StartReplication), arg0, arg1, arg2, arg3)
