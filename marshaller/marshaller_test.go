@@ -128,20 +128,82 @@ func _basicUpdateMessage() *replication.WalMessage {
 	return &walMessage
 }
 
-func _setupMarshaller(noMarshalOldValue bool) (Marshaller, chan *replication.WalMessage, chan error, chan stats.Stat) {
+func _nullsUpdateMessage() *replication.WalMessage {
+	null := parselogical.ColumnValue{
+		Value:  "null",
+		Type:   "string",
+		Quoted: false,
+	}
+
+	columns := map[string]parselogical.ColumnValue{}
+
+	column := parselogical.ColumnValue{
+		Value:  "Foo",
+		Type:   "string",
+		Quoted: true,
+	}
+
+	columns["first_name"] = null
+	columns["last_name"] = column
+
+	oldColumn := parselogical.ColumnValue{
+		Value:  "Bar",
+		Type:   "string",
+		Quoted: true,
+	}
+
+	oldColumns := map[string]parselogical.ColumnValue{}
+	oldColumns["first_name"] = oldColumn
+
+	// Updates first_name from "Bar" to NULL
+	// Updates last_name from NULL to "Foo"
+
+	msg := string("test")
+	ps := parselogical.ParseState{
+		Msg:           &msg,
+		Current:       1,
+		Prev:          1,
+		TokenStart:    1,
+		OldKey:        false,
+		CurColumnName: "username",
+		CurColumnType: "string",
+	}
+
+	pr := parselogical.ParseResult{
+		State:       ps,
+		Transaction: "0",
+		Relation:    "test.users",
+		Operation:   "UPDATE",
+		NoTupleData: false,
+		Columns:     columns,
+		OldColumns:  oldColumns,
+	}
+
+	walMessage := replication.WalMessage{
+		WalStart:     1,
+		ServerWalEnd: 0,
+		ServerTime:   0,
+		TimeBasedKey: "0-0",
+		Pr:           &pr,
+	}
+
+	return &walMessage
+}
+
+func _setupMarshaller(noMarshalOldValue bool, inferUpdatedNulls bool) (Marshaller, chan *replication.WalMessage, chan error, chan stats.Stat) {
 	sh := shutdown.NewShutdownHandler()
 	in := make(chan *replication.WalMessage)
 	errorChan := make(chan error)
 	statsChan := make(chan stats.Stat, 1000)
 
-	m := New(sh, in, statsChan, noMarshalOldValue)
+	m := New(sh, in, statsChan, noMarshalOldValue, inferUpdatedNulls)
 
 	return m, in, errorChan, statsChan
 }
 
 func TestBasicInsertMessage(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -177,7 +239,7 @@ func TestBasicInsertMessage(t *testing.T) {
 
 func TestBasicUpdateMessage(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -213,7 +275,7 @@ func TestBasicUpdateMessage(t *testing.T) {
 
 func TestBasicUpdateNoOldMessage(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(true)
+	m, in, _, _ := _setupMarshaller(true, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -247,9 +309,81 @@ func TestBasicUpdateNoOldMessage(t *testing.T) {
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
+func TestNullsUpdateMessageWithoutInferrence(t *testing.T) {
+	// Setup test
+	m, in, _, _ := _setupMarshaller(false, false)
+	go m.Start()
+
+	// Send data in to marshaller
+	in <- _nullsUpdateMessage()
+
+	// Setup timer to catch issues with Marshaller reading from channel
+	timeout := time.NewTimer(25 * time.Millisecond)
+
+	var marshalled *MarshalledMessage
+	var ok bool
+
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "did not get marshalled message in time")
+	case m, okay := <-m.OutputChan:
+		marshalled = m
+		ok = okay
+		break
+	}
+
+	if !ok {
+		assert.Fail(t, "something went wrong.. the output channel is closed.")
+	}
+
+	assert.Equal(t, uint64(1), marshalled.WalStart)
+	assert.Equal(t, "UPDATE", marshalled.Operation)
+	assert.Equal(t, "test.users", marshalled.Table)
+	assert.Equal(t, "0", marshalled.Transaction)
+
+	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"}}}}`
+	assert.Equal(t, expectedJson, string(marshalled.Json))
+}
+
+func TestNullsUpdateMessageWithInferrence(t *testing.T) {
+	// Setup test
+	m, in, _, _ := _setupMarshaller(false, true)
+	go m.Start()
+
+	// Send data in to marshaller
+	in <- _nullsUpdateMessage()
+
+	// Setup timer to catch issues with Marshaller reading from channel
+	timeout := time.NewTimer(25 * time.Millisecond)
+
+	var marshalled *MarshalledMessage
+	var ok bool
+
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "did not get marshalled message in time")
+	case m, okay := <-m.OutputChan:
+		marshalled = m
+		ok = okay
+		break
+	}
+
+	if !ok {
+		assert.Fail(t, "something went wrong.. the output channel is closed.")
+	}
+
+	assert.Equal(t, uint64(1), marshalled.WalStart)
+	assert.Equal(t, "UPDATE", marshalled.Operation)
+	assert.Equal(t, "test.users", marshalled.Table)
+	assert.Equal(t, "0", marshalled.Transaction)
+
+	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"},"old":{"q":"false","t":"string","v":"null"}}}}`
+	assert.Equal(t, expectedJson, string(marshalled.Json))
+}
+
 func TestToastValue(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -294,7 +428,7 @@ func TestToastValue(t *testing.T) {
 
 func TestToastNoOldValue(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(true)
+	m, in, _, _ := _setupMarshaller(true, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -339,7 +473,7 @@ func TestToastNoOldValue(t *testing.T) {
 
 func TestTimeBasedKey(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -372,7 +506,7 @@ func TestTimeBasedKey(t *testing.T) {
 
 func TestSuccessStat(t *testing.T) {
 	// Setup test
-	m, in, _, s := _setupMarshaller(false)
+	m, in, _, s := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller
@@ -393,7 +527,7 @@ func TestSuccessStat(t *testing.T) {
 
 func TestInputChannelClose(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Close input channel
@@ -412,7 +546,7 @@ func TestInputChannelClose(t *testing.T) {
 
 func TestTerminationContextInput(t *testing.T) {
 	// Setup test
-	m, _, _, _ := _setupMarshaller(false)
+	m, _, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Cancel
@@ -426,7 +560,7 @@ func TestTerminationContextInput(t *testing.T) {
 
 func TestTerminationContextOutput(t *testing.T) {
 	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
+	m, in, _, _ := _setupMarshaller(false, false)
 	go m.Start()
 
 	// Send data in to marshaller

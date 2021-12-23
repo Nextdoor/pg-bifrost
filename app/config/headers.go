@@ -49,4 +49,5 @@ const (
 	VAR_NAME_PARTITION_METHOD          = "partition-method"
 	VAR_NAME_PARTITION_COUNT           = "partition-count"
 	VAR_NAME_NO_MARSHAL_OLD_VALUE      = "no-marshal-old-value"
+	VAR_NAME_INFER_UPDATED_NULLS       = "infer-updated-nulls"
 )

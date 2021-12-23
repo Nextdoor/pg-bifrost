@@ -112,6 +112,12 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	}
 	log.Info("noMarshalOldValue=", noMarshalOldValue)
 
+	inferUpdatedNulls, ok := marshallerConfig[config.VAR_NAME_INFER_UPDATED_NULLS].(bool)
+	if !ok {
+		log.Panic("Wrong type assertion")
+	}
+	log.Info("inferUpdatedNulls=", inferUpdatedNulls)
+
 	// Get partitioner configurations
 	partMethod, ok := partitionConfig[config.VAR_NAME_PARTITION_METHOD].(partitioner.PartitionMethod)
 	if !ok {
@@ -189,7 +195,8 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		shutdownHandler,
 		partitionerInstance.OutputChan,
 		statsChan,
-		noMarshalOldValue)
+		noMarshalOldValue,
+		inferUpdatedNulls)
 
 	transportManager := manager.New(
 		shutdownHandler,
