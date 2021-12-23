@@ -257,7 +257,7 @@ func TestToastValue(t *testing.T) {
 	toast := parselogical.ColumnValue{
 		Value:  "unchanged-toast-datum",
 		Type:   "string",
-		Quoted: true,
+		Quoted: false,
 	}
 
 	bm.Pr.Columns["first_name"] = toast
@@ -302,7 +302,7 @@ func TestToastNoOldValue(t *testing.T) {
 	toast := parselogical.ColumnValue{
 		Value:  "unchanged-toast-datum",
 		Type:   "string",
-		Quoted: true,
+		Quoted: false,
 	}
 
 	bm.Pr.Columns["first_name"] = toast

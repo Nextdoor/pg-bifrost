@@ -200,7 +200,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 
 		if ok && v.Value != oldV.Value {
 			// When column is TOAST-ed use the previous value instead of "unchanged-toast-datum"
-			if v.Value == "unchanged-toast-datum" {
+			if !v.Quoted && v.Value == "unchanged-toast-datum" {
 				if noMarshalOldValue {
 					columns[k] = marshalColumnValuePair(&oldV, nil)
 				} else {
