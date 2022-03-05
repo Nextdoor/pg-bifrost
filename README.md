@@ -128,8 +128,11 @@ Additionally, there is a regex mode to enable matching multiple tables at once, 
 Config Var | Description
 -- | --
 no-marshal-old-value | Disable marshalling of the old value. This can help with performance by only writing the new values.
+infer-updated-nulls  | Infers when a column has been updated from `NULL`, and ensures that `NULL` is present in the old value. Without this flag it is not possible for consumers to differentiate between an unchanged value and a value that has been updated from `NULL`.
 
 In order for pg-bifrost to replicate TOAST-ed columns you must set `REPLICA IDENTITY FULL` on the table containing TOAST columns. Postgres will then send the old and new values for each row written instead of just the current value. If you do not wish to include both the old and new values in your output then you can use `no-marshal-old-value` to disable outputting old values. It is important to note that setting replicate identity to `FULL` can cause severe performance implications. See https://www.postgresql.org/docs/10/logical-replication-publication.html for details.
+
+If your use case involves processing `UPDATE` operations to detect when a column has updated from `NULL` to a not `NULL` value then the `infer-updated-nulls` setting should be enabled. It is important to note that the accuracy of this behaviour relies on the relevant columns being included in the `REPLICA IDENTITY`. Columns that are not included in the `REPLICA IDENTITY` will always have a `NULL` old value in the output stream.
 
 ### Partitioning
 
