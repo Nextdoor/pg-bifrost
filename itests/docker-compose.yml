@@ -12,7 +12,7 @@ services:
 
   localstack:
     container_name: localstack
-    image: localstack/localstack:0.8.7
+    image: localstack/localstack:0.14.0
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
@@ -42,9 +42,7 @@ services:
     - "./tests/${TEST_NAME}/envfile.env"
     - "./contexts/${TRANSPORT_SINK}.env"
     networks:
-      net:
-        aliases:
-        - localstack
+      - net
 
   # bifrost needs postgres to be up, and for data-poller to have created sinks (e.g, s3 bucket, kinesis stream, etc)
   # This container is intended to be started first by the caller and then bifrost
@@ -66,10 +64,7 @@ services:
     - "./tests/${TEST_NAME}/envfile.env"
     - "./contexts/${TRANSPORT_SINK}.env"
     networks:
-      net:
-        aliases:
-        - localstack
-        - postgres
+      - net
     command: /pg-bifrost replicate ${TRANSPORT_SINK}
 
 networks:

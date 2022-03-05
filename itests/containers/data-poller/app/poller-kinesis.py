@@ -15,7 +15,7 @@ from retry import retry
 # Variables
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 STREAM_NAME = os.getenv('STREAM_NAME', 'itests')
-ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4568')
+ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4566')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KINESIS_POLLER_WAIT_TIME', '90'))

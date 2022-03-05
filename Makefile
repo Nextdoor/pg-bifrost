@@ -47,6 +47,16 @@ build_mac: generate
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
+build_arm: generate
+	@echo "Creating GO binary"
+	mkdir -p target
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
+
+build_mac_arm: generate
+	@echo "Creating GO binary"
+	mkdir -p target
+	CGO_ENABLED=0 GOOS=darwin GOOS=arm64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
+
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
 
