@@ -19,6 +19,9 @@ set -e
 # Used to manually run itests against a single transport sink
 ITESTS_TRANSPORT_SINK=${ITESTS_TRANSPORT_SINK:-}
 
+# Used to manually run a specific test
+ITESTS_TEST=${ITESTS_TEST:-}
+
 get_testfiles() {
     _transport_sink=$1
 
@@ -57,6 +60,7 @@ run_itests_on_transport_sink() {
 
     for TEST in $TESTFILES
     do
+       if [[ "$ITESTS_TEST" != "" ]] && [[ "$ITESTS_TEST" != "$TEST" ]]; then continue; fi
        echo "running test $TEST"
        ./integration_tests.bats -r tests -f "$TEST"
     done
