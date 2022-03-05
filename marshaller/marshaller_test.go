@@ -17,14 +17,15 @@
 package marshaller
 
 import (
+	"testing"
+	"time"
+
 	"github.com/Nextdoor/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -144,6 +145,7 @@ func _nullsUpdateMessage() *replication.WalMessage {
 	}
 
 	columns["first_name"] = null
+	columns["middle_name"] = null
 	columns["last_name"] = column
 
 	oldColumn := parselogical.ColumnValue{
@@ -341,7 +343,7 @@ func TestNullsUpdateMessageWithoutInferrence(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"}}}}`
+	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"}},"middle_name":{"new":{"q":"false","t":"string","v":"null"}}}}`
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
@@ -377,7 +379,7 @@ func TestNullsUpdateMessageWithInferrence(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"},"old":{"q":"false","t":"string","v":"null"}}}}`
+	expectedJson := `{"time":"1970-01-01T00:00:00Z","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"false","t":"string","v":"null"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Foo"},"old":{"q":"false","t":"string","v":"null"}},"middle_name":{"new":{"q":"false","t":"string","v":"null"}}}}`
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 

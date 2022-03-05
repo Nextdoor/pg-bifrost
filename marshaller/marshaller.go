@@ -17,7 +17,7 @@
 package marshaller
 
 import (
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 
 	"os"
 	"time"
@@ -216,7 +216,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool, infer
 			} else {
 				columns[k] = marshalColumnValuePair(&v, &oldV)
 			}
-		} else if inferUpdatedNulls && !noMarshalOldValue && !ok && msg.Pr.Operation == "UPDATE" {
+		} else if inferUpdatedNulls && !noMarshalOldValue && !ok && !(v.Value == "null" && !v.Quoted) && msg.Pr.Operation == "UPDATE" {
 			// The test_decoding output omits NULL values from the old-key.
 			//
 			// Ordinarily the "old" key being omitted from the value pair represents an unchanged column, which
@@ -224,6 +224,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool, infer
 			// an update from NULL to not NULL.
 
 			// Construct a NULL value when the column is missing from OldColumns
+			// and the current value isn't NULL
 			columns[k] = marshalColumnValuePair(&v, &parselogical.ColumnValue{
 				Value:  "null",
 				Type:   v.Type,
