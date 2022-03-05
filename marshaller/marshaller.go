@@ -17,7 +17,7 @@
 package marshaller
 
 import (
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 
 	"os"
 	"time"
@@ -50,17 +50,19 @@ type Marshaller struct {
 	statsChan chan stats.Stat
 
 	noMarshalOldValue bool
+	inferUpdatedNulls bool
 }
 
 // New is a simple constructor which create a marshaller.
 func New(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *replication.WalMessage,
 	statsChan chan stats.Stat,
-	noMarshalOldValue bool) Marshaller {
+	noMarshalOldValue bool,
+	inferUpdatedNulls bool) Marshaller {
 
 	outputChan := make(chan *MarshalledMessage)
 
-	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan, noMarshalOldValue}
+	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan, noMarshalOldValue, inferUpdatedNulls}
 }
 
 // jsonWalEntry is a helper struct which has json field tags
@@ -121,7 +123,7 @@ func (m Marshaller) Start() {
 			return
 		}
 
-		byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
+		byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue, m.inferUpdatedNulls)
 
 		if err != nil {
 			m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
@@ -183,7 +185,7 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 }
 
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
-func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
+func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool, inferUpdatedNulls bool) ([]byte, error) {
 	lsn := pglogrepl.LSN(msg.WalStart).String()
 
 	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
@@ -200,7 +202,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 
 		if ok && v.Value != oldV.Value {
 			// When column is TOAST-ed use the previous value instead of "unchanged-toast-datum"
-			if v.Value == "unchanged-toast-datum" {
+			if !v.Quoted && v.Value == "unchanged-toast-datum" {
 				if noMarshalOldValue {
 					columns[k] = marshalColumnValuePair(&oldV, nil)
 				} else {
@@ -214,6 +216,20 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 			} else {
 				columns[k] = marshalColumnValuePair(&v, &oldV)
 			}
+		} else if inferUpdatedNulls && !noMarshalOldValue && !ok && !(v.Value == "null" && !v.Quoted) && msg.Pr.Operation == "UPDATE" {
+			// The test_decoding output omits NULL values from the old-key.
+			//
+			// Ordinarily the "old" key being omitted from the value pair represents an unchanged column, which
+			// consequently means that downstream consumers cannot differentiate between an unchanged column and
+			// an update from NULL to not NULL.
+
+			// Construct a NULL value when the column is missing from OldColumns
+			// and the current value isn't NULL
+			columns[k] = marshalColumnValuePair(&v, &parselogical.ColumnValue{
+				Value:  "null",
+				Type:   v.Type,
+				Quoted: false,
+			})
 		} else {
 			columns[k] = marshalColumnValuePair(&v, nil)
 		}

@@ -409,6 +409,7 @@ func replicateAction(c *cli.Context) error {
 	//
 	marshallerConfig := make(map[string]interface{}, 0)
 	marshallerConfig[config.VAR_NAME_NO_MARSHAL_OLD_VALUE] = c.GlobalBool(config.VAR_NAME_NO_MARSHAL_OLD_VALUE)
+	marshallerConfig[config.VAR_NAME_INFER_UPDATED_NULLS] = c.GlobalBool(config.VAR_NAME_INFER_UPDATED_NULLS)
 
 	//
 	// Validate, construct and create partitioner config from Flags
@@ -654,6 +655,11 @@ func main() {
 					Name:   config.VAR_NAME_NO_MARSHAL_OLD_VALUE,
 					Usage:  "Disable marshalling of the old value. This can help with performance by only writing the new values.",
 					EnvVar: "NO_MARSHAL_OLD_VALUE",
+				},
+				cli.BoolFlag{
+					Name:   config.VAR_NAME_INFER_UPDATED_NULLS,
+					Usage:  "Enable inferring previous NULL values while marshalling updates.",
+					EnvVar: "INFER_UPDATED_NULLS",
 				},
 			},
 			Subcommands: []cli.Command{
