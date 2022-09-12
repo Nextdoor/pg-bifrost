@@ -1,6 +1,6 @@
 FROM postgres:14.3
 
-RUN apt-get update && apt-get install -y postgresql-10-pglogical && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y postgresql-14-pglogical && rm -rf /var/lib/apt/lists/*
 
 COPY docker-entrypoint-initdb.d /docker-entrypoint-initdb.d
 COPY bootstrap.sh /usr/local/bin/
