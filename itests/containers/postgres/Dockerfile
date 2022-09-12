@@ -1,4 +1,4 @@
-FROM postgres:14.13
+FROM postgres:14.3
 
 RUN apt-get update && apt-get install -y postgresql-10-pglogical && rm -rf /var/lib/apt/lists/*
 
