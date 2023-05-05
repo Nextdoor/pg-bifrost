@@ -187,7 +187,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 	lsn := pglogrepl.LSN(msg.WalStart).String()
 
 	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
-	t := time.Unix(0, int64(msg.ServerTime)*1000000).Format(time.RFC3339)
+	t := time.Unix(0, int64(msg.ServerTime)*1000000).UTC().Format(time.RFC3339)
 	columns := make(map[string]map[string]map[string]string)
 
 	for k, v := range msg.Pr.Columns {
