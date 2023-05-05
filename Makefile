@@ -40,7 +40,7 @@ clean:
 build: generate
 	@echo "Creating GO binary"
 	mkdir -p target
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
 build_mac: generate
 	@echo "Creating GO binary"
