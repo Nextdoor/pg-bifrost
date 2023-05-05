@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
@@ -41,7 +41,7 @@ import (
 //go:generate mockgen -destination=mocks/mock_kinesis.go -package=mocks github.com/aws/aws-sdk-go/service/kinesis/kinesisiface KinesisAPI
 
 var (
-	TimeSource utils.TimeSource = utils.RealTime{}
+	TimeSource utils.TimeSource = &utils.RealTime{}
 )
 
 type KinesisTransporter struct {
@@ -97,8 +97,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	endpoint *string) transport.Transporter {
 
 	awsConfig := &aws.Config{
-		Region:      aws.String(*awsRegion),
-		Endpoint:    endpoint,
+		Region:   aws.String(*awsRegion),
+		Endpoint: endpoint,
 	}
 
 	if *awsAccessKeyId != "" || *awsSecretAccessKey != "" {
@@ -143,6 +143,7 @@ func (t *KinesisTransporter) shutdown() {
 
 func (t *KinesisTransporter) transportWithRetry(ctx context.Context, pri *kinesis.PutRecordsInput) (error, bool) {
 	var cancelled bool
+	var ts = TimeSource
 
 	// An operation that may fail.
 	operation := func() error {
@@ -159,13 +160,13 @@ func (t *KinesisTransporter) transportWithRetry(ctx context.Context, pri *kinesi
 		// If entire put had an error then entire batch needs retrying
 		if err != nil {
 			t.log.Warnf("err %s", err)
-			t.statsChan <- stats.NewStatCount("kinesis_transport", "failure", 1, TimeSource.UnixNano())
+			t.statsChan <- stats.NewStatCount("kinesis_transport", "failure", 1, ts.UnixNano())
 			return err
 		}
 
 		// If there are no failures then put was successful
 		if *pro.FailedRecordCount == 0 {
-			t.statsChan <- stats.NewStatCount("kinesis_transport", "success", 1, TimeSource.UnixNano())
+			t.statsChan <- stats.NewStatCount("kinesis_transport", "success", 1, ts.UnixNano())
 			return nil
 		}
 
@@ -193,7 +194,7 @@ func (t *KinesisTransporter) transportWithRetry(ctx context.Context, pri *kinesi
 		// record the error
 		err = errors.New(fmt.Sprintf("%d records failed to be put to Kinesis: %v", *pro.FailedRecordCount, errorMessages))
 		t.log.Warnf("err %s", err)
-		t.statsChan <- stats.NewStatCount("kinesis_transport", "failure", 1, TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("kinesis_transport", "failure", 1, ts.UnixNano())
 
 		// return err to signify a retry is needed
 		return err
@@ -220,6 +221,7 @@ func (t *KinesisTransporter) StartTransporting() {
 
 	var b interface{}
 	var ok bool
+	var ts = TimeSource
 
 	for {
 		select {
@@ -261,15 +263,15 @@ func (t *KinesisTransporter) StartTransporting() {
 		pri := kinesis.PutRecordsInput{Records: prre, StreamName: &t.streamName}
 
 		// Begin timer
-		start := TimeSource.UnixNano()
+		start := ts.UnixNano()
 
 		// send to Kinesis with some retry logic
 		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, &pri)
 
 		// End timer and send stat
 
-		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
-		t.statsChan <- stats.NewStatHistogram("kinesis_transport", "duration", total, TimeSource.UnixNano(), "ms")
+		total := (ts.UnixNano() - start) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("kinesis_transport", "duration", total, ts.UnixNano(), "ms")
 
 		if err != nil {
 			t.log.Error("max retries exceeded")
@@ -282,7 +284,7 @@ func (t *KinesisTransporter) StartTransporting() {
 		}
 
 		t.log.Debug("successfully wrote batch")
-		t.statsChan <- stats.NewStatCount("kinesis_transport", "written", int64(kinesisBatch.NumMessages()), TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("kinesis_transport", "written", int64(kinesisBatch.NumMessages()), ts.UnixNano())
 
 		// report transactions written in this batch
 		t.txnsWritten <- kinesisBatch.GetTransactions()
