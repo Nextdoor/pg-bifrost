@@ -6,47 +6,48 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	conn "github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockManagerInterface is a mock of ManagerInterface interface
+// MockManagerInterface is a mock of ManagerInterface interface.
 type MockManagerInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockManagerInterfaceMockRecorder
 }
 
-// MockManagerInterfaceMockRecorder is the mock recorder for MockManagerInterface
+// MockManagerInterfaceMockRecorder is the mock recorder for MockManagerInterface.
 type MockManagerInterfaceMockRecorder struct {
 	mock *MockManagerInterface
 }
 
-// NewMockManagerInterface creates a new mock instance
+// NewMockManagerInterface creates a new mock instance.
 func NewMockManagerInterface(ctrl *gomock.Controller) *MockManagerInterface {
 	mock := &MockManagerInterface{ctrl: ctrl}
 	mock.recorder = &MockManagerInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockManagerInterface) EXPECT() *MockManagerInterfaceMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method
+// Close mocks base method.
 func (m *MockManagerInterface) Close() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Close")
 }
 
-// Close indicates an expected call of Close
+// Close indicates an expected call of Close.
 func (mr *MockManagerInterfaceMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockManagerInterface)(nil).Close))
 }
 
-// GetConn mocks base method
+// GetConn mocks base method.
 func (m *MockManagerInterface) GetConn(arg0 context.Context) (conn.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConn", arg0)
@@ -55,13 +56,13 @@ func (m *MockManagerInterface) GetConn(arg0 context.Context) (conn.Conn, error) 
 	return ret0, ret1
 }
 
-// GetConn indicates an expected call of GetConn
+// GetConn indicates an expected call of GetConn.
 func (mr *MockManagerInterfaceMockRecorder) GetConn(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockManagerInterface)(nil).GetConn), arg0)
 }
 
-// GetConnWithStartLsn mocks base method
+// GetConnWithStartLsn mocks base method.
 func (m *MockManagerInterface) GetConnWithStartLsn(arg0 context.Context, arg1 uint64) (conn.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnWithStartLsn", arg0, arg1)
@@ -70,7 +71,7 @@ func (m *MockManagerInterface) GetConnWithStartLsn(arg0 context.Context, arg1 ui
 	return ret0, ret1
 }
 
-// GetConnWithStartLsn indicates an expected call of GetConnWithStartLsn
+// GetConnWithStartLsn indicates an expected call of GetConnWithStartLsn.
 func (mr *MockManagerInterfaceMockRecorder) GetConnWithStartLsn(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConnWithStartLsn", reflect.TypeOf((*MockManagerInterface)(nil).GetConnWithStartLsn), arg0, arg1)

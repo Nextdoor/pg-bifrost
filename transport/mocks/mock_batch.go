@@ -5,37 +5,38 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	marshaller "github.com/Nextdoor/pg-bifrost.git/marshaller"
 	transport "github.com/Nextdoor/pg-bifrost.git/transport"
 	ordered_map "github.com/cevaris/ordered_map"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockBatch is a mock of Batch interface
+// MockBatch is a mock of Batch interface.
 type MockBatch struct {
 	ctrl     *gomock.Controller
 	recorder *MockBatchMockRecorder
 }
 
-// MockBatchMockRecorder is the mock recorder for MockBatch
+// MockBatchMockRecorder is the mock recorder for MockBatch.
 type MockBatchMockRecorder struct {
 	mock *MockBatch
 }
 
-// NewMockBatch creates a new mock instance
+// NewMockBatch creates a new mock instance.
 func NewMockBatch(ctrl *gomock.Controller) *MockBatch {
 	mock := &MockBatch{ctrl: ctrl}
 	mock.recorder = &MockBatchMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockBatch) EXPECT() *MockBatchMockRecorder {
 	return m.recorder
 }
 
-// Add mocks base method
+// Add mocks base method.
 func (m *MockBatch) Add(arg0 *marshaller.MarshalledMessage) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
@@ -44,13 +45,13 @@ func (m *MockBatch) Add(arg0 *marshaller.MarshalledMessage) (bool, error) {
 	return ret0, ret1
 }
 
-// Add indicates an expected call of Add
+// Add indicates an expected call of Add.
 func (mr *MockBatchMockRecorder) Add(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockBatch)(nil).Add), arg0)
 }
 
-// Close mocks base method
+// Close mocks base method.
 func (m *MockBatch) Close() (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -59,13 +60,13 @@ func (m *MockBatch) Close() (bool, error) {
 	return ret0, ret1
 }
 
-// Close indicates an expected call of Close
+// Close indicates an expected call of Close.
 func (mr *MockBatchMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockBatch)(nil).Close))
 }
 
-// CreateTime mocks base method
+// CreateTime mocks base method.
 func (m *MockBatch) CreateTime() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateTime")
@@ -73,13 +74,13 @@ func (m *MockBatch) CreateTime() int64 {
 	return ret0
 }
 
-// CreateTime indicates an expected call of CreateTime
+// CreateTime indicates an expected call of CreateTime.
 func (mr *MockBatchMockRecorder) CreateTime() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTime", reflect.TypeOf((*MockBatch)(nil).CreateTime))
 }
 
-// GetPartitionKey mocks base method
+// GetPartitionKey mocks base method.
 func (m *MockBatch) GetPartitionKey() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPartitionKey")
@@ -87,13 +88,13 @@ func (m *MockBatch) GetPartitionKey() string {
 	return ret0
 }
 
-// GetPartitionKey indicates an expected call of GetPartitionKey
+// GetPartitionKey indicates an expected call of GetPartitionKey.
 func (mr *MockBatchMockRecorder) GetPartitionKey() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPartitionKey", reflect.TypeOf((*MockBatch)(nil).GetPartitionKey))
 }
 
-// GetPayload mocks base method
+// GetPayload mocks base method.
 func (m *MockBatch) GetPayload() interface{} {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPayload")
@@ -101,13 +102,13 @@ func (m *MockBatch) GetPayload() interface{} {
 	return ret0
 }
 
-// GetPayload indicates an expected call of GetPayload
+// GetPayload indicates an expected call of GetPayload.
 func (mr *MockBatchMockRecorder) GetPayload() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPayload", reflect.TypeOf((*MockBatch)(nil).GetPayload))
 }
 
-// GetPayloadByteSize mocks base method
+// GetPayloadByteSize mocks base method.
 func (m *MockBatch) GetPayloadByteSize() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPayloadByteSize")
@@ -115,13 +116,13 @@ func (m *MockBatch) GetPayloadByteSize() int64 {
 	return ret0
 }
 
-// GetPayloadByteSize indicates an expected call of GetPayloadByteSize
+// GetPayloadByteSize indicates an expected call of GetPayloadByteSize.
 func (mr *MockBatchMockRecorder) GetPayloadByteSize() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPayloadByteSize", reflect.TypeOf((*MockBatch)(nil).GetPayloadByteSize))
 }
 
-// GetTransactions mocks base method
+// GetTransactions mocks base method.
 func (m *MockBatch) GetTransactions() *ordered_map.OrderedMap {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTransactions")
@@ -129,13 +130,13 @@ func (m *MockBatch) GetTransactions() *ordered_map.OrderedMap {
 	return ret0
 }
 
-// GetTransactions indicates an expected call of GetTransactions
+// GetTransactions indicates an expected call of GetTransactions.
 func (mr *MockBatchMockRecorder) GetTransactions() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactions", reflect.TypeOf((*MockBatch)(nil).GetTransactions))
 }
 
-// IsEmpty mocks base method
+// IsEmpty mocks base method.
 func (m *MockBatch) IsEmpty() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsEmpty")
@@ -143,13 +144,13 @@ func (m *MockBatch) IsEmpty() bool {
 	return ret0
 }
 
-// IsEmpty indicates an expected call of IsEmpty
+// IsEmpty indicates an expected call of IsEmpty.
 func (mr *MockBatchMockRecorder) IsEmpty() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsEmpty", reflect.TypeOf((*MockBatch)(nil).IsEmpty))
 }
 
-// IsFull mocks base method
+// IsFull mocks base method.
 func (m *MockBatch) IsFull() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsFull")
@@ -157,13 +158,13 @@ func (m *MockBatch) IsFull() bool {
 	return ret0
 }
 
-// IsFull indicates an expected call of IsFull
+// IsFull indicates an expected call of IsFull.
 func (mr *MockBatchMockRecorder) IsFull() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsFull", reflect.TypeOf((*MockBatch)(nil).IsFull))
 }
 
-// ModifyTime mocks base method
+// ModifyTime mocks base method.
 func (m *MockBatch) ModifyTime() int64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ModifyTime")
@@ -171,13 +172,13 @@ func (m *MockBatch) ModifyTime() int64 {
 	return ret0
 }
 
-// ModifyTime indicates an expected call of ModifyTime
+// ModifyTime indicates an expected call of ModifyTime.
 func (mr *MockBatchMockRecorder) ModifyTime() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModifyTime", reflect.TypeOf((*MockBatch)(nil).ModifyTime))
 }
 
-// NumMessages mocks base method
+// NumMessages mocks base method.
 func (m *MockBatch) NumMessages() int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NumMessages")
@@ -185,36 +186,36 @@ func (m *MockBatch) NumMessages() int {
 	return ret0
 }
 
-// NumMessages indicates an expected call of NumMessages
+// NumMessages indicates an expected call of NumMessages.
 func (mr *MockBatchMockRecorder) NumMessages() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NumMessages", reflect.TypeOf((*MockBatch)(nil).NumMessages))
 }
 
-// MockBatchFactory is a mock of BatchFactory interface
+// MockBatchFactory is a mock of BatchFactory interface.
 type MockBatchFactory struct {
 	ctrl     *gomock.Controller
 	recorder *MockBatchFactoryMockRecorder
 }
 
-// MockBatchFactoryMockRecorder is the mock recorder for MockBatchFactory
+// MockBatchFactoryMockRecorder is the mock recorder for MockBatchFactory.
 type MockBatchFactoryMockRecorder struct {
 	mock *MockBatchFactory
 }
 
-// NewMockBatchFactory creates a new mock instance
+// NewMockBatchFactory creates a new mock instance.
 func NewMockBatchFactory(ctrl *gomock.Controller) *MockBatchFactory {
 	mock := &MockBatchFactory{ctrl: ctrl}
 	mock.recorder = &MockBatchFactoryMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockBatchFactory) EXPECT() *MockBatchFactoryMockRecorder {
 	return m.recorder
 }
 
-// NewBatch mocks base method
+// NewBatch mocks base method.
 func (m *MockBatchFactory) NewBatch(arg0 string) transport.Batch {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewBatch", arg0)
@@ -222,7 +223,7 @@ func (m *MockBatchFactory) NewBatch(arg0 string) transport.Batch {
 	return ret0
 }
 
-// NewBatch indicates an expected call of NewBatch
+// NewBatch indicates an expected call of NewBatch.
 func (mr *MockBatchFactoryMockRecorder) NewBatch(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewBatch", reflect.TypeOf((*MockBatchFactory)(nil).NewBatch), arg0)

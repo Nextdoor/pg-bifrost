@@ -5,37 +5,38 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	aws "github.com/aws/aws-sdk-go/aws"
 	request "github.com/aws/aws-sdk-go/aws/request"
 	kinesis "github.com/aws/aws-sdk-go/service/kinesis"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockKinesisAPI is a mock of KinesisAPI interface
+// MockKinesisAPI is a mock of KinesisAPI interface.
 type MockKinesisAPI struct {
 	ctrl     *gomock.Controller
 	recorder *MockKinesisAPIMockRecorder
 }
 
-// MockKinesisAPIMockRecorder is the mock recorder for MockKinesisAPI
+// MockKinesisAPIMockRecorder is the mock recorder for MockKinesisAPI.
 type MockKinesisAPIMockRecorder struct {
 	mock *MockKinesisAPI
 }
 
-// NewMockKinesisAPI creates a new mock instance
+// NewMockKinesisAPI creates a new mock instance.
 func NewMockKinesisAPI(ctrl *gomock.Controller) *MockKinesisAPI {
 	mock := &MockKinesisAPI{ctrl: ctrl}
 	mock.recorder = &MockKinesisAPIMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockKinesisAPI) EXPECT() *MockKinesisAPIMockRecorder {
 	return m.recorder
 }
 
-// AddTagsToStream mocks base method
+// AddTagsToStream mocks base method.
 func (m *MockKinesisAPI) AddTagsToStream(arg0 *kinesis.AddTagsToStreamInput) (*kinesis.AddTagsToStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddTagsToStream", arg0)
@@ -44,13 +45,13 @@ func (m *MockKinesisAPI) AddTagsToStream(arg0 *kinesis.AddTagsToStreamInput) (*k
 	return ret0, ret1
 }
 
-// AddTagsToStream indicates an expected call of AddTagsToStream
+// AddTagsToStream indicates an expected call of AddTagsToStream.
 func (mr *MockKinesisAPIMockRecorder) AddTagsToStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTagsToStream", reflect.TypeOf((*MockKinesisAPI)(nil).AddTagsToStream), arg0)
 }
 
-// AddTagsToStreamRequest mocks base method
+// AddTagsToStreamRequest mocks base method.
 func (m *MockKinesisAPI) AddTagsToStreamRequest(arg0 *kinesis.AddTagsToStreamInput) (*request.Request, *kinesis.AddTagsToStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddTagsToStreamRequest", arg0)
@@ -59,13 +60,13 @@ func (m *MockKinesisAPI) AddTagsToStreamRequest(arg0 *kinesis.AddTagsToStreamInp
 	return ret0, ret1
 }
 
-// AddTagsToStreamRequest indicates an expected call of AddTagsToStreamRequest
+// AddTagsToStreamRequest indicates an expected call of AddTagsToStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) AddTagsToStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTagsToStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).AddTagsToStreamRequest), arg0)
 }
 
-// AddTagsToStreamWithContext mocks base method
+// AddTagsToStreamWithContext mocks base method.
 func (m *MockKinesisAPI) AddTagsToStreamWithContext(arg0 aws.Context, arg1 *kinesis.AddTagsToStreamInput, arg2 ...request.Option) (*kinesis.AddTagsToStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -78,14 +79,14 @@ func (m *MockKinesisAPI) AddTagsToStreamWithContext(arg0 aws.Context, arg1 *kine
 	return ret0, ret1
 }
 
-// AddTagsToStreamWithContext indicates an expected call of AddTagsToStreamWithContext
+// AddTagsToStreamWithContext indicates an expected call of AddTagsToStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) AddTagsToStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTagsToStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).AddTagsToStreamWithContext), varargs...)
 }
 
-// CreateStream mocks base method
+// CreateStream mocks base method.
 func (m *MockKinesisAPI) CreateStream(arg0 *kinesis.CreateStreamInput) (*kinesis.CreateStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateStream", arg0)
@@ -94,13 +95,13 @@ func (m *MockKinesisAPI) CreateStream(arg0 *kinesis.CreateStreamInput) (*kinesis
 	return ret0, ret1
 }
 
-// CreateStream indicates an expected call of CreateStream
+// CreateStream indicates an expected call of CreateStream.
 func (mr *MockKinesisAPIMockRecorder) CreateStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStream", reflect.TypeOf((*MockKinesisAPI)(nil).CreateStream), arg0)
 }
 
-// CreateStreamRequest mocks base method
+// CreateStreamRequest mocks base method.
 func (m *MockKinesisAPI) CreateStreamRequest(arg0 *kinesis.CreateStreamInput) (*request.Request, *kinesis.CreateStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateStreamRequest", arg0)
@@ -109,13 +110,13 @@ func (m *MockKinesisAPI) CreateStreamRequest(arg0 *kinesis.CreateStreamInput) (*
 	return ret0, ret1
 }
 
-// CreateStreamRequest indicates an expected call of CreateStreamRequest
+// CreateStreamRequest indicates an expected call of CreateStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) CreateStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).CreateStreamRequest), arg0)
 }
 
-// CreateStreamWithContext mocks base method
+// CreateStreamWithContext mocks base method.
 func (m *MockKinesisAPI) CreateStreamWithContext(arg0 aws.Context, arg1 *kinesis.CreateStreamInput, arg2 ...request.Option) (*kinesis.CreateStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -128,14 +129,14 @@ func (m *MockKinesisAPI) CreateStreamWithContext(arg0 aws.Context, arg1 *kinesis
 	return ret0, ret1
 }
 
-// CreateStreamWithContext indicates an expected call of CreateStreamWithContext
+// CreateStreamWithContext indicates an expected call of CreateStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) CreateStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).CreateStreamWithContext), varargs...)
 }
 
-// DecreaseStreamRetentionPeriod mocks base method
+// DecreaseStreamRetentionPeriod mocks base method.
 func (m *MockKinesisAPI) DecreaseStreamRetentionPeriod(arg0 *kinesis.DecreaseStreamRetentionPeriodInput) (*kinesis.DecreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DecreaseStreamRetentionPeriod", arg0)
@@ -144,13 +145,13 @@ func (m *MockKinesisAPI) DecreaseStreamRetentionPeriod(arg0 *kinesis.DecreaseStr
 	return ret0, ret1
 }
 
-// DecreaseStreamRetentionPeriod indicates an expected call of DecreaseStreamRetentionPeriod
+// DecreaseStreamRetentionPeriod indicates an expected call of DecreaseStreamRetentionPeriod.
 func (mr *MockKinesisAPIMockRecorder) DecreaseStreamRetentionPeriod(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecreaseStreamRetentionPeriod", reflect.TypeOf((*MockKinesisAPI)(nil).DecreaseStreamRetentionPeriod), arg0)
 }
 
-// DecreaseStreamRetentionPeriodRequest mocks base method
+// DecreaseStreamRetentionPeriodRequest mocks base method.
 func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodRequest(arg0 *kinesis.DecreaseStreamRetentionPeriodInput) (*request.Request, *kinesis.DecreaseStreamRetentionPeriodOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DecreaseStreamRetentionPeriodRequest", arg0)
@@ -159,13 +160,13 @@ func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodRequest(arg0 *kinesis.Decr
 	return ret0, ret1
 }
 
-// DecreaseStreamRetentionPeriodRequest indicates an expected call of DecreaseStreamRetentionPeriodRequest
+// DecreaseStreamRetentionPeriodRequest indicates an expected call of DecreaseStreamRetentionPeriodRequest.
 func (mr *MockKinesisAPIMockRecorder) DecreaseStreamRetentionPeriodRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecreaseStreamRetentionPeriodRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DecreaseStreamRetentionPeriodRequest), arg0)
 }
 
-// DecreaseStreamRetentionPeriodWithContext mocks base method
+// DecreaseStreamRetentionPeriodWithContext mocks base method.
 func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodWithContext(arg0 aws.Context, arg1 *kinesis.DecreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.DecreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -178,14 +179,14 @@ func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodWithContext(arg0 aws.Conte
 	return ret0, ret1
 }
 
-// DecreaseStreamRetentionPeriodWithContext indicates an expected call of DecreaseStreamRetentionPeriodWithContext
+// DecreaseStreamRetentionPeriodWithContext indicates an expected call of DecreaseStreamRetentionPeriodWithContext.
 func (mr *MockKinesisAPIMockRecorder) DecreaseStreamRetentionPeriodWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecreaseStreamRetentionPeriodWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DecreaseStreamRetentionPeriodWithContext), varargs...)
 }
 
-// DeleteStream mocks base method
+// DeleteStream mocks base method.
 func (m *MockKinesisAPI) DeleteStream(arg0 *kinesis.DeleteStreamInput) (*kinesis.DeleteStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteStream", arg0)
@@ -194,13 +195,13 @@ func (m *MockKinesisAPI) DeleteStream(arg0 *kinesis.DeleteStreamInput) (*kinesis
 	return ret0, ret1
 }
 
-// DeleteStream indicates an expected call of DeleteStream
+// DeleteStream indicates an expected call of DeleteStream.
 func (mr *MockKinesisAPIMockRecorder) DeleteStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStream", reflect.TypeOf((*MockKinesisAPI)(nil).DeleteStream), arg0)
 }
 
-// DeleteStreamRequest mocks base method
+// DeleteStreamRequest mocks base method.
 func (m *MockKinesisAPI) DeleteStreamRequest(arg0 *kinesis.DeleteStreamInput) (*request.Request, *kinesis.DeleteStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteStreamRequest", arg0)
@@ -209,13 +210,13 @@ func (m *MockKinesisAPI) DeleteStreamRequest(arg0 *kinesis.DeleteStreamInput) (*
 	return ret0, ret1
 }
 
-// DeleteStreamRequest indicates an expected call of DeleteStreamRequest
+// DeleteStreamRequest indicates an expected call of DeleteStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) DeleteStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DeleteStreamRequest), arg0)
 }
 
-// DeleteStreamWithContext mocks base method
+// DeleteStreamWithContext mocks base method.
 func (m *MockKinesisAPI) DeleteStreamWithContext(arg0 aws.Context, arg1 *kinesis.DeleteStreamInput, arg2 ...request.Option) (*kinesis.DeleteStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -228,14 +229,14 @@ func (m *MockKinesisAPI) DeleteStreamWithContext(arg0 aws.Context, arg1 *kinesis
 	return ret0, ret1
 }
 
-// DeleteStreamWithContext indicates an expected call of DeleteStreamWithContext
+// DeleteStreamWithContext indicates an expected call of DeleteStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) DeleteStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DeleteStreamWithContext), varargs...)
 }
 
-// DeregisterStreamConsumer mocks base method
+// DeregisterStreamConsumer mocks base method.
 func (m *MockKinesisAPI) DeregisterStreamConsumer(arg0 *kinesis.DeregisterStreamConsumerInput) (*kinesis.DeregisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeregisterStreamConsumer", arg0)
@@ -244,13 +245,13 @@ func (m *MockKinesisAPI) DeregisterStreamConsumer(arg0 *kinesis.DeregisterStream
 	return ret0, ret1
 }
 
-// DeregisterStreamConsumer indicates an expected call of DeregisterStreamConsumer
+// DeregisterStreamConsumer indicates an expected call of DeregisterStreamConsumer.
 func (mr *MockKinesisAPIMockRecorder) DeregisterStreamConsumer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeregisterStreamConsumer", reflect.TypeOf((*MockKinesisAPI)(nil).DeregisterStreamConsumer), arg0)
 }
 
-// DeregisterStreamConsumerRequest mocks base method
+// DeregisterStreamConsumerRequest mocks base method.
 func (m *MockKinesisAPI) DeregisterStreamConsumerRequest(arg0 *kinesis.DeregisterStreamConsumerInput) (*request.Request, *kinesis.DeregisterStreamConsumerOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeregisterStreamConsumerRequest", arg0)
@@ -259,13 +260,13 @@ func (m *MockKinesisAPI) DeregisterStreamConsumerRequest(arg0 *kinesis.Deregiste
 	return ret0, ret1
 }
 
-// DeregisterStreamConsumerRequest indicates an expected call of DeregisterStreamConsumerRequest
+// DeregisterStreamConsumerRequest indicates an expected call of DeregisterStreamConsumerRequest.
 func (mr *MockKinesisAPIMockRecorder) DeregisterStreamConsumerRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeregisterStreamConsumerRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DeregisterStreamConsumerRequest), arg0)
 }
 
-// DeregisterStreamConsumerWithContext mocks base method
+// DeregisterStreamConsumerWithContext mocks base method.
 func (m *MockKinesisAPI) DeregisterStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.DeregisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.DeregisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -278,14 +279,14 @@ func (m *MockKinesisAPI) DeregisterStreamConsumerWithContext(arg0 aws.Context, a
 	return ret0, ret1
 }
 
-// DeregisterStreamConsumerWithContext indicates an expected call of DeregisterStreamConsumerWithContext
+// DeregisterStreamConsumerWithContext indicates an expected call of DeregisterStreamConsumerWithContext.
 func (mr *MockKinesisAPIMockRecorder) DeregisterStreamConsumerWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeregisterStreamConsumerWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DeregisterStreamConsumerWithContext), varargs...)
 }
 
-// DescribeLimits mocks base method
+// DescribeLimits mocks base method.
 func (m *MockKinesisAPI) DescribeLimits(arg0 *kinesis.DescribeLimitsInput) (*kinesis.DescribeLimitsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeLimits", arg0)
@@ -294,13 +295,13 @@ func (m *MockKinesisAPI) DescribeLimits(arg0 *kinesis.DescribeLimitsInput) (*kin
 	return ret0, ret1
 }
 
-// DescribeLimits indicates an expected call of DescribeLimits
+// DescribeLimits indicates an expected call of DescribeLimits.
 func (mr *MockKinesisAPIMockRecorder) DescribeLimits(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeLimits", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeLimits), arg0)
 }
 
-// DescribeLimitsRequest mocks base method
+// DescribeLimitsRequest mocks base method.
 func (m *MockKinesisAPI) DescribeLimitsRequest(arg0 *kinesis.DescribeLimitsInput) (*request.Request, *kinesis.DescribeLimitsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeLimitsRequest", arg0)
@@ -309,13 +310,13 @@ func (m *MockKinesisAPI) DescribeLimitsRequest(arg0 *kinesis.DescribeLimitsInput
 	return ret0, ret1
 }
 
-// DescribeLimitsRequest indicates an expected call of DescribeLimitsRequest
+// DescribeLimitsRequest indicates an expected call of DescribeLimitsRequest.
 func (mr *MockKinesisAPIMockRecorder) DescribeLimitsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeLimitsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeLimitsRequest), arg0)
 }
 
-// DescribeLimitsWithContext mocks base method
+// DescribeLimitsWithContext mocks base method.
 func (m *MockKinesisAPI) DescribeLimitsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeLimitsInput, arg2 ...request.Option) (*kinesis.DescribeLimitsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -328,14 +329,14 @@ func (m *MockKinesisAPI) DescribeLimitsWithContext(arg0 aws.Context, arg1 *kines
 	return ret0, ret1
 }
 
-// DescribeLimitsWithContext indicates an expected call of DescribeLimitsWithContext
+// DescribeLimitsWithContext indicates an expected call of DescribeLimitsWithContext.
 func (mr *MockKinesisAPIMockRecorder) DescribeLimitsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeLimitsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeLimitsWithContext), varargs...)
 }
 
-// DescribeStream mocks base method
+// DescribeStream mocks base method.
 func (m *MockKinesisAPI) DescribeStream(arg0 *kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStream", arg0)
@@ -344,13 +345,13 @@ func (m *MockKinesisAPI) DescribeStream(arg0 *kinesis.DescribeStreamInput) (*kin
 	return ret0, ret1
 }
 
-// DescribeStream indicates an expected call of DescribeStream
+// DescribeStream indicates an expected call of DescribeStream.
 func (mr *MockKinesisAPIMockRecorder) DescribeStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStream", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStream), arg0)
 }
 
-// DescribeStreamConsumer mocks base method
+// DescribeStreamConsumer mocks base method.
 func (m *MockKinesisAPI) DescribeStreamConsumer(arg0 *kinesis.DescribeStreamConsumerInput) (*kinesis.DescribeStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamConsumer", arg0)
@@ -359,13 +360,13 @@ func (m *MockKinesisAPI) DescribeStreamConsumer(arg0 *kinesis.DescribeStreamCons
 	return ret0, ret1
 }
 
-// DescribeStreamConsumer indicates an expected call of DescribeStreamConsumer
+// DescribeStreamConsumer indicates an expected call of DescribeStreamConsumer.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamConsumer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamConsumer", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamConsumer), arg0)
 }
 
-// DescribeStreamConsumerRequest mocks base method
+// DescribeStreamConsumerRequest mocks base method.
 func (m *MockKinesisAPI) DescribeStreamConsumerRequest(arg0 *kinesis.DescribeStreamConsumerInput) (*request.Request, *kinesis.DescribeStreamConsumerOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamConsumerRequest", arg0)
@@ -374,13 +375,13 @@ func (m *MockKinesisAPI) DescribeStreamConsumerRequest(arg0 *kinesis.DescribeStr
 	return ret0, ret1
 }
 
-// DescribeStreamConsumerRequest indicates an expected call of DescribeStreamConsumerRequest
+// DescribeStreamConsumerRequest indicates an expected call of DescribeStreamConsumerRequest.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamConsumerRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamConsumerRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamConsumerRequest), arg0)
 }
 
-// DescribeStreamConsumerWithContext mocks base method
+// DescribeStreamConsumerWithContext mocks base method.
 func (m *MockKinesisAPI) DescribeStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamConsumerInput, arg2 ...request.Option) (*kinesis.DescribeStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -393,14 +394,14 @@ func (m *MockKinesisAPI) DescribeStreamConsumerWithContext(arg0 aws.Context, arg
 	return ret0, ret1
 }
 
-// DescribeStreamConsumerWithContext indicates an expected call of DescribeStreamConsumerWithContext
+// DescribeStreamConsumerWithContext indicates an expected call of DescribeStreamConsumerWithContext.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamConsumerWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamConsumerWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamConsumerWithContext), varargs...)
 }
 
-// DescribeStreamPages mocks base method
+// DescribeStreamPages mocks base method.
 func (m *MockKinesisAPI) DescribeStreamPages(arg0 *kinesis.DescribeStreamInput, arg1 func(*kinesis.DescribeStreamOutput, bool) bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamPages", arg0, arg1)
@@ -408,13 +409,13 @@ func (m *MockKinesisAPI) DescribeStreamPages(arg0 *kinesis.DescribeStreamInput, 
 	return ret0
 }
 
-// DescribeStreamPages indicates an expected call of DescribeStreamPages
+// DescribeStreamPages indicates an expected call of DescribeStreamPages.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamPages(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamPages", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamPages), arg0, arg1)
 }
 
-// DescribeStreamPagesWithContext mocks base method
+// DescribeStreamPagesWithContext mocks base method.
 func (m *MockKinesisAPI) DescribeStreamPagesWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 func(*kinesis.DescribeStreamOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
@@ -426,14 +427,14 @@ func (m *MockKinesisAPI) DescribeStreamPagesWithContext(arg0 aws.Context, arg1 *
 	return ret0
 }
 
-// DescribeStreamPagesWithContext indicates an expected call of DescribeStreamPagesWithContext
+// DescribeStreamPagesWithContext indicates an expected call of DescribeStreamPagesWithContext.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamPagesWithContext(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamPagesWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamPagesWithContext), varargs...)
 }
 
-// DescribeStreamRequest mocks base method
+// DescribeStreamRequest mocks base method.
 func (m *MockKinesisAPI) DescribeStreamRequest(arg0 *kinesis.DescribeStreamInput) (*request.Request, *kinesis.DescribeStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamRequest", arg0)
@@ -442,13 +443,13 @@ func (m *MockKinesisAPI) DescribeStreamRequest(arg0 *kinesis.DescribeStreamInput
 	return ret0, ret1
 }
 
-// DescribeStreamRequest indicates an expected call of DescribeStreamRequest
+// DescribeStreamRequest indicates an expected call of DescribeStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamRequest), arg0)
 }
 
-// DescribeStreamSummary mocks base method
+// DescribeStreamSummary mocks base method.
 func (m *MockKinesisAPI) DescribeStreamSummary(arg0 *kinesis.DescribeStreamSummaryInput) (*kinesis.DescribeStreamSummaryOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamSummary", arg0)
@@ -457,13 +458,13 @@ func (m *MockKinesisAPI) DescribeStreamSummary(arg0 *kinesis.DescribeStreamSumma
 	return ret0, ret1
 }
 
-// DescribeStreamSummary indicates an expected call of DescribeStreamSummary
+// DescribeStreamSummary indicates an expected call of DescribeStreamSummary.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamSummary(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamSummary", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamSummary), arg0)
 }
 
-// DescribeStreamSummaryRequest mocks base method
+// DescribeStreamSummaryRequest mocks base method.
 func (m *MockKinesisAPI) DescribeStreamSummaryRequest(arg0 *kinesis.DescribeStreamSummaryInput) (*request.Request, *kinesis.DescribeStreamSummaryOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DescribeStreamSummaryRequest", arg0)
@@ -472,13 +473,13 @@ func (m *MockKinesisAPI) DescribeStreamSummaryRequest(arg0 *kinesis.DescribeStre
 	return ret0, ret1
 }
 
-// DescribeStreamSummaryRequest indicates an expected call of DescribeStreamSummaryRequest
+// DescribeStreamSummaryRequest indicates an expected call of DescribeStreamSummaryRequest.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamSummaryRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamSummaryRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamSummaryRequest), arg0)
 }
 
-// DescribeStreamSummaryWithContext mocks base method
+// DescribeStreamSummaryWithContext mocks base method.
 func (m *MockKinesisAPI) DescribeStreamSummaryWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamSummaryInput, arg2 ...request.Option) (*kinesis.DescribeStreamSummaryOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -491,14 +492,14 @@ func (m *MockKinesisAPI) DescribeStreamSummaryWithContext(arg0 aws.Context, arg1
 	return ret0, ret1
 }
 
-// DescribeStreamSummaryWithContext indicates an expected call of DescribeStreamSummaryWithContext
+// DescribeStreamSummaryWithContext indicates an expected call of DescribeStreamSummaryWithContext.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamSummaryWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamSummaryWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamSummaryWithContext), varargs...)
 }
 
-// DescribeStreamWithContext mocks base method
+// DescribeStreamWithContext mocks base method.
 func (m *MockKinesisAPI) DescribeStreamWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.Option) (*kinesis.DescribeStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -511,14 +512,14 @@ func (m *MockKinesisAPI) DescribeStreamWithContext(arg0 aws.Context, arg1 *kines
 	return ret0, ret1
 }
 
-// DescribeStreamWithContext indicates an expected call of DescribeStreamWithContext
+// DescribeStreamWithContext indicates an expected call of DescribeStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) DescribeStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DescribeStreamWithContext), varargs...)
 }
 
-// DisableEnhancedMonitoring mocks base method
+// DisableEnhancedMonitoring mocks base method.
 func (m *MockKinesisAPI) DisableEnhancedMonitoring(arg0 *kinesis.DisableEnhancedMonitoringInput) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableEnhancedMonitoring", arg0)
@@ -527,13 +528,13 @@ func (m *MockKinesisAPI) DisableEnhancedMonitoring(arg0 *kinesis.DisableEnhanced
 	return ret0, ret1
 }
 
-// DisableEnhancedMonitoring indicates an expected call of DisableEnhancedMonitoring
+// DisableEnhancedMonitoring indicates an expected call of DisableEnhancedMonitoring.
 func (mr *MockKinesisAPIMockRecorder) DisableEnhancedMonitoring(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableEnhancedMonitoring", reflect.TypeOf((*MockKinesisAPI)(nil).DisableEnhancedMonitoring), arg0)
 }
 
-// DisableEnhancedMonitoringRequest mocks base method
+// DisableEnhancedMonitoringRequest mocks base method.
 func (m *MockKinesisAPI) DisableEnhancedMonitoringRequest(arg0 *kinesis.DisableEnhancedMonitoringInput) (*request.Request, *kinesis.EnhancedMonitoringOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DisableEnhancedMonitoringRequest", arg0)
@@ -542,13 +543,13 @@ func (m *MockKinesisAPI) DisableEnhancedMonitoringRequest(arg0 *kinesis.DisableE
 	return ret0, ret1
 }
 
-// DisableEnhancedMonitoringRequest indicates an expected call of DisableEnhancedMonitoringRequest
+// DisableEnhancedMonitoringRequest indicates an expected call of DisableEnhancedMonitoringRequest.
 func (mr *MockKinesisAPIMockRecorder) DisableEnhancedMonitoringRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableEnhancedMonitoringRequest", reflect.TypeOf((*MockKinesisAPI)(nil).DisableEnhancedMonitoringRequest), arg0)
 }
 
-// DisableEnhancedMonitoringWithContext mocks base method
+// DisableEnhancedMonitoringWithContext mocks base method.
 func (m *MockKinesisAPI) DisableEnhancedMonitoringWithContext(arg0 aws.Context, arg1 *kinesis.DisableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -561,14 +562,14 @@ func (m *MockKinesisAPI) DisableEnhancedMonitoringWithContext(arg0 aws.Context, 
 	return ret0, ret1
 }
 
-// DisableEnhancedMonitoringWithContext indicates an expected call of DisableEnhancedMonitoringWithContext
+// DisableEnhancedMonitoringWithContext indicates an expected call of DisableEnhancedMonitoringWithContext.
 func (mr *MockKinesisAPIMockRecorder) DisableEnhancedMonitoringWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableEnhancedMonitoringWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).DisableEnhancedMonitoringWithContext), varargs...)
 }
 
-// EnableEnhancedMonitoring mocks base method
+// EnableEnhancedMonitoring mocks base method.
 func (m *MockKinesisAPI) EnableEnhancedMonitoring(arg0 *kinesis.EnableEnhancedMonitoringInput) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableEnhancedMonitoring", arg0)
@@ -577,13 +578,13 @@ func (m *MockKinesisAPI) EnableEnhancedMonitoring(arg0 *kinesis.EnableEnhancedMo
 	return ret0, ret1
 }
 
-// EnableEnhancedMonitoring indicates an expected call of EnableEnhancedMonitoring
+// EnableEnhancedMonitoring indicates an expected call of EnableEnhancedMonitoring.
 func (mr *MockKinesisAPIMockRecorder) EnableEnhancedMonitoring(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableEnhancedMonitoring", reflect.TypeOf((*MockKinesisAPI)(nil).EnableEnhancedMonitoring), arg0)
 }
 
-// EnableEnhancedMonitoringRequest mocks base method
+// EnableEnhancedMonitoringRequest mocks base method.
 func (m *MockKinesisAPI) EnableEnhancedMonitoringRequest(arg0 *kinesis.EnableEnhancedMonitoringInput) (*request.Request, *kinesis.EnhancedMonitoringOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnableEnhancedMonitoringRequest", arg0)
@@ -592,13 +593,13 @@ func (m *MockKinesisAPI) EnableEnhancedMonitoringRequest(arg0 *kinesis.EnableEnh
 	return ret0, ret1
 }
 
-// EnableEnhancedMonitoringRequest indicates an expected call of EnableEnhancedMonitoringRequest
+// EnableEnhancedMonitoringRequest indicates an expected call of EnableEnhancedMonitoringRequest.
 func (mr *MockKinesisAPIMockRecorder) EnableEnhancedMonitoringRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableEnhancedMonitoringRequest", reflect.TypeOf((*MockKinesisAPI)(nil).EnableEnhancedMonitoringRequest), arg0)
 }
 
-// EnableEnhancedMonitoringWithContext mocks base method
+// EnableEnhancedMonitoringWithContext mocks base method.
 func (m *MockKinesisAPI) EnableEnhancedMonitoringWithContext(arg0 aws.Context, arg1 *kinesis.EnableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -611,14 +612,14 @@ func (m *MockKinesisAPI) EnableEnhancedMonitoringWithContext(arg0 aws.Context, a
 	return ret0, ret1
 }
 
-// EnableEnhancedMonitoringWithContext indicates an expected call of EnableEnhancedMonitoringWithContext
+// EnableEnhancedMonitoringWithContext indicates an expected call of EnableEnhancedMonitoringWithContext.
 func (mr *MockKinesisAPIMockRecorder) EnableEnhancedMonitoringWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableEnhancedMonitoringWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).EnableEnhancedMonitoringWithContext), varargs...)
 }
 
-// GetRecords mocks base method
+// GetRecords mocks base method.
 func (m *MockKinesisAPI) GetRecords(arg0 *kinesis.GetRecordsInput) (*kinesis.GetRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRecords", arg0)
@@ -627,13 +628,13 @@ func (m *MockKinesisAPI) GetRecords(arg0 *kinesis.GetRecordsInput) (*kinesis.Get
 	return ret0, ret1
 }
 
-// GetRecords indicates an expected call of GetRecords
+// GetRecords indicates an expected call of GetRecords.
 func (mr *MockKinesisAPIMockRecorder) GetRecords(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecords", reflect.TypeOf((*MockKinesisAPI)(nil).GetRecords), arg0)
 }
 
-// GetRecordsRequest mocks base method
+// GetRecordsRequest mocks base method.
 func (m *MockKinesisAPI) GetRecordsRequest(arg0 *kinesis.GetRecordsInput) (*request.Request, *kinesis.GetRecordsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRecordsRequest", arg0)
@@ -642,13 +643,13 @@ func (m *MockKinesisAPI) GetRecordsRequest(arg0 *kinesis.GetRecordsInput) (*requ
 	return ret0, ret1
 }
 
-// GetRecordsRequest indicates an expected call of GetRecordsRequest
+// GetRecordsRequest indicates an expected call of GetRecordsRequest.
 func (mr *MockKinesisAPIMockRecorder) GetRecordsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecordsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).GetRecordsRequest), arg0)
 }
 
-// GetRecordsWithContext mocks base method
+// GetRecordsWithContext mocks base method.
 func (m *MockKinesisAPI) GetRecordsWithContext(arg0 aws.Context, arg1 *kinesis.GetRecordsInput, arg2 ...request.Option) (*kinesis.GetRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -661,14 +662,14 @@ func (m *MockKinesisAPI) GetRecordsWithContext(arg0 aws.Context, arg1 *kinesis.G
 	return ret0, ret1
 }
 
-// GetRecordsWithContext indicates an expected call of GetRecordsWithContext
+// GetRecordsWithContext indicates an expected call of GetRecordsWithContext.
 func (mr *MockKinesisAPIMockRecorder) GetRecordsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecordsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).GetRecordsWithContext), varargs...)
 }
 
-// GetShardIterator mocks base method
+// GetShardIterator mocks base method.
 func (m *MockKinesisAPI) GetShardIterator(arg0 *kinesis.GetShardIteratorInput) (*kinesis.GetShardIteratorOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetShardIterator", arg0)
@@ -677,13 +678,13 @@ func (m *MockKinesisAPI) GetShardIterator(arg0 *kinesis.GetShardIteratorInput) (
 	return ret0, ret1
 }
 
-// GetShardIterator indicates an expected call of GetShardIterator
+// GetShardIterator indicates an expected call of GetShardIterator.
 func (mr *MockKinesisAPIMockRecorder) GetShardIterator(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShardIterator", reflect.TypeOf((*MockKinesisAPI)(nil).GetShardIterator), arg0)
 }
 
-// GetShardIteratorRequest mocks base method
+// GetShardIteratorRequest mocks base method.
 func (m *MockKinesisAPI) GetShardIteratorRequest(arg0 *kinesis.GetShardIteratorInput) (*request.Request, *kinesis.GetShardIteratorOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetShardIteratorRequest", arg0)
@@ -692,13 +693,13 @@ func (m *MockKinesisAPI) GetShardIteratorRequest(arg0 *kinesis.GetShardIteratorI
 	return ret0, ret1
 }
 
-// GetShardIteratorRequest indicates an expected call of GetShardIteratorRequest
+// GetShardIteratorRequest indicates an expected call of GetShardIteratorRequest.
 func (mr *MockKinesisAPIMockRecorder) GetShardIteratorRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShardIteratorRequest", reflect.TypeOf((*MockKinesisAPI)(nil).GetShardIteratorRequest), arg0)
 }
 
-// GetShardIteratorWithContext mocks base method
+// GetShardIteratorWithContext mocks base method.
 func (m *MockKinesisAPI) GetShardIteratorWithContext(arg0 aws.Context, arg1 *kinesis.GetShardIteratorInput, arg2 ...request.Option) (*kinesis.GetShardIteratorOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -711,14 +712,14 @@ func (m *MockKinesisAPI) GetShardIteratorWithContext(arg0 aws.Context, arg1 *kin
 	return ret0, ret1
 }
 
-// GetShardIteratorWithContext indicates an expected call of GetShardIteratorWithContext
+// GetShardIteratorWithContext indicates an expected call of GetShardIteratorWithContext.
 func (mr *MockKinesisAPIMockRecorder) GetShardIteratorWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShardIteratorWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).GetShardIteratorWithContext), varargs...)
 }
 
-// IncreaseStreamRetentionPeriod mocks base method
+// IncreaseStreamRetentionPeriod mocks base method.
 func (m *MockKinesisAPI) IncreaseStreamRetentionPeriod(arg0 *kinesis.IncreaseStreamRetentionPeriodInput) (*kinesis.IncreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IncreaseStreamRetentionPeriod", arg0)
@@ -727,13 +728,13 @@ func (m *MockKinesisAPI) IncreaseStreamRetentionPeriod(arg0 *kinesis.IncreaseStr
 	return ret0, ret1
 }
 
-// IncreaseStreamRetentionPeriod indicates an expected call of IncreaseStreamRetentionPeriod
+// IncreaseStreamRetentionPeriod indicates an expected call of IncreaseStreamRetentionPeriod.
 func (mr *MockKinesisAPIMockRecorder) IncreaseStreamRetentionPeriod(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncreaseStreamRetentionPeriod", reflect.TypeOf((*MockKinesisAPI)(nil).IncreaseStreamRetentionPeriod), arg0)
 }
 
-// IncreaseStreamRetentionPeriodRequest mocks base method
+// IncreaseStreamRetentionPeriodRequest mocks base method.
 func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodRequest(arg0 *kinesis.IncreaseStreamRetentionPeriodInput) (*request.Request, *kinesis.IncreaseStreamRetentionPeriodOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IncreaseStreamRetentionPeriodRequest", arg0)
@@ -742,13 +743,13 @@ func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodRequest(arg0 *kinesis.Incr
 	return ret0, ret1
 }
 
-// IncreaseStreamRetentionPeriodRequest indicates an expected call of IncreaseStreamRetentionPeriodRequest
+// IncreaseStreamRetentionPeriodRequest indicates an expected call of IncreaseStreamRetentionPeriodRequest.
 func (mr *MockKinesisAPIMockRecorder) IncreaseStreamRetentionPeriodRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncreaseStreamRetentionPeriodRequest", reflect.TypeOf((*MockKinesisAPI)(nil).IncreaseStreamRetentionPeriodRequest), arg0)
 }
 
-// IncreaseStreamRetentionPeriodWithContext mocks base method
+// IncreaseStreamRetentionPeriodWithContext mocks base method.
 func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodWithContext(arg0 aws.Context, arg1 *kinesis.IncreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.IncreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -761,14 +762,14 @@ func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodWithContext(arg0 aws.Conte
 	return ret0, ret1
 }
 
-// IncreaseStreamRetentionPeriodWithContext indicates an expected call of IncreaseStreamRetentionPeriodWithContext
+// IncreaseStreamRetentionPeriodWithContext indicates an expected call of IncreaseStreamRetentionPeriodWithContext.
 func (mr *MockKinesisAPIMockRecorder) IncreaseStreamRetentionPeriodWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncreaseStreamRetentionPeriodWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).IncreaseStreamRetentionPeriodWithContext), varargs...)
 }
 
-// ListShards mocks base method
+// ListShards mocks base method.
 func (m *MockKinesisAPI) ListShards(arg0 *kinesis.ListShardsInput) (*kinesis.ListShardsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListShards", arg0)
@@ -777,13 +778,13 @@ func (m *MockKinesisAPI) ListShards(arg0 *kinesis.ListShardsInput) (*kinesis.Lis
 	return ret0, ret1
 }
 
-// ListShards indicates an expected call of ListShards
+// ListShards indicates an expected call of ListShards.
 func (mr *MockKinesisAPIMockRecorder) ListShards(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListShards", reflect.TypeOf((*MockKinesisAPI)(nil).ListShards), arg0)
 }
 
-// ListShardsRequest mocks base method
+// ListShardsRequest mocks base method.
 func (m *MockKinesisAPI) ListShardsRequest(arg0 *kinesis.ListShardsInput) (*request.Request, *kinesis.ListShardsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListShardsRequest", arg0)
@@ -792,13 +793,13 @@ func (m *MockKinesisAPI) ListShardsRequest(arg0 *kinesis.ListShardsInput) (*requ
 	return ret0, ret1
 }
 
-// ListShardsRequest indicates an expected call of ListShardsRequest
+// ListShardsRequest indicates an expected call of ListShardsRequest.
 func (mr *MockKinesisAPIMockRecorder) ListShardsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListShardsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).ListShardsRequest), arg0)
 }
 
-// ListShardsWithContext mocks base method
+// ListShardsWithContext mocks base method.
 func (m *MockKinesisAPI) ListShardsWithContext(arg0 aws.Context, arg1 *kinesis.ListShardsInput, arg2 ...request.Option) (*kinesis.ListShardsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -811,14 +812,14 @@ func (m *MockKinesisAPI) ListShardsWithContext(arg0 aws.Context, arg1 *kinesis.L
 	return ret0, ret1
 }
 
-// ListShardsWithContext indicates an expected call of ListShardsWithContext
+// ListShardsWithContext indicates an expected call of ListShardsWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListShardsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListShardsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListShardsWithContext), varargs...)
 }
 
-// ListStreamConsumers mocks base method
+// ListStreamConsumers mocks base method.
 func (m *MockKinesisAPI) ListStreamConsumers(arg0 *kinesis.ListStreamConsumersInput) (*kinesis.ListStreamConsumersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreamConsumers", arg0)
@@ -827,13 +828,13 @@ func (m *MockKinesisAPI) ListStreamConsumers(arg0 *kinesis.ListStreamConsumersIn
 	return ret0, ret1
 }
 
-// ListStreamConsumers indicates an expected call of ListStreamConsumers
+// ListStreamConsumers indicates an expected call of ListStreamConsumers.
 func (mr *MockKinesisAPIMockRecorder) ListStreamConsumers(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamConsumers", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamConsumers), arg0)
 }
 
-// ListStreamConsumersPages mocks base method
+// ListStreamConsumersPages mocks base method.
 func (m *MockKinesisAPI) ListStreamConsumersPages(arg0 *kinesis.ListStreamConsumersInput, arg1 func(*kinesis.ListStreamConsumersOutput, bool) bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreamConsumersPages", arg0, arg1)
@@ -841,13 +842,13 @@ func (m *MockKinesisAPI) ListStreamConsumersPages(arg0 *kinesis.ListStreamConsum
 	return ret0
 }
 
-// ListStreamConsumersPages indicates an expected call of ListStreamConsumersPages
+// ListStreamConsumersPages indicates an expected call of ListStreamConsumersPages.
 func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersPages(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamConsumersPages", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamConsumersPages), arg0, arg1)
 }
 
-// ListStreamConsumersPagesWithContext mocks base method
+// ListStreamConsumersPagesWithContext mocks base method.
 func (m *MockKinesisAPI) ListStreamConsumersPagesWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 func(*kinesis.ListStreamConsumersOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
@@ -859,14 +860,14 @@ func (m *MockKinesisAPI) ListStreamConsumersPagesWithContext(arg0 aws.Context, a
 	return ret0
 }
 
-// ListStreamConsumersPagesWithContext indicates an expected call of ListStreamConsumersPagesWithContext
+// ListStreamConsumersPagesWithContext indicates an expected call of ListStreamConsumersPagesWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersPagesWithContext(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamConsumersPagesWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamConsumersPagesWithContext), varargs...)
 }
 
-// ListStreamConsumersRequest mocks base method
+// ListStreamConsumersRequest mocks base method.
 func (m *MockKinesisAPI) ListStreamConsumersRequest(arg0 *kinesis.ListStreamConsumersInput) (*request.Request, *kinesis.ListStreamConsumersOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreamConsumersRequest", arg0)
@@ -875,13 +876,13 @@ func (m *MockKinesisAPI) ListStreamConsumersRequest(arg0 *kinesis.ListStreamCons
 	return ret0, ret1
 }
 
-// ListStreamConsumersRequest indicates an expected call of ListStreamConsumersRequest
+// ListStreamConsumersRequest indicates an expected call of ListStreamConsumersRequest.
 func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamConsumersRequest", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamConsumersRequest), arg0)
 }
 
-// ListStreamConsumersWithContext mocks base method
+// ListStreamConsumersWithContext mocks base method.
 func (m *MockKinesisAPI) ListStreamConsumersWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 ...request.Option) (*kinesis.ListStreamConsumersOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -894,14 +895,14 @@ func (m *MockKinesisAPI) ListStreamConsumersWithContext(arg0 aws.Context, arg1 *
 	return ret0, ret1
 }
 
-// ListStreamConsumersWithContext indicates an expected call of ListStreamConsumersWithContext
+// ListStreamConsumersWithContext indicates an expected call of ListStreamConsumersWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamConsumersWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamConsumersWithContext), varargs...)
 }
 
-// ListStreams mocks base method
+// ListStreams mocks base method.
 func (m *MockKinesisAPI) ListStreams(arg0 *kinesis.ListStreamsInput) (*kinesis.ListStreamsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreams", arg0)
@@ -910,13 +911,13 @@ func (m *MockKinesisAPI) ListStreams(arg0 *kinesis.ListStreamsInput) (*kinesis.L
 	return ret0, ret1
 }
 
-// ListStreams indicates an expected call of ListStreams
+// ListStreams indicates an expected call of ListStreams.
 func (mr *MockKinesisAPIMockRecorder) ListStreams(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreams", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreams), arg0)
 }
 
-// ListStreamsPages mocks base method
+// ListStreamsPages mocks base method.
 func (m *MockKinesisAPI) ListStreamsPages(arg0 *kinesis.ListStreamsInput, arg1 func(*kinesis.ListStreamsOutput, bool) bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreamsPages", arg0, arg1)
@@ -924,13 +925,13 @@ func (m *MockKinesisAPI) ListStreamsPages(arg0 *kinesis.ListStreamsInput, arg1 f
 	return ret0
 }
 
-// ListStreamsPages indicates an expected call of ListStreamsPages
+// ListStreamsPages indicates an expected call of ListStreamsPages.
 func (mr *MockKinesisAPIMockRecorder) ListStreamsPages(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamsPages", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamsPages), arg0, arg1)
 }
 
-// ListStreamsPagesWithContext mocks base method
+// ListStreamsPagesWithContext mocks base method.
 func (m *MockKinesisAPI) ListStreamsPagesWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamsInput, arg2 func(*kinesis.ListStreamsOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
@@ -942,14 +943,14 @@ func (m *MockKinesisAPI) ListStreamsPagesWithContext(arg0 aws.Context, arg1 *kin
 	return ret0
 }
 
-// ListStreamsPagesWithContext indicates an expected call of ListStreamsPagesWithContext
+// ListStreamsPagesWithContext indicates an expected call of ListStreamsPagesWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListStreamsPagesWithContext(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamsPagesWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamsPagesWithContext), varargs...)
 }
 
-// ListStreamsRequest mocks base method
+// ListStreamsRequest mocks base method.
 func (m *MockKinesisAPI) ListStreamsRequest(arg0 *kinesis.ListStreamsInput) (*request.Request, *kinesis.ListStreamsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListStreamsRequest", arg0)
@@ -958,13 +959,13 @@ func (m *MockKinesisAPI) ListStreamsRequest(arg0 *kinesis.ListStreamsInput) (*re
 	return ret0, ret1
 }
 
-// ListStreamsRequest indicates an expected call of ListStreamsRequest
+// ListStreamsRequest indicates an expected call of ListStreamsRequest.
 func (mr *MockKinesisAPIMockRecorder) ListStreamsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamsRequest), arg0)
 }
 
-// ListStreamsWithContext mocks base method
+// ListStreamsWithContext mocks base method.
 func (m *MockKinesisAPI) ListStreamsWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamsInput, arg2 ...request.Option) (*kinesis.ListStreamsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -977,14 +978,14 @@ func (m *MockKinesisAPI) ListStreamsWithContext(arg0 aws.Context, arg1 *kinesis.
 	return ret0, ret1
 }
 
-// ListStreamsWithContext indicates an expected call of ListStreamsWithContext
+// ListStreamsWithContext indicates an expected call of ListStreamsWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListStreamsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStreamsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListStreamsWithContext), varargs...)
 }
 
-// ListTagsForStream mocks base method
+// ListTagsForStream mocks base method.
 func (m *MockKinesisAPI) ListTagsForStream(arg0 *kinesis.ListTagsForStreamInput) (*kinesis.ListTagsForStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListTagsForStream", arg0)
@@ -993,13 +994,13 @@ func (m *MockKinesisAPI) ListTagsForStream(arg0 *kinesis.ListTagsForStreamInput)
 	return ret0, ret1
 }
 
-// ListTagsForStream indicates an expected call of ListTagsForStream
+// ListTagsForStream indicates an expected call of ListTagsForStream.
 func (mr *MockKinesisAPIMockRecorder) ListTagsForStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagsForStream", reflect.TypeOf((*MockKinesisAPI)(nil).ListTagsForStream), arg0)
 }
 
-// ListTagsForStreamRequest mocks base method
+// ListTagsForStreamRequest mocks base method.
 func (m *MockKinesisAPI) ListTagsForStreamRequest(arg0 *kinesis.ListTagsForStreamInput) (*request.Request, *kinesis.ListTagsForStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListTagsForStreamRequest", arg0)
@@ -1008,13 +1009,13 @@ func (m *MockKinesisAPI) ListTagsForStreamRequest(arg0 *kinesis.ListTagsForStrea
 	return ret0, ret1
 }
 
-// ListTagsForStreamRequest indicates an expected call of ListTagsForStreamRequest
+// ListTagsForStreamRequest indicates an expected call of ListTagsForStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) ListTagsForStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagsForStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).ListTagsForStreamRequest), arg0)
 }
 
-// ListTagsForStreamWithContext mocks base method
+// ListTagsForStreamWithContext mocks base method.
 func (m *MockKinesisAPI) ListTagsForStreamWithContext(arg0 aws.Context, arg1 *kinesis.ListTagsForStreamInput, arg2 ...request.Option) (*kinesis.ListTagsForStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1027,14 +1028,14 @@ func (m *MockKinesisAPI) ListTagsForStreamWithContext(arg0 aws.Context, arg1 *ki
 	return ret0, ret1
 }
 
-// ListTagsForStreamWithContext indicates an expected call of ListTagsForStreamWithContext
+// ListTagsForStreamWithContext indicates an expected call of ListTagsForStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) ListTagsForStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagsForStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).ListTagsForStreamWithContext), varargs...)
 }
 
-// MergeShards mocks base method
+// MergeShards mocks base method.
 func (m *MockKinesisAPI) MergeShards(arg0 *kinesis.MergeShardsInput) (*kinesis.MergeShardsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MergeShards", arg0)
@@ -1043,13 +1044,13 @@ func (m *MockKinesisAPI) MergeShards(arg0 *kinesis.MergeShardsInput) (*kinesis.M
 	return ret0, ret1
 }
 
-// MergeShards indicates an expected call of MergeShards
+// MergeShards indicates an expected call of MergeShards.
 func (mr *MockKinesisAPIMockRecorder) MergeShards(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeShards", reflect.TypeOf((*MockKinesisAPI)(nil).MergeShards), arg0)
 }
 
-// MergeShardsRequest mocks base method
+// MergeShardsRequest mocks base method.
 func (m *MockKinesisAPI) MergeShardsRequest(arg0 *kinesis.MergeShardsInput) (*request.Request, *kinesis.MergeShardsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MergeShardsRequest", arg0)
@@ -1058,13 +1059,13 @@ func (m *MockKinesisAPI) MergeShardsRequest(arg0 *kinesis.MergeShardsInput) (*re
 	return ret0, ret1
 }
 
-// MergeShardsRequest indicates an expected call of MergeShardsRequest
+// MergeShardsRequest indicates an expected call of MergeShardsRequest.
 func (mr *MockKinesisAPIMockRecorder) MergeShardsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeShardsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).MergeShardsRequest), arg0)
 }
 
-// MergeShardsWithContext mocks base method
+// MergeShardsWithContext mocks base method.
 func (m *MockKinesisAPI) MergeShardsWithContext(arg0 aws.Context, arg1 *kinesis.MergeShardsInput, arg2 ...request.Option) (*kinesis.MergeShardsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1077,14 +1078,14 @@ func (m *MockKinesisAPI) MergeShardsWithContext(arg0 aws.Context, arg1 *kinesis.
 	return ret0, ret1
 }
 
-// MergeShardsWithContext indicates an expected call of MergeShardsWithContext
+// MergeShardsWithContext indicates an expected call of MergeShardsWithContext.
 func (mr *MockKinesisAPIMockRecorder) MergeShardsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MergeShardsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).MergeShardsWithContext), varargs...)
 }
 
-// PutRecord mocks base method
+// PutRecord mocks base method.
 func (m *MockKinesisAPI) PutRecord(arg0 *kinesis.PutRecordInput) (*kinesis.PutRecordOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRecord", arg0)
@@ -1093,13 +1094,13 @@ func (m *MockKinesisAPI) PutRecord(arg0 *kinesis.PutRecordInput) (*kinesis.PutRe
 	return ret0, ret1
 }
 
-// PutRecord indicates an expected call of PutRecord
+// PutRecord indicates an expected call of PutRecord.
 func (mr *MockKinesisAPIMockRecorder) PutRecord(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecord", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecord), arg0)
 }
 
-// PutRecordRequest mocks base method
+// PutRecordRequest mocks base method.
 func (m *MockKinesisAPI) PutRecordRequest(arg0 *kinesis.PutRecordInput) (*request.Request, *kinesis.PutRecordOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRecordRequest", arg0)
@@ -1108,13 +1109,13 @@ func (m *MockKinesisAPI) PutRecordRequest(arg0 *kinesis.PutRecordInput) (*reques
 	return ret0, ret1
 }
 
-// PutRecordRequest indicates an expected call of PutRecordRequest
+// PutRecordRequest indicates an expected call of PutRecordRequest.
 func (mr *MockKinesisAPIMockRecorder) PutRecordRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecordRequest", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecordRequest), arg0)
 }
 
-// PutRecordWithContext mocks base method
+// PutRecordWithContext mocks base method.
 func (m *MockKinesisAPI) PutRecordWithContext(arg0 aws.Context, arg1 *kinesis.PutRecordInput, arg2 ...request.Option) (*kinesis.PutRecordOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1127,14 +1128,14 @@ func (m *MockKinesisAPI) PutRecordWithContext(arg0 aws.Context, arg1 *kinesis.Pu
 	return ret0, ret1
 }
 
-// PutRecordWithContext indicates an expected call of PutRecordWithContext
+// PutRecordWithContext indicates an expected call of PutRecordWithContext.
 func (mr *MockKinesisAPIMockRecorder) PutRecordWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecordWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecordWithContext), varargs...)
 }
 
-// PutRecords mocks base method
+// PutRecords mocks base method.
 func (m *MockKinesisAPI) PutRecords(arg0 *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRecords", arg0)
@@ -1143,13 +1144,13 @@ func (m *MockKinesisAPI) PutRecords(arg0 *kinesis.PutRecordsInput) (*kinesis.Put
 	return ret0, ret1
 }
 
-// PutRecords indicates an expected call of PutRecords
+// PutRecords indicates an expected call of PutRecords.
 func (mr *MockKinesisAPIMockRecorder) PutRecords(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecords", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecords), arg0)
 }
 
-// PutRecordsRequest mocks base method
+// PutRecordsRequest mocks base method.
 func (m *MockKinesisAPI) PutRecordsRequest(arg0 *kinesis.PutRecordsInput) (*request.Request, *kinesis.PutRecordsOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutRecordsRequest", arg0)
@@ -1158,13 +1159,13 @@ func (m *MockKinesisAPI) PutRecordsRequest(arg0 *kinesis.PutRecordsInput) (*requ
 	return ret0, ret1
 }
 
-// PutRecordsRequest indicates an expected call of PutRecordsRequest
+// PutRecordsRequest indicates an expected call of PutRecordsRequest.
 func (mr *MockKinesisAPIMockRecorder) PutRecordsRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecordsRequest", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecordsRequest), arg0)
 }
 
-// PutRecordsWithContext mocks base method
+// PutRecordsWithContext mocks base method.
 func (m *MockKinesisAPI) PutRecordsWithContext(arg0 aws.Context, arg1 *kinesis.PutRecordsInput, arg2 ...request.Option) (*kinesis.PutRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1177,14 +1178,14 @@ func (m *MockKinesisAPI) PutRecordsWithContext(arg0 aws.Context, arg1 *kinesis.P
 	return ret0, ret1
 }
 
-// PutRecordsWithContext indicates an expected call of PutRecordsWithContext
+// PutRecordsWithContext indicates an expected call of PutRecordsWithContext.
 func (mr *MockKinesisAPIMockRecorder) PutRecordsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutRecordsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).PutRecordsWithContext), varargs...)
 }
 
-// RegisterStreamConsumer mocks base method
+// RegisterStreamConsumer mocks base method.
 func (m *MockKinesisAPI) RegisterStreamConsumer(arg0 *kinesis.RegisterStreamConsumerInput) (*kinesis.RegisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterStreamConsumer", arg0)
@@ -1193,13 +1194,13 @@ func (m *MockKinesisAPI) RegisterStreamConsumer(arg0 *kinesis.RegisterStreamCons
 	return ret0, ret1
 }
 
-// RegisterStreamConsumer indicates an expected call of RegisterStreamConsumer
+// RegisterStreamConsumer indicates an expected call of RegisterStreamConsumer.
 func (mr *MockKinesisAPIMockRecorder) RegisterStreamConsumer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterStreamConsumer", reflect.TypeOf((*MockKinesisAPI)(nil).RegisterStreamConsumer), arg0)
 }
 
-// RegisterStreamConsumerRequest mocks base method
+// RegisterStreamConsumerRequest mocks base method.
 func (m *MockKinesisAPI) RegisterStreamConsumerRequest(arg0 *kinesis.RegisterStreamConsumerInput) (*request.Request, *kinesis.RegisterStreamConsumerOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterStreamConsumerRequest", arg0)
@@ -1208,13 +1209,13 @@ func (m *MockKinesisAPI) RegisterStreamConsumerRequest(arg0 *kinesis.RegisterStr
 	return ret0, ret1
 }
 
-// RegisterStreamConsumerRequest indicates an expected call of RegisterStreamConsumerRequest
+// RegisterStreamConsumerRequest indicates an expected call of RegisterStreamConsumerRequest.
 func (mr *MockKinesisAPIMockRecorder) RegisterStreamConsumerRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterStreamConsumerRequest", reflect.TypeOf((*MockKinesisAPI)(nil).RegisterStreamConsumerRequest), arg0)
 }
 
-// RegisterStreamConsumerWithContext mocks base method
+// RegisterStreamConsumerWithContext mocks base method.
 func (m *MockKinesisAPI) RegisterStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.RegisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.RegisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1227,14 +1228,14 @@ func (m *MockKinesisAPI) RegisterStreamConsumerWithContext(arg0 aws.Context, arg
 	return ret0, ret1
 }
 
-// RegisterStreamConsumerWithContext indicates an expected call of RegisterStreamConsumerWithContext
+// RegisterStreamConsumerWithContext indicates an expected call of RegisterStreamConsumerWithContext.
 func (mr *MockKinesisAPIMockRecorder) RegisterStreamConsumerWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterStreamConsumerWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).RegisterStreamConsumerWithContext), varargs...)
 }
 
-// RemoveTagsFromStream mocks base method
+// RemoveTagsFromStream mocks base method.
 func (m *MockKinesisAPI) RemoveTagsFromStream(arg0 *kinesis.RemoveTagsFromStreamInput) (*kinesis.RemoveTagsFromStreamOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveTagsFromStream", arg0)
@@ -1243,13 +1244,13 @@ func (m *MockKinesisAPI) RemoveTagsFromStream(arg0 *kinesis.RemoveTagsFromStream
 	return ret0, ret1
 }
 
-// RemoveTagsFromStream indicates an expected call of RemoveTagsFromStream
+// RemoveTagsFromStream indicates an expected call of RemoveTagsFromStream.
 func (mr *MockKinesisAPIMockRecorder) RemoveTagsFromStream(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTagsFromStream", reflect.TypeOf((*MockKinesisAPI)(nil).RemoveTagsFromStream), arg0)
 }
 
-// RemoveTagsFromStreamRequest mocks base method
+// RemoveTagsFromStreamRequest mocks base method.
 func (m *MockKinesisAPI) RemoveTagsFromStreamRequest(arg0 *kinesis.RemoveTagsFromStreamInput) (*request.Request, *kinesis.RemoveTagsFromStreamOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveTagsFromStreamRequest", arg0)
@@ -1258,13 +1259,13 @@ func (m *MockKinesisAPI) RemoveTagsFromStreamRequest(arg0 *kinesis.RemoveTagsFro
 	return ret0, ret1
 }
 
-// RemoveTagsFromStreamRequest indicates an expected call of RemoveTagsFromStreamRequest
+// RemoveTagsFromStreamRequest indicates an expected call of RemoveTagsFromStreamRequest.
 func (mr *MockKinesisAPIMockRecorder) RemoveTagsFromStreamRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTagsFromStreamRequest", reflect.TypeOf((*MockKinesisAPI)(nil).RemoveTagsFromStreamRequest), arg0)
 }
 
-// RemoveTagsFromStreamWithContext mocks base method
+// RemoveTagsFromStreamWithContext mocks base method.
 func (m *MockKinesisAPI) RemoveTagsFromStreamWithContext(arg0 aws.Context, arg1 *kinesis.RemoveTagsFromStreamInput, arg2 ...request.Option) (*kinesis.RemoveTagsFromStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1277,14 +1278,14 @@ func (m *MockKinesisAPI) RemoveTagsFromStreamWithContext(arg0 aws.Context, arg1 
 	return ret0, ret1
 }
 
-// RemoveTagsFromStreamWithContext indicates an expected call of RemoveTagsFromStreamWithContext
+// RemoveTagsFromStreamWithContext indicates an expected call of RemoveTagsFromStreamWithContext.
 func (mr *MockKinesisAPIMockRecorder) RemoveTagsFromStreamWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTagsFromStreamWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).RemoveTagsFromStreamWithContext), varargs...)
 }
 
-// SplitShard mocks base method
+// SplitShard mocks base method.
 func (m *MockKinesisAPI) SplitShard(arg0 *kinesis.SplitShardInput) (*kinesis.SplitShardOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SplitShard", arg0)
@@ -1293,13 +1294,13 @@ func (m *MockKinesisAPI) SplitShard(arg0 *kinesis.SplitShardInput) (*kinesis.Spl
 	return ret0, ret1
 }
 
-// SplitShard indicates an expected call of SplitShard
+// SplitShard indicates an expected call of SplitShard.
 func (mr *MockKinesisAPIMockRecorder) SplitShard(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SplitShard", reflect.TypeOf((*MockKinesisAPI)(nil).SplitShard), arg0)
 }
 
-// SplitShardRequest mocks base method
+// SplitShardRequest mocks base method.
 func (m *MockKinesisAPI) SplitShardRequest(arg0 *kinesis.SplitShardInput) (*request.Request, *kinesis.SplitShardOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SplitShardRequest", arg0)
@@ -1308,13 +1309,13 @@ func (m *MockKinesisAPI) SplitShardRequest(arg0 *kinesis.SplitShardInput) (*requ
 	return ret0, ret1
 }
 
-// SplitShardRequest indicates an expected call of SplitShardRequest
+// SplitShardRequest indicates an expected call of SplitShardRequest.
 func (mr *MockKinesisAPIMockRecorder) SplitShardRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SplitShardRequest", reflect.TypeOf((*MockKinesisAPI)(nil).SplitShardRequest), arg0)
 }
 
-// SplitShardWithContext mocks base method
+// SplitShardWithContext mocks base method.
 func (m *MockKinesisAPI) SplitShardWithContext(arg0 aws.Context, arg1 *kinesis.SplitShardInput, arg2 ...request.Option) (*kinesis.SplitShardOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1327,14 +1328,14 @@ func (m *MockKinesisAPI) SplitShardWithContext(arg0 aws.Context, arg1 *kinesis.S
 	return ret0, ret1
 }
 
-// SplitShardWithContext indicates an expected call of SplitShardWithContext
+// SplitShardWithContext indicates an expected call of SplitShardWithContext.
 func (mr *MockKinesisAPIMockRecorder) SplitShardWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SplitShardWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).SplitShardWithContext), varargs...)
 }
 
-// StartStreamEncryption mocks base method
+// StartStreamEncryption mocks base method.
 func (m *MockKinesisAPI) StartStreamEncryption(arg0 *kinesis.StartStreamEncryptionInput) (*kinesis.StartStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartStreamEncryption", arg0)
@@ -1343,13 +1344,13 @@ func (m *MockKinesisAPI) StartStreamEncryption(arg0 *kinesis.StartStreamEncrypti
 	return ret0, ret1
 }
 
-// StartStreamEncryption indicates an expected call of StartStreamEncryption
+// StartStreamEncryption indicates an expected call of StartStreamEncryption.
 func (mr *MockKinesisAPIMockRecorder) StartStreamEncryption(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamEncryption", reflect.TypeOf((*MockKinesisAPI)(nil).StartStreamEncryption), arg0)
 }
 
-// StartStreamEncryptionRequest mocks base method
+// StartStreamEncryptionRequest mocks base method.
 func (m *MockKinesisAPI) StartStreamEncryptionRequest(arg0 *kinesis.StartStreamEncryptionInput) (*request.Request, *kinesis.StartStreamEncryptionOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartStreamEncryptionRequest", arg0)
@@ -1358,13 +1359,13 @@ func (m *MockKinesisAPI) StartStreamEncryptionRequest(arg0 *kinesis.StartStreamE
 	return ret0, ret1
 }
 
-// StartStreamEncryptionRequest indicates an expected call of StartStreamEncryptionRequest
+// StartStreamEncryptionRequest indicates an expected call of StartStreamEncryptionRequest.
 func (mr *MockKinesisAPIMockRecorder) StartStreamEncryptionRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamEncryptionRequest", reflect.TypeOf((*MockKinesisAPI)(nil).StartStreamEncryptionRequest), arg0)
 }
 
-// StartStreamEncryptionWithContext mocks base method
+// StartStreamEncryptionWithContext mocks base method.
 func (m *MockKinesisAPI) StartStreamEncryptionWithContext(arg0 aws.Context, arg1 *kinesis.StartStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StartStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1377,14 +1378,14 @@ func (m *MockKinesisAPI) StartStreamEncryptionWithContext(arg0 aws.Context, arg1
 	return ret0, ret1
 }
 
-// StartStreamEncryptionWithContext indicates an expected call of StartStreamEncryptionWithContext
+// StartStreamEncryptionWithContext indicates an expected call of StartStreamEncryptionWithContext.
 func (mr *MockKinesisAPIMockRecorder) StartStreamEncryptionWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamEncryptionWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).StartStreamEncryptionWithContext), varargs...)
 }
 
-// StopStreamEncryption mocks base method
+// StopStreamEncryption mocks base method.
 func (m *MockKinesisAPI) StopStreamEncryption(arg0 *kinesis.StopStreamEncryptionInput) (*kinesis.StopStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StopStreamEncryption", arg0)
@@ -1393,13 +1394,13 @@ func (m *MockKinesisAPI) StopStreamEncryption(arg0 *kinesis.StopStreamEncryption
 	return ret0, ret1
 }
 
-// StopStreamEncryption indicates an expected call of StopStreamEncryption
+// StopStreamEncryption indicates an expected call of StopStreamEncryption.
 func (mr *MockKinesisAPIMockRecorder) StopStreamEncryption(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopStreamEncryption", reflect.TypeOf((*MockKinesisAPI)(nil).StopStreamEncryption), arg0)
 }
 
-// StopStreamEncryptionRequest mocks base method
+// StopStreamEncryptionRequest mocks base method.
 func (m *MockKinesisAPI) StopStreamEncryptionRequest(arg0 *kinesis.StopStreamEncryptionInput) (*request.Request, *kinesis.StopStreamEncryptionOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StopStreamEncryptionRequest", arg0)
@@ -1408,13 +1409,13 @@ func (m *MockKinesisAPI) StopStreamEncryptionRequest(arg0 *kinesis.StopStreamEnc
 	return ret0, ret1
 }
 
-// StopStreamEncryptionRequest indicates an expected call of StopStreamEncryptionRequest
+// StopStreamEncryptionRequest indicates an expected call of StopStreamEncryptionRequest.
 func (mr *MockKinesisAPIMockRecorder) StopStreamEncryptionRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopStreamEncryptionRequest", reflect.TypeOf((*MockKinesisAPI)(nil).StopStreamEncryptionRequest), arg0)
 }
 
-// StopStreamEncryptionWithContext mocks base method
+// StopStreamEncryptionWithContext mocks base method.
 func (m *MockKinesisAPI) StopStreamEncryptionWithContext(arg0 aws.Context, arg1 *kinesis.StopStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StopStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1427,14 +1428,14 @@ func (m *MockKinesisAPI) StopStreamEncryptionWithContext(arg0 aws.Context, arg1 
 	return ret0, ret1
 }
 
-// StopStreamEncryptionWithContext indicates an expected call of StopStreamEncryptionWithContext
+// StopStreamEncryptionWithContext indicates an expected call of StopStreamEncryptionWithContext.
 func (mr *MockKinesisAPIMockRecorder) StopStreamEncryptionWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopStreamEncryptionWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).StopStreamEncryptionWithContext), varargs...)
 }
 
-// UpdateShardCount mocks base method
+// UpdateShardCount mocks base method.
 func (m *MockKinesisAPI) UpdateShardCount(arg0 *kinesis.UpdateShardCountInput) (*kinesis.UpdateShardCountOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateShardCount", arg0)
@@ -1443,13 +1444,13 @@ func (m *MockKinesisAPI) UpdateShardCount(arg0 *kinesis.UpdateShardCountInput) (
 	return ret0, ret1
 }
 
-// UpdateShardCount indicates an expected call of UpdateShardCount
+// UpdateShardCount indicates an expected call of UpdateShardCount.
 func (mr *MockKinesisAPIMockRecorder) UpdateShardCount(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateShardCount", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateShardCount), arg0)
 }
 
-// UpdateShardCountRequest mocks base method
+// UpdateShardCountRequest mocks base method.
 func (m *MockKinesisAPI) UpdateShardCountRequest(arg0 *kinesis.UpdateShardCountInput) (*request.Request, *kinesis.UpdateShardCountOutput) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateShardCountRequest", arg0)
@@ -1458,13 +1459,13 @@ func (m *MockKinesisAPI) UpdateShardCountRequest(arg0 *kinesis.UpdateShardCountI
 	return ret0, ret1
 }
 
-// UpdateShardCountRequest indicates an expected call of UpdateShardCountRequest
+// UpdateShardCountRequest indicates an expected call of UpdateShardCountRequest.
 func (mr *MockKinesisAPIMockRecorder) UpdateShardCountRequest(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateShardCountRequest", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateShardCountRequest), arg0)
 }
 
-// UpdateShardCountWithContext mocks base method
+// UpdateShardCountWithContext mocks base method.
 func (m *MockKinesisAPI) UpdateShardCountWithContext(arg0 aws.Context, arg1 *kinesis.UpdateShardCountInput, arg2 ...request.Option) (*kinesis.UpdateShardCountOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1477,14 +1478,14 @@ func (m *MockKinesisAPI) UpdateShardCountWithContext(arg0 aws.Context, arg1 *kin
 	return ret0, ret1
 }
 
-// UpdateShardCountWithContext indicates an expected call of UpdateShardCountWithContext
+// UpdateShardCountWithContext indicates an expected call of UpdateShardCountWithContext.
 func (mr *MockKinesisAPIMockRecorder) UpdateShardCountWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateShardCountWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateShardCountWithContext), varargs...)
 }
 
-// WaitUntilStreamExists mocks base method
+// WaitUntilStreamExists mocks base method.
 func (m *MockKinesisAPI) WaitUntilStreamExists(arg0 *kinesis.DescribeStreamInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitUntilStreamExists", arg0)
@@ -1492,13 +1493,13 @@ func (m *MockKinesisAPI) WaitUntilStreamExists(arg0 *kinesis.DescribeStreamInput
 	return ret0
 }
 
-// WaitUntilStreamExists indicates an expected call of WaitUntilStreamExists
+// WaitUntilStreamExists indicates an expected call of WaitUntilStreamExists.
 func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamExists(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitUntilStreamExists", reflect.TypeOf((*MockKinesisAPI)(nil).WaitUntilStreamExists), arg0)
 }
 
-// WaitUntilStreamExistsWithContext mocks base method
+// WaitUntilStreamExistsWithContext mocks base method.
 func (m *MockKinesisAPI) WaitUntilStreamExistsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1510,14 +1511,14 @@ func (m *MockKinesisAPI) WaitUntilStreamExistsWithContext(arg0 aws.Context, arg1
 	return ret0
 }
 
-// WaitUntilStreamExistsWithContext indicates an expected call of WaitUntilStreamExistsWithContext
+// WaitUntilStreamExistsWithContext indicates an expected call of WaitUntilStreamExistsWithContext.
 func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamExistsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitUntilStreamExistsWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).WaitUntilStreamExistsWithContext), varargs...)
 }
 
-// WaitUntilStreamNotExists mocks base method
+// WaitUntilStreamNotExists mocks base method.
 func (m *MockKinesisAPI) WaitUntilStreamNotExists(arg0 *kinesis.DescribeStreamInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitUntilStreamNotExists", arg0)
@@ -1525,13 +1526,13 @@ func (m *MockKinesisAPI) WaitUntilStreamNotExists(arg0 *kinesis.DescribeStreamIn
 	return ret0
 }
 
-// WaitUntilStreamNotExists indicates an expected call of WaitUntilStreamNotExists
+// WaitUntilStreamNotExists indicates an expected call of WaitUntilStreamNotExists.
 func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamNotExists(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitUntilStreamNotExists", reflect.TypeOf((*MockKinesisAPI)(nil).WaitUntilStreamNotExists), arg0)
 }
 
-// WaitUntilStreamNotExistsWithContext mocks base method
+// WaitUntilStreamNotExistsWithContext mocks base method.
 func (m *MockKinesisAPI) WaitUntilStreamNotExistsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -1543,7 +1544,7 @@ func (m *MockKinesisAPI) WaitUntilStreamNotExistsWithContext(arg0 aws.Context, a
 	return ret0
 }
 
-// WaitUntilStreamNotExistsWithContext indicates an expected call of WaitUntilStreamNotExistsWithContext
+// WaitUntilStreamNotExistsWithContext indicates an expected call of WaitUntilStreamNotExistsWithContext.
 func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamNotExistsWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
