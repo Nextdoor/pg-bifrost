@@ -3,7 +3,7 @@ FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
 # Test and build binary
-FROM golang:1.13.5-stretch as intermediate
+FROM golang:1.20.4-buster as intermediate
 
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf

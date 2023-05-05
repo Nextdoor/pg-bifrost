@@ -15,7 +15,7 @@ from retry import retry
 # Variables
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 STREAM_NAME = os.getenv('STREAM_NAME', 'itests')
-ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4568')
+ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4566')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KINESIS_POLLER_WAIT_TIME', '90'))
@@ -29,11 +29,25 @@ client = boto3.client('kinesis',
 # Create a stream
 @retry(exceptions.EndpointConnectionError, tries=10, delay=.5)
 def _create_stream(name):
-    print "Trying to create stream {}".format(name)
+    print "Trying to create stream {} with {} shards".format(name, SHARD_COUNT)
     return client.create_stream(
         StreamName=name,
         ShardCount=SHARD_COUNT
     )
+
+
+@retry(Exception, tries=10, delay=1)
+def _check_stream_ready(name):
+    print("checking if stream {} is ready".format(name))
+
+    resp = client.describe_stream(
+        StreamName=name
+    )
+
+    status = resp.get('StreamDescription', []).get('StreamStatus', 'UNKNOWN')
+    if status != 'ACTIVE':
+        print("stream status: {}".format(status))
+        raise Exception("stream not active")
 
 
 @retry(ValueError, tries=10, delay=.5)
@@ -42,7 +56,7 @@ def _get_shard_ids(name):
         StreamName=name,
     )
 
-    if len(response['Shards']) == 0:
+    if len(response['Shards']) != SHARD_COUNT:
         raise ValueError
 
     shard_ids = []
@@ -50,6 +64,7 @@ def _get_shard_ids(name):
     for shard in response['Shards']:
         shard_ids.append(shard.get('ShardId'))
 
+    print("shard ids: {}".format(shard_ids))
     return shard_ids
 
 
@@ -63,6 +78,8 @@ except exceptions.EndpointConnectionError:
 except exceptions.ClientError as e:
     if e.response['Error']['Code'] != 'ResourceInUseException':
         raise e
+
+_check_stream_ready(STREAM_NAME)
 
 # Get list of shards
 print "Getting shard list..."
@@ -114,7 +131,7 @@ while total < EXPECTED_COUNT:
         record_count += len(response['Records'])
 
     total += record_count
-    print("total so far: {}".format(total))
+    print("{} total so far: {}".format(time.time(), total))
 
     if record_count == 0:
         time.sleep(1)
