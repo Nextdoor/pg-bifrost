@@ -7,7 +7,7 @@ require (
 	github.com/NeowayLabs/wabbit v0.0.0-20190108150251-e762dd02f7f2
 	github.com/Nextdoor/parselogical v0.0.0-20180824214823-31546f21ba34
 	github.com/aws/aws-sdk-go v1.44.258
-	github.com/cenkalti/backoff v2.1.1+incompatible
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cevaris/ordered_map v0.0.0-20180310183325-0efaee1733e3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9

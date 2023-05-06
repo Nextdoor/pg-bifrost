@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
@@ -35,7 +35,7 @@ import (
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
@@ -79,9 +79,9 @@ func gzipAsReadSeeker(messagesSlice []*marshaller.MarshalledMessage) io.ReadSeek
 
 // used to compare all fields of PutObjectInput while reading from the buffer for Body
 type putObjectInputMatcher struct {
-	Bucket *string
-	Key *string
-	BodyString string
+	Bucket          *string
+	Key             *string
+	BodyString      string
 	ContentEncoding *string
 }
 
@@ -144,7 +144,6 @@ func TestSinglePutOk(t *testing.T) {
 	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
-
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
 		Json:         []byte("data"),
@@ -156,9 +155,9 @@ func TestSinglePutOk(t *testing.T) {
 
 	// Expects
 	expectedInput := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
@@ -189,7 +188,6 @@ func TestSinglePutOk(t *testing.T) {
 	stats.VerifyStats(t, statsChan, expected)
 }
 
-
 func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -212,7 +210,6 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
-
 	firstMarshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
 		Json:         []byte("dataOne"),
@@ -233,9 +230,9 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 
 	// Expects
 	expectedInput := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
@@ -288,7 +285,6 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
-
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
 		Json:         []byte("data"),
@@ -300,17 +296,17 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
 	// We need two "identical" inputs because Body's io.Reader is mutable (reading again needs a Seek to rewind)
 	expectedInputTwo := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
@@ -366,7 +362,6 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
 	b := batch.NewGenericBatch("", batchSize)
 
-
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
 		Json:         []byte("data"),
@@ -378,17 +373,17 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 
 	// We need two "identical" inputs because Body's io.Reader is mutable (reading needs a Seek back to start offset)
 	expectedInputTwo := s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key: aws.String("2000/01/02/03/456_1234.gz"),
-		Body: gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
+		Bucket:          aws.String(bucketName),
+		Key:             aws.String("2000/01/02/03/456_1234.gz"),
+		Body:            gzipAsReadSeeker(b.GetPayload().([]*marshaller.MarshalledMessage)),
 		ContentEncoding: aws.String("gzip"),
 	}
 

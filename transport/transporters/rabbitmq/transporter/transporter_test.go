@@ -35,7 +35,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq/transporter/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"

@@ -18,7 +18,7 @@ package conn
 
 import (
 	"context"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgproto3/v2"

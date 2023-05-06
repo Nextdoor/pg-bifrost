@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package kinesis
 
@@ -28,7 +28,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/transporter"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
