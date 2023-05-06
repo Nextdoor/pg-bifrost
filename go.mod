@@ -3,7 +3,7 @@ module github.com/Nextdoor/pg-bifrost.git
 go 1.20
 
 require (
-	github.com/DataDog/datadog-go v2.2.0+incompatible
+	github.com/DataDog/datadog-go/v5 v5.3.0
 	github.com/NeowayLabs/wabbit v0.0.0-20190108150251-e762dd02f7f2
 	github.com/Nextdoor/parselogical v0.0.0-20180824214823-31546f21ba34
 	github.com/aws/aws-sdk-go v1.15.38
@@ -18,12 +18,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/streadway/amqp v0.0.0-20181205114330-a314942b2fd9
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	gopkg.in/Nextdoor/cli.v1 v1.20.2
 )
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsouza/go-dockerclient v1.9.7 // indirect
 	github.com/go-ini/ini v1.25.4 // indirect
@@ -39,9 +40,11 @@ require (
 	github.com/smartystreets/goconvey v1.8.0 // indirect
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
