@@ -40,6 +40,9 @@ jobs:
     - run: cp -r /tmp/workspace/project/. .
     - run: |
         sudo docker load < docker-cache/built-image.tar
+        
+        # Pull binary out of docker image so we can do perf regression checks
+        make docker_get_binary
     - run:
         name: Run integration tests in docker
         command: |
