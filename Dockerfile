@@ -10,6 +10,7 @@ RUN mkdir /perf
 
 # Build/test dependencies
 RUN go install github.com/golang/mock/mockgen@v1.6.0
+RUN go install golang.org/x/tools/cmd/goimports@latest
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 
