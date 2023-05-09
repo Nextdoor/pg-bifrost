@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	pglogrepl "github.com/jackc/pglogrepl"
-	pgproto3 "github.com/jackc/pgproto3/v2"
+	pgproto3 "github.com/jackc/pgx/v5/pgproto3"
 )
 
 // MockConn is a mock of Conn interface.

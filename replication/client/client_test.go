@@ -28,7 +28,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3/v2"
+	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/stretchr/testify/assert"
 	"time"
 

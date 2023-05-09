@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package main
 
@@ -41,7 +41,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/Nextdoor/cli.v1"
@@ -121,8 +121,8 @@ var (
 			EnvVar: "DATADOG_HOST",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
-			Name:   config.VAR_NAME_DD_TAGS,
-			Usage:  "datadog tags to add to emitted metrics. These are specified as key:value and are " +
+			Name: config.VAR_NAME_DD_TAGS,
+			Usage: "datadog tags to add to emitted metrics. These are specified as key:value and are " +
 				"delimited by ','. For example key1:value1,key2:value2",
 			Value:  "",
 			EnvVar: "DATADOG_TAGS",

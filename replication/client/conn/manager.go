@@ -12,14 +12,14 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package conn
 
 import (
 	"context"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sirupsen/logrus"
 	"os"
 	"time"
@@ -95,4 +95,3 @@ func (m *Manager) Close() {
 	m.conn.Close(context.Background())
 	m.conn = nil
 }
-
