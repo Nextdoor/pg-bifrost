@@ -227,7 +227,7 @@ _profile() {
   fi
 
   log "Comparing Memory Profile"
-  memprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/mem.pprof ../target/pg-bifrost tests/$BATS_TEST_DESCRIPTION/perf_output/mem.pprof | grep -v -E "^(\s+)?-" | tail -n +9 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5- | egrep -v vendor/gopkg.in/Nextdoor/cli)
+  memprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -ignore github.com/Nextdoor/pg-bifrost.git/stats -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/mem.pprof ../target/pg-bifrost tests/$BATS_TEST_DESCRIPTION/perf_output/mem.pprof | grep -v -E "^(\s+)?-" | tail -n +9 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5- | egrep -v vendor/gopkg.in/Nextdoor/cli)
   memory_leak=false
   while read -r line; do
     percent=$(echo $line | cut -d ' ' -f1 | rev | cut -c 2- | rev)
@@ -238,7 +238,7 @@ _profile() {
   done <<< "$memprofile"
 
   log "Comparing CPU Profile"
-  cpuprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/cpu.pprof tests/$BATS_TEST_DESCRIPTION/perf_output/cpu.pprof | tail -n +10 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5-)
+  cpuprofile=$(go tool pprof -normalize -top -show github.com/Nextdoor -ignore github.com/Nextdoor/pg-bifrost.git/stats -diff_base tests/$BATS_TEST_DESCRIPTION/perf_base/cpu.pprof tests/$BATS_TEST_DESCRIPTION/perf_output/cpu.pprof | tail -n +10 | tr -s ' ' | awk '{$1=$1};1' | cut -d ' ' -f5-)
   cpu_hot=false
   while read -r line; do
     percent=$(echo $line | cut -d ' ' -f1 | rev | cut -c 2- | rev)
