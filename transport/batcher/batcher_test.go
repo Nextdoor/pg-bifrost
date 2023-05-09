@@ -1111,7 +1111,7 @@ func TestPanicRecovery(t *testing.T) {
 	defer mockCtrl.Finish()
 	b.txnsSeenTimeout = time.Millisecond * 1
 
-	mockBatchFactory.EXPECT().NewBatch("foo").Do(func() { panic("expected") })
+	mockBatchFactory.EXPECT().NewBatch("foo").Do(func(_ interface{}) { panic("expected") })
 
 	commit := &marshaller.MarshalledMessage{
 		Operation:    "UPDATE",

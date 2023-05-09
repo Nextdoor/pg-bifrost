@@ -2,129 +2,67 @@ version: 2
 
 defaults: &defaults
   docker:
-  - image: circleci/golang:1.13.5-stretch
-  working_directory: /go/src/github.com/Nextdoor/pg-bifrost.git
+  - image: cimg/go:1.20.4
 
 defaults_itests: &defaults_itests
   machine:
     enabled: true
     docker_layer_caching: true
 
-step_library:
-- &step_itests
-  run:
-    name: Run integration tests in docker
-    command: |
-      git submodule sync
-      git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
-      make itests
-
-- &step_build_artifact
-  run:
-    name: Run make build
-    command: |
-      # builds pg-bifrost in a docker container
-      make docker_build
-
-      # Save the docker container for re-use
-      mkdir -p docker-cache
-      docker save -o docker-cache/built-image.tar pg-bifrost:latest
-
-      # pull binary out of docker container
-      make docker_get_binary
-      /usr/bin/md5sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.md5
-      cat target/pg-bifrost.md5
-      /usr/bin/sha1sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha1
-      cat target/pg-bifrost.sha1
-      /usr/bin/sha256sum -b target/pg-bifrost | cut -d' ' -f1 > target/pg-bifrost.sha256
-      cat target/pg-bifrost.sha256
-
 jobs:
-  build: &build
+  build:
     <<: *defaults
     steps:
     - checkout
     - setup_remote_docker:
         docker_layer_caching: true
-    - *step_build_artifact
-    - persist_to_workspace:
-        root: /go/src/github.com/Nextdoor
-        paths:
-          - pg-bifrost.git
+    - run:
+        name: Run make build
+        command: |
+          # builds pg-bifrost in a docker container
+          make docker_build
 
-  itests: &itests
+          # Save the docker container for re-use
+          mkdir -p docker-cache
+          docker save -o docker-cache/built-image.tar pg-bifrost:latest
+    - persist_to_workspace:
+        root: ~/
+        paths:
+          - project
+
+  itests:
     <<: *defaults_itests
     parallelism: 6
+    resource_class: xlarge
     steps:
     - attach_workspace:
         at: /tmp/workspace
-    - run: cp -r /tmp/workspace/pg-bifrost.git/. .
+    - run: cp -r /tmp/workspace/project/. .
     - run: |
-        sudo rm -rf /usr/local/go || true
-        sudo curl -L https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        sudo curl -L https://dl.google.com/go/go1.13.5.linux-amd64.tar.gz -o go1.13.5.linux-amd64.tar.gz
-        sudo tar -xf go1.13.5.linux-amd64.tar.gz
-        sudo mv go /usr/local
         sudo docker load < docker-cache/built-image.tar
-    - *step_itests
+        
+        # Pull binary out of docker image so we can do perf regression checks
+        make docker_get_binary
+    - run:
+        name: Run integration tests in docker
+        command: |
+          git submodule sync
+          git submodule update --init || (rm -fr .git/config .git/modules && git submodule deinit -f . && git submodule update --init)
+          make itests
     - store_test_results:
         path: ./itests/test_output/
 
-  publish_binary:
+  publish_image:
     docker:
-      - image: circleci/golang:1.13.5
+      - image: cimg/go:1.20.4
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: "Publish Release on GitHub and Docker Hub"
           command: |
-            GIT_CMD="git --git-dir /tmp/workspace/pg-bifrost.git/.git"
-            go get github.com/tcnksm/ghr
-
-            # Create tarball and compute hashes
-            export ARTIFACT="pg-bifrost.linux-amd64.tar.gz"
-            tar -czvf ${ARTIFACT} -C /tmp/workspace/pg-bifrost.git/target .
-            SHA256_HASH=$(/usr/bin/sha256sum -b ${ARTIFACT} | cut -d' ' -f1)
-            SHA1_HASH=$(/usr/bin/sha1sum -b ${ARTIFACT} | cut -d' ' -f1)
-            MD5_HASH=$(/usr/bin/md5sum -b ${ARTIFACT} | cut -d' ' -f1)
-
-            # Determine tagging
-            if [ -z "$CIRCLE_TAG" ]
-            then
-              RELEASE_TAG="latest"
-              GHR_ARGS="-prerelease"
-              PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n1 | head -1 | cut -d' ' -f1)
-            else
-              RELEASE_TAG=${CIRCLE_TAG}
-              PREVIOUS_TAG_HASH=$(${GIT_CMD} show-ref --tags --head | grep -v latest | tail -n2 | head -1 | cut -d' ' -f1)
-            fi
-
-            # Get commit history between the previous tag and this tag
-            LOG=$(${GIT_CMD} log --pretty="format:* %B"  ${PREVIOUS_TAG_HASH}..HEAD)
-
-            # Create changelog
-            cat << EOF > CHANGELOG.txt
-            Commits:
-
-            ${LOG}
-
-            Hashes:
-
-            ${ARTIFACT} sha256 ${SHA256_HASH}
-            ${ARTIFACT} sha1 ${SHA1_HASH}
-            ${ARTIFACT} md5 ${MD5_HASH}
-            EOF
-
-            CHANGELOG=$(cat CHANGELOG.txt)
-
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ${GHR_ARGS} -delete -name ${RELEASE_TAG} -b "${CHANGELOG}" ${RELEASE_TAG} ${ARTIFACT}
-
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-            docker load < /tmp/workspace/pg-bifrost.git/docker-cache/built-image.tar
+            docker load < /tmp/workspace/pg-bifrost/docker-cache/built-image.tar
             docker tag pg-bifrost:latest "${HUB_REPO}:${RELEASE_TAG}"
             docker push "${HUB_REPO}:${RELEASE_TAG}"
 
@@ -147,11 +85,11 @@ workflows:
           tags:
             only: /.*/
 
-    - publish_binary:
+    - publish_image:
         requires: [itests]
         filters:
           branches:
             # Ignore everything except master
-            ignore: /^(?!master).*$/
+            ignore: /^(?!main).*$/
           tags:
             only: /[0-9\.]+/

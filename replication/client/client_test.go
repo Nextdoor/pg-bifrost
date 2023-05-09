@@ -1144,7 +1144,7 @@ func TestPanic(t *testing.T) {
 
 	err := errors.New("expected error")
 	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(nil, err).Do(
-		func(_ interface{}) {
+		func(_ interface{}, _ interface{}) {
 			time.Sleep(time.Millisecond * 1)
 			panic("TestPanic")
 		}).Times(1)

@@ -12,11 +12,12 @@ services:
 
   localstack:
     container_name: localstack
-    image: localstack/localstack:0.8.7
+    image: localstack/localstack:2.0.2
     env_file:
     - "./containers/defaults.env"
     - "./tests/${TEST_NAME}/envfile.env"
     environment:
+    - EAGER_SERVICE_LOADING=1
     - SERVICES=${TRANSPORT_SINK}
     ports:
     - ${LOCALSTACK_PORT}:${LOCALSTACK_PORT}

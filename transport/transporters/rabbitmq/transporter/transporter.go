@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	TimeSource utils.TimeSource = utils.RealTime{}
+	TimeSource utils.TimeSource = &utils.RealTime{}
 )
 
 // RabbitMQTransporter handles sending messages to RabbitMQ, retrying if there is
@@ -116,6 +116,7 @@ func (t *RabbitMQTransporter) StartTransporting() {
 
 	var b interface{}
 	var ok bool
+	var ts = TimeSource
 
 	for {
 		select {
@@ -154,15 +155,15 @@ func (t *RabbitMQTransporter) StartTransporting() {
 		}
 
 		// Begin timer
-		start := TimeSource.UnixNano()
+		start := ts.UnixNano()
 
 		// send to RabbitMQ with some retry logic
 		cancelled, err := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
 
 		// End timer and send stat
 
-		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
-		t.statsChan <- stats.NewStatHistogram("rabbitmq_transport", "duration", total, TimeSource.UnixNano(), "ms")
+		total := (ts.UnixNano() - start) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("rabbitmq_transport", "duration", total, ts.UnixNano(), "ms")
 
 		if err != nil {
 			t.log.Error("max retries exceeded")
@@ -175,7 +176,7 @@ func (t *RabbitMQTransporter) StartTransporting() {
 		}
 
 		t.log.Debug("successfully wrote batch")
-		t.statsChan <- stats.NewStatCount("rabbitmq_transport", "written", int64(genericBatch.NumMessages()), TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("rabbitmq_transport", "written", int64(genericBatch.NumMessages()), ts.UnixNano())
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
@@ -184,6 +185,7 @@ func (t *RabbitMQTransporter) StartTransporting() {
 
 func (t *RabbitMQTransporter) transportWithRetry(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (bool, error) {
 	var cancelled bool
+	var ts = TimeSource
 
 	// An operation that may fail.
 	operation := func() error {
@@ -206,14 +208,14 @@ func (t *RabbitMQTransporter) transportWithRetry(ctx context.Context, messagesSl
 		// If any errors occurred during sending then entire batch will be retried
 		if err != nil {
 			t.log.WithError(err).Error("Could not transport messages")
-			t.statsChan <- stats.NewStatCount("rabbitmq_transport", "failure", 1, TimeSource.UnixNano())
+			t.statsChan <- stats.NewStatCount("rabbitmq_transport", "failure", 1, ts.UnixNano())
 			return err
 		}
 
 		remaining, err := t.waitForConfirmations(ctx, uint64(len(messagesSlice)))
 		// If there are no failures then all messages were sent and received
 		if err == nil {
-			t.statsChan <- stats.NewStatCount("rabbitmq_transport", "success", 1, TimeSource.UnixNano())
+			t.statsChan <- stats.NewStatCount("rabbitmq_transport", "success", 1, ts.UnixNano())
 			return nil
 		}
 
@@ -224,7 +226,7 @@ func (t *RabbitMQTransporter) transportWithRetry(ctx context.Context, messagesSl
 		// record the error
 		err = fmt.Errorf("%d records failed to be acknowledged by RabbitMQ: %v", remaining, err)
 		t.log.Warnf("err %s", err)
-		t.statsChan <- stats.NewStatCount("rabbitmq_transport", "failure", 1, TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("rabbitmq_transport", "failure", 1, ts.UnixNano())
 
 		// return err to signify a retry is needed
 		return err

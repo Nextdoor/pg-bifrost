@@ -17,7 +17,7 @@ from retry import retry
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'itests')
 CREATE_BUCKET = bool(os.getenv('CREATE_BUCKET', '1'))
-ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4572')
+ENDPOINT_URL = os.getenv('ENDPOINT_URL', 'http://localstack:4566')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1')) # expect number of records (only used for logging)
 INITIAL_WAIT_TIME = int(os.getenv('S3_POLLER_INITIAL_WAIT_TIME', '90')) # time to wait for initial list of keys
@@ -147,7 +147,7 @@ while time.time() <= moving_deadline:
     key_i += 1
 
     total += record_count
-    print("total so far: {}".format(total))
+    print("{} total so far: {}".format(time.time(), total))
 
     if record_count == 0:
         time.sleep(1)

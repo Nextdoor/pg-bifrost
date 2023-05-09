@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
@@ -46,11 +46,11 @@ import (
 //go:generate mockgen -destination=mocks/mock_s3.go -package=mocks github.com/aws/aws-sdk-go/service/s3/s3iface S3API
 
 var (
-	TimeSource utils.TimeSource = utils.RealTime{}
+	TimeSource utils.TimeSource = &utils.RealTime{}
 )
 
 // key_join is a helper to concatenate strings to form an S3 key
-func key_join(strs ...string, ) string {
+func key_join(strs ...string) string {
 	var sb strings.Builder
 	for i, str := range strs {
 		if str == "" || str == "/" {
@@ -64,7 +64,7 @@ func key_join(strs ...string, ) string {
 		// concatenate string and add trailing slash
 		sb.WriteString(str)
 
-		if i != len(strs) - 1 {
+		if i != len(strs)-1 {
 			sb.WriteString("/")
 		}
 	}
@@ -128,11 +128,11 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsRegion *string,
 	awsAccessKeyId *string,
 	awsSecretAccessKey *string,
-	endpointPtr *string,) transport.Transporter {
+	endpointPtr *string) transport.Transporter {
 
 	awsConfig := &aws.Config{
-		Region:      		aws.String(*awsRegion),
-		MaxRetries:		aws.Int(0), // We disable the client retry policy because of our own retry logic
+		Region:     aws.String(*awsRegion),
+		MaxRetries: aws.Int(0), // We disable the client retry policy because of our own retry logic
 	}
 
 	if *awsAccessKeyId != "" || *awsSecretAccessKey != "" {
@@ -181,11 +181,11 @@ func (t *S3Transporter) shutdown() {
 	close(t.txnsWritten)
 }
 
-
 // transportWithRetry does a PUT on a full batch as a single key/file to S3
 func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (error, bool) {
 	var cancelled bool
 	var buf bytes.Buffer
+	var ts = TimeSource
 	gz := gzip.NewWriter(&buf)
 
 	select {
@@ -225,7 +225,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	byteArray = nil
 
 	// Partition the S3 keys into days
-	year, month, day, hour, full := TimeSource.DateString()
+	year, month, day, hour, full := ts.DateString()
 	baseFilename := fmt.Sprintf("%s_%d", full, firstWalStart)
 
 	fullKey := key_join(t.keySpace, year, month, day, hour, baseFilename)
@@ -243,7 +243,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 		// If any errors occurred during sending the entire batch
 		if err != nil {
 			t.log.WithError(err).Errorf("%s failed to be uploaded to S3", fullKey)
-			t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, TimeSource.UnixNano())
+			t.statsChan <- stats.NewStatCount("s3_transport", "failure", 1, ts.UnixNano())
 
 			// Rewind the reader for retries
 			_, seekErr := byteReader.Seek(0, 0)
@@ -257,7 +257,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 
 		// If there are no failures then all messages were sent
 		t.log.Infof("successful PUT: %s/%s", t.bucketName, fullKey)
-		t.statsChan <- stats.NewStatCount("s3_transport", "success", 1, TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("s3_transport", "success", 1, ts.UnixNano())
 		return nil
 	}
 
@@ -275,7 +275,6 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	return nil, cancelled
 }
 
-
 // StartTransporting reads in message batches, outputs its data to S3 and then sends a progress report on the batch
 func (t *S3Transporter) StartTransporting() {
 	t.log.Info("starting transporter")
@@ -283,6 +282,7 @@ func (t *S3Transporter) StartTransporting() {
 
 	var b interface{}
 	var ok bool
+	var ts = TimeSource
 
 	for {
 		select {
@@ -321,14 +321,14 @@ func (t *S3Transporter) StartTransporting() {
 		}
 
 		// Begin timer
-		start := TimeSource.UnixNano()
+		start := ts.UnixNano()
 
 		// send to S3
 		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
 
 		// End timer and send stat
-		total := (TimeSource.UnixNano() - start) / int64(time.Millisecond)
-		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, TimeSource.UnixNano(), "ms")
+		total := (ts.UnixNano() - start) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, ts.UnixNano(), "ms")
 
 		if err != nil {
 			t.log.Error("max retries exceeded")
@@ -341,7 +341,7 @@ func (t *S3Transporter) StartTransporting() {
 		}
 
 		t.log.Debug("successfully wrote batch")
-		t.statsChan <- stats.NewStatCount("s3_transport", "written", int64(genericBatch.NumMessages()), TimeSource.UnixNano())
+		t.statsChan <- stats.NewStatCount("s3_transport", "written", int64(genericBatch.NumMessages()), ts.UnixNano())
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
