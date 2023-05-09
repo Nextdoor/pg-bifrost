@@ -12,19 +12,20 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package filter
 
 import (
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 
-	"github.com/Nextdoor/pg-bifrost.git/shutdown"
-	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/Nextdoor/parselogical"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/shutdown"
+	"github.com/Nextdoor/pg-bifrost.git/stats"
+	"github.com/stretchr/testify/assert"
 )
 
 func _testMessage(relation string, operation string) *replication.WalMessage {

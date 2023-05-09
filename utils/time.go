@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package utils
 
@@ -57,8 +57,8 @@ func (rt RealTime) DateString() (
 	fullFormat := now.Format("20060102150405")
 
 	return strconv.Itoa(yearInt),
-	       intDateToNormalString(monthInt),
-	       intDateToNormalString(dayInt),
-	       intDateToNormalString(hourInt),
-	       fullFormat
+		intDateToNormalString(monthInt),
+		intDateToNormalString(dayInt),
+		intDateToNormalString(hourInt),
+		fullFormat
 }

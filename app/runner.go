@@ -17,11 +17,14 @@
 package app
 
 import (
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
 	"github.com/jackc/pgx/v5/pgconn"
-	"time"
+
+	"os"
 
 	"github.com/Nextdoor/pg-bifrost.git/filter"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -37,7 +40,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 var (

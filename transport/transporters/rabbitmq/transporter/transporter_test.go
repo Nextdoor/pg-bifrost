@@ -18,10 +18,11 @@ package transporter
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/NeowayLabs/wabbit"
 	w_amqp "github.com/NeowayLabs/wabbit/amqp"

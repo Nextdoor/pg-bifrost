@@ -12,12 +12,14 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package batch
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
@@ -25,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/cevaris/ordered_map"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const (

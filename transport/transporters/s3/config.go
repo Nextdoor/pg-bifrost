@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package s3
 
@@ -24,7 +24,7 @@ import (
 const (
 	ConfVarBucketName         = "s3-bucket"
 	ConfVarKeySpace           = "s3-key-space"
-	ConfVarPutBatchSize 	  = "s3-batch-size"
+	ConfVarPutBatchSize       = "s3-batch-size"
 	ConfVarAwsAccessKeyId     = "aws-access-key-id"
 	ConfVarAwsSecretAccessKey = "aws-secret-access-key"
 	ConfVarAwsRegion          = "aws-region"

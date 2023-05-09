@@ -1,9 +1,10 @@
 package batch
 
 import (
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
-	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/cevaris/ordered_map"

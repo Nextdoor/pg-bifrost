@@ -12,14 +12,15 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package progress
 
 import (
+	"testing"
+
 	"github.com/cevaris/ordered_map"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestIsEqual(t *testing.T) {
@@ -83,7 +84,6 @@ func TestIsNotEqualMultiple(t *testing.T) {
 	omapA := ordered_map.NewOrderedMap()
 	omapA.Set("1-1", &Written{"1", "1-1", 1})
 	omapA.Set("2-1", &Written{"2", "2-1", 1})
-
 
 	omapB := ordered_map.NewOrderedMap()
 	omapB.Set("1-1", &Written{"1", "1-1", 1})

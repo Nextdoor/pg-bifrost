@@ -2,8 +2,9 @@ package aggregator
 
 import (
 	"fmt"
-	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"math"
+
+	"github.com/Nextdoor/pg-bifrost.git/stats"
 )
 
 // aggregate type which keeps a unique Stat's metadata, a running count of it's value

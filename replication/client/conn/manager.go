@@ -18,11 +18,12 @@ package conn
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (

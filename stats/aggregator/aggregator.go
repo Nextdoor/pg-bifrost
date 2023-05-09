@@ -19,7 +19,6 @@
 //
 //	// receive aggregated stats
 //	aggregated_stat := <-out_stats
-//
 package aggregator
 
 import (

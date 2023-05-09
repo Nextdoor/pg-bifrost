@@ -2,6 +2,9 @@ package batcher
 
 import (
 	"container/heap"
+	"os"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -10,8 +13,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (
@@ -48,7 +49,7 @@ func GetRoutingMethod(name string) BatchRouting {
 
 const (
 	DEFAULT_MAX_MEMORY_BYTES = int64(1024 * 1024 * 100)
-	TICKER_RATE = 1 * time.Second
+	TICKER_RATE              = 1 * time.Second
 )
 
 func init() {

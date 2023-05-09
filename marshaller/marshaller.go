@@ -17,7 +17,7 @@
 package marshaller
 
 import (
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 
 	"os"
 	"time"

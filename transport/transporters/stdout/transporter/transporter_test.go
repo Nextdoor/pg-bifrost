@@ -12,13 +12,15 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
 import (
 	"fmt"
 	"testing"
+
+	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -29,7 +31,6 @@ import (
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"time"
 )
 
 var (
@@ -74,7 +75,7 @@ func TestBatchHasCommit(t *testing.T) {
 	result := <-txns
 
 	omap := ordered_map.NewOrderedMap()
-	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count:1})
+	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count: 1})
 
 	assert.Equal(t, omap, result, "A message sent to the transporter should have a matching progress result.")
 }
@@ -104,7 +105,7 @@ func TestBatchHasNoCommit(t *testing.T) {
 	result := <-txns
 
 	omap := ordered_map.NewOrderedMap()
-	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count:1})
+	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count: 1})
 
 	assert.Equal(t, omap, result, "A message sent to the transporter should have a matching progress result.")
 }

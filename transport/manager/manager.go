@@ -9,10 +9,11 @@
 //	go m.StartBatcher()
 //	go m.StartTransporterGroup()
 //	go m.Start()
-//
 package manager
 
 import (
+	"log"
+
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -22,7 +23,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/factory"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/cevaris/ordered_map"
-	"log"
 )
 
 type TransportManager struct {

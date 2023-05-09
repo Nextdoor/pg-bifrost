@@ -12,18 +12,19 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package partitioner
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/sirupsen/logrus"
-	"os"
-	"strconv"
 )
 
 type PartitionMethod int
@@ -66,7 +67,7 @@ type Partitioner struct {
 
 	statsChan chan stats.Stat
 
-	method PartitionMethod
+	method  PartitionMethod
 	buckets int
 }
 

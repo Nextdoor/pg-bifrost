@@ -1,11 +1,12 @@
 package batch
 
 import (
+	"testing"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/cevaris/ordered_map"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestAddTransaction(t *testing.T) {
