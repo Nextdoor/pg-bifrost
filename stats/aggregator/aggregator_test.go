@@ -116,8 +116,7 @@ func _testStart(t *testing.T, sts []testStat, expecteds []testResult) {
 
 	// Compare the respective result and expected elements
 	for _, expected := range expecteds {
-		var expectedStat stats.Stat
-		expectedStat = stats.NewStatCount("rplclient",
+		var expectedStat = stats.NewStatCount("rplclient",
 			expected.statName,
 			expected.value,
 			expected.timestamp,
@@ -235,24 +234,19 @@ func TestCloseInputChannel(t *testing.T) {
 	go statsAggregator.Start()
 
 	// Wait to ensure routine started
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	select {
-	case <-timeout.C:
-	}
+	time.Sleep(25 * time.Millisecond)
 
 	// Close input
 	close(in)
 
 	// Verify output gets closed
-	timeoutVerify := time.NewTimer(25 * time.Millisecond)
 
 	select {
 	case _, ok := <-statsAggregator.outputChan:
 		if ok {
 			assert.Fail(t, "output channel not properly closed")
 		}
-	case <-timeoutVerify.C:
+	case <-time.After(25 * time.Millisecond):
 		assert.Fail(t, "output channel not closed in time")
 	}
 }
@@ -335,14 +329,12 @@ func TestTerminationContextInSend(t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 
 	// Verify output gets closed
-	timeoutVerify := time.NewTimer(10 * time.Millisecond)
-
 	select {
 	case _, ok := <-statsAggregator.outputChan:
 		if ok {
 			assert.Fail(t, "output channel not properly closed")
 		}
-	case <-timeoutVerify.C:
+	case <-time.After(10 * time.Millisecond):
 		assert.Fail(t, "output channel not closed in time")
 	}
 }

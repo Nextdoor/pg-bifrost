@@ -118,7 +118,7 @@ func (c *Replicator) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 	close(c.outputChan)
 

@@ -18,7 +18,6 @@ package partitioner
 
 import (
 	"testing"
-	"time"
 
 	"github.com/Nextdoor/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
@@ -35,24 +34,6 @@ func _setupPartitioner(partMethod PartitionMethod, buckets int) (Partitioner, ch
 	p := New(sh, in, statsChan, partMethod, buckets)
 
 	return p, in, statsChan
-}
-
-func _collectOutput(outputChan chan *replication.WalMessage) []*replication.WalMessage {
-	actual := make([]*replication.WalMessage, 0)
-
-	func() {
-		for {
-			select {
-			case <-time.After(5 * time.Millisecond):
-				// Got all the stats
-				return
-			case m := <-outputChan:
-				actual = append(actual, m)
-			}
-		}
-	}()
-
-	return actual
 }
 
 func _testMessage(relation string, transaction string) *replication.WalMessage {

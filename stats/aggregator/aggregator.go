@@ -111,7 +111,7 @@ func (a *Aggregator) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing output channel")
@@ -241,7 +241,7 @@ func (a *Aggregator) reportAggregatesWorker() {
 			}
 
 			if len(reportedBucketBtimes) != 0 {
-				for bucketTime, _ := range reportedBucketBtimes {
+				for bucketTime := range reportedBucketBtimes {
 					delete(a.aggregates, bucketTime)
 				}
 			}

@@ -69,7 +69,7 @@ func (t StdoutTransporter) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	t.log.Debug("closing progress channel")
@@ -121,7 +121,7 @@ func (t StdoutTransporter) StartTransporting() {
 		}
 
 		for _, msg := range messagesSlice {
-			fmt.Println(fmt.Sprintf("%d: %s", t.id, string(msg.Json)))
+			fmt.Printf("%d: %s\n", t.id, string(msg.Json))
 		}
 
 		// report transactions written in this batch

@@ -124,7 +124,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 func safeCloseChan(c chan transport.Batch) {
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	close(c)
@@ -148,7 +148,7 @@ func (b *Batcher) shutdown() {
 	// Also close the transaction progress channel
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	close(b.txnsSeenChan)
@@ -383,10 +383,8 @@ func (b *Batcher) sendBatch(batch transport.Batch) bool {
 		} else {
 			b.roundRobinPosition++
 		}
-		break
 	case BATCH_ROUTING_PARTITION:
 		channelIndex = utils.QuickHash(batch.GetPartitionKey(), b.workers)
-		break
 	}
 
 	log.Debugf("sending batch to worker %d", channelIndex)

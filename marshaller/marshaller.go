@@ -83,7 +83,7 @@ func (m Marshaller) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing output channel")

@@ -78,7 +78,6 @@ func (b *KinesisBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 	switch b.partitionMethod {
 	case utils.KINESIS_PART_WALSTART:
 		partitionKey = fmt.Sprintf("%v", msg.WalStart)
-		break
 	case utils.KINESIS_PART_BATCH:
 		partitionKey = msg.PartitionKey
 	}
@@ -141,11 +140,7 @@ func (b *KinesisBatch) CreateTime() int64 {
 }
 
 func (b *KinesisBatch) IsFull() bool {
-	if len(b.records) >= MAX_RECORDS {
-		return true
-	}
-
-	return false
+	return len(b.records) >= MAX_RECORDS
 }
 
 func (b *KinesisBatch) IsEmpty() bool {

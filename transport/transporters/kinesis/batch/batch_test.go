@@ -55,9 +55,9 @@ func TestAddTransaction(t *testing.T) {
 		Transaction:  "1",
 	}
 
-	batch.Add(begin)
-	batch.Add(insert)
-	batch.Add(commit)
+	_, _ = batch.Add(begin)
+	_, _ = batch.Add(insert)
+	_, _ = batch.Add(commit)
 
 	payload := batch.GetPayload()
 	prre, ok := payload.([]*kinesis.PutRecordsRequestEntry)

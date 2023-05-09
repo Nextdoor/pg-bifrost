@@ -101,7 +101,7 @@ func (t *RabbitMQTransporter) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	t.log.Debug("closing progress channel")

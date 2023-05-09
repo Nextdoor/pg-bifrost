@@ -68,8 +68,8 @@ func TestBatchHasCommit(t *testing.T) {
 	}
 
 	b := batch.NewGenericBatch("", 1)
-	b.Add(&_msgPtr)
-	b.Add(&_commitPtr)
+	_, _ = b.Add(&_msgPtr)
+	_, _ = b.Add(&_commitPtr)
 
 	in <- b
 	result := <-txns
@@ -99,7 +99,7 @@ func TestBatchHasNoCommit(t *testing.T) {
 	}
 
 	b := batch.NewGenericBatch("", 1)
-	b.Add(&_msgPtr)
+	_, _ = b.Add(&_msgPtr)
 
 	in <- b
 	result := <-txns

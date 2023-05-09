@@ -350,11 +350,7 @@ func TestDualShutdown(t *testing.T) {
 	close(written)
 
 	// Give time for ProgressTracker to handle shutdown
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	select {
-	case <-timeout.C:
-	}
+	time.Sleep(25 * time.Millisecond)
 
 	// Catch panic if it does happen
 	defer func() {

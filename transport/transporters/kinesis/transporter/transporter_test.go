@@ -76,7 +76,7 @@ func TestPutOk(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -202,7 +202,7 @@ func TestPutRetryWithError(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -281,7 +281,7 @@ func TestPutWithFailuresNoError(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -375,8 +375,8 @@ func TestRetryOnlyFailures(t *testing.T) {
 		Transaction:  "124",
 	}
 
-	b.Add(&firstMessage)
-	b.Add(&secondMessage)
+	_, _ = b.Add(&firstMessage)
+	_, _ = b.Add(&secondMessage)
 
 	// Input
 	firstPk := fmt.Sprintf("%v", firstMessage.WalStart)
@@ -555,7 +555,7 @@ func TestTerminationContextInRetry(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -628,7 +628,7 @@ func TestPanicHandling(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -692,7 +692,7 @@ func TestMissMatchReply(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)

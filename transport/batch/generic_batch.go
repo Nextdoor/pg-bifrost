@@ -73,10 +73,7 @@ func (b *GenericBatch) GetPartitionKey() string {
 }
 
 func (b *GenericBatch) IsFull() bool {
-	if len(b.messages) >= b.maxSize {
-		return true
-	}
-	return false
+	return len(b.messages) >= b.maxSize
 }
 
 func (b *GenericBatch) IsEmpty() bool {

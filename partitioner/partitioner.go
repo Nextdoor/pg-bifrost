@@ -99,7 +99,7 @@ func (f *Partitioner) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing output channel")
@@ -145,16 +145,12 @@ func (f *Partitioner) Start() {
 		switch f.method {
 		case PART_METHOD_NONE:
 			partitionKey = ""
-			break
 		case PART_METHOD_TABLENAME:
 			partitionKey = msg.Pr.Relation
-			break
 		case PART_METHOD_TXN:
 			partitionKey = msg.Pr.Transaction
-			break
 		case PART_METHOD_TXN_BUCKET:
 			partitionKey = strconv.Itoa(utils.QuickHash(msg.Pr.Transaction, f.buckets))
-			break
 		}
 
 		msg.PartitionKey = partitionKey

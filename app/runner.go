@@ -236,7 +236,7 @@ func (m Runner) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing global channels")

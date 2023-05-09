@@ -56,7 +56,7 @@ func resetTimeSource() {
 // operations. Subsequent reads off of this io.ReadSeeker will not return any data.
 func streamSeekToBytes(stream io.ReadSeeker) string {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(stream)
+	_, _ = buf.ReadFrom(stream)
 	return buf.String()
 }
 
@@ -66,12 +66,12 @@ func gzipAsReadSeeker(messagesSlice []*marshaller.MarshalledMessage) io.ReadSeek
 	gz := gzip.NewWriter(&buf)
 
 	for _, msg := range messagesSlice {
-		gz.Write(msg.Json)
-		gz.Write([]byte("\n"))
+		_, _ = gz.Write(msg.Json)
+		_, _ = gz.Write([]byte("\n"))
 	}
 
-	gz.Flush()
-	gz.Close()
+	_ = gz.Flush()
+	_ = gz.Close()
 
 	byteArray := buf.Bytes()
 	return bytes.NewReader(byteArray)
@@ -98,8 +98,8 @@ func (s *putObjectInputMatcher) Matches(x interface{}) bool {
 	actualBase64 := base64.StdEncoding.EncodeToString([]byte(actualBodyString))
 	expectedBase64 := base64.StdEncoding.EncodeToString([]byte(s.BodyString))
 	fmt.Println("Base64 encoding of PutObjectInput.Body Matcher test: ")
-	fmt.Println(fmt.Sprintf("actual: %s", actualBase64))
-	fmt.Println(fmt.Sprintf("expected: %s", expectedBase64))
+	fmt.Printf("actual: %s\n", actualBase64)
+	fmt.Printf("expected: %s\n", expectedBase64)
 
 	return *actual.Bucket == *s.Bucket &&
 		*actual.Key == *s.Key &&
@@ -151,7 +151,7 @@ func TestSinglePutOk(t *testing.T) {
 		WalStart:     1234,
 		Transaction:  "123",
 	}
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	expectedInput := s3.PutObjectInput{
@@ -217,7 +217,7 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 		WalStart:     1234,
 		Transaction:  "123",
 	}
-	b.Add(&firstMarshalledMessage)
+	_, _ = b.Add(&firstMarshalledMessage)
 
 	secondMarshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "UPDATE",
@@ -226,7 +226,7 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 		WalStart:     1235,
 		Transaction:  "123",
 	}
-	b.Add(&secondMarshalledMessage)
+	_, _ = b.Add(&secondMarshalledMessage)
 
 	// Expects
 	expectedInput := s3.PutObjectInput{
@@ -292,7 +292,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 		WalStart:     1234,
 		Transaction:  "123",
 	}
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
@@ -369,7 +369,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 		WalStart:     1234,
 		Transaction:  "123",
 	}
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	expectedInputOne := s3.PutObjectInput{
