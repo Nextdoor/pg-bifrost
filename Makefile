@@ -13,7 +13,12 @@ endif
 vendor: go.sum go.mod
 	go mod vendor -v
 
-lint: vet
+check_imports:
+	@echo "Checking goimports for imports and formatting..."
+	goimports -l -d .
+	@goimports -l -d . | xargs echo | xargs test -z 2> /dev/null
+
+lint: vet check_imports
 	@echo "Running golangci-lint"
 	golangci-lint run
 
@@ -27,7 +32,7 @@ generate:
 		go generate ./... ;\
 	fi
 
-test: generate
+test: generate check_imports
 	go clean -testcache || true
 	@echo "Executing tests ..."
 	go test -race -v ${GO_TEST_EXTRAS} ./...
@@ -69,4 +74,4 @@ docker_get_binary:
 	@$(DOCKER) cp "pg-bifrost-build":/pg-bifrost target/
 	@$(DOCKER) rm "pg-bifrost-build"
 
-.PHONY: clean test itests docker_build docker_get_binary vendor lint
+.PHONY: clean test itests docker_build docker_get_binary vendor lint check_imports
