@@ -10,6 +10,13 @@ ifeq ($(CI),true)
 	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(GIT_TAG_VERSION)
 endif
 
+vendor: go.sum go.mod
+	go mod vendor -v
+
+lint: vet
+	@echo "Running golangci-lint"
+	golangci-lint run
+
 vet:
 	@echo "Running go vet ..."
 	go list ./...  | xargs go vet
@@ -20,7 +27,7 @@ generate:
 		go generate ./... ;\
 	fi
 
-test: generate vet
+test: generate
 	go clean -testcache || true
 	@echo "Executing tests ..."
 	go test -race -v ${GO_TEST_EXTRAS} ./...
@@ -62,4 +69,4 @@ docker_get_binary:
 	@$(DOCKER) cp "pg-bifrost-build":/pg-bifrost target/
 	@$(DOCKER) rm "pg-bifrost-build"
 
-.PHONY: clean test itests docker_build docker_get_binary
+.PHONY: clean test itests docker_build docker_get_binary vendor lint
