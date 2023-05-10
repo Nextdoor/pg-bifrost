@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -333,7 +332,6 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 				continue
 			}
 
-			fmt.Println("returning")
 			return
 		}
 
