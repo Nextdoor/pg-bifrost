@@ -18,14 +18,15 @@ package client
 
 import (
 	"context"
-	"github.com/Nextdoor/parselogical"
-	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgproto3"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Nextdoor/parselogical"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgproto3"
 
 	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pglogrepl"
