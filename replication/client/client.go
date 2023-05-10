@@ -19,9 +19,9 @@ package client
 import (
 	"context"
 	"github.com/Nextdoor/parselogical"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3/v2"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgproto3"
 	"os"
 	"strconv"
 	"strings"
@@ -315,7 +315,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 
 		// Check for error and connection status
 		if rplErr != nil {
-			if pgconn.Timeout(rplErr) {
+			if pgconn.Timeout(rplErr) || errors.Is(rplErr, context.DeadlineExceeded) {
 				if err := c.handleProgress(true); err != nil {
 					log.Error(err)
 					return

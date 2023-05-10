@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
@@ -24,19 +24,19 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/transporter/mocks"
+	kinesis_utils "github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/utils"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
-	kinesis_utils "github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/utils"
 
 	"github.com/aws/aws-sdk-go/service/kinesis"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
+	"github.com/cevaris/ordered_map"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-	"github.com/cevaris/ordered_map"
 )
 
 var (

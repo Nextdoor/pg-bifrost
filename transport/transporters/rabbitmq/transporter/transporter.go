@@ -31,7 +31,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"

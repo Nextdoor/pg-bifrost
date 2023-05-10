@@ -19,7 +19,7 @@ package conn
 import (
 	"context"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgproto3/v2"
+	"github.com/jackc/pgx/v5/pgproto3"
 )
 
 // Conn is a interface which both our PgReplConnWrapper and pgx.ReplicationConn implement to help with gomocks

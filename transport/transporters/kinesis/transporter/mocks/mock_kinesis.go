@@ -5,9 +5,9 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
-	aws "github.com/aws/aws-sdk-go/aws"
 	request "github.com/aws/aws-sdk-go/aws/request"
 	kinesis "github.com/aws/aws-sdk-go/service/kinesis"
 	gomock "github.com/golang/mock/gomock"
@@ -67,7 +67,7 @@ func (mr *MockKinesisAPIMockRecorder) AddTagsToStreamRequest(arg0 interface{}) *
 }
 
 // AddTagsToStreamWithContext mocks base method.
-func (m *MockKinesisAPI) AddTagsToStreamWithContext(arg0 aws.Context, arg1 *kinesis.AddTagsToStreamInput, arg2 ...request.Option) (*kinesis.AddTagsToStreamOutput, error) {
+func (m *MockKinesisAPI) AddTagsToStreamWithContext(arg0 context.Context, arg1 *kinesis.AddTagsToStreamInput, arg2 ...request.Option) (*kinesis.AddTagsToStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -117,7 +117,7 @@ func (mr *MockKinesisAPIMockRecorder) CreateStreamRequest(arg0 interface{}) *gom
 }
 
 // CreateStreamWithContext mocks base method.
-func (m *MockKinesisAPI) CreateStreamWithContext(arg0 aws.Context, arg1 *kinesis.CreateStreamInput, arg2 ...request.Option) (*kinesis.CreateStreamOutput, error) {
+func (m *MockKinesisAPI) CreateStreamWithContext(arg0 context.Context, arg1 *kinesis.CreateStreamInput, arg2 ...request.Option) (*kinesis.CreateStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -167,7 +167,7 @@ func (mr *MockKinesisAPIMockRecorder) DecreaseStreamRetentionPeriodRequest(arg0 
 }
 
 // DecreaseStreamRetentionPeriodWithContext mocks base method.
-func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodWithContext(arg0 aws.Context, arg1 *kinesis.DecreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.DecreaseStreamRetentionPeriodOutput, error) {
+func (m *MockKinesisAPI) DecreaseStreamRetentionPeriodWithContext(arg0 context.Context, arg1 *kinesis.DecreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.DecreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -217,7 +217,7 @@ func (mr *MockKinesisAPIMockRecorder) DeleteStreamRequest(arg0 interface{}) *gom
 }
 
 // DeleteStreamWithContext mocks base method.
-func (m *MockKinesisAPI) DeleteStreamWithContext(arg0 aws.Context, arg1 *kinesis.DeleteStreamInput, arg2 ...request.Option) (*kinesis.DeleteStreamOutput, error) {
+func (m *MockKinesisAPI) DeleteStreamWithContext(arg0 context.Context, arg1 *kinesis.DeleteStreamInput, arg2 ...request.Option) (*kinesis.DeleteStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -267,7 +267,7 @@ func (mr *MockKinesisAPIMockRecorder) DeregisterStreamConsumerRequest(arg0 inter
 }
 
 // DeregisterStreamConsumerWithContext mocks base method.
-func (m *MockKinesisAPI) DeregisterStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.DeregisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.DeregisterStreamConsumerOutput, error) {
+func (m *MockKinesisAPI) DeregisterStreamConsumerWithContext(arg0 context.Context, arg1 *kinesis.DeregisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.DeregisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -317,7 +317,7 @@ func (mr *MockKinesisAPIMockRecorder) DescribeLimitsRequest(arg0 interface{}) *g
 }
 
 // DescribeLimitsWithContext mocks base method.
-func (m *MockKinesisAPI) DescribeLimitsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeLimitsInput, arg2 ...request.Option) (*kinesis.DescribeLimitsOutput, error) {
+func (m *MockKinesisAPI) DescribeLimitsWithContext(arg0 context.Context, arg1 *kinesis.DescribeLimitsInput, arg2 ...request.Option) (*kinesis.DescribeLimitsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -382,7 +382,7 @@ func (mr *MockKinesisAPIMockRecorder) DescribeStreamConsumerRequest(arg0 interfa
 }
 
 // DescribeStreamConsumerWithContext mocks base method.
-func (m *MockKinesisAPI) DescribeStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamConsumerInput, arg2 ...request.Option) (*kinesis.DescribeStreamConsumerOutput, error) {
+func (m *MockKinesisAPI) DescribeStreamConsumerWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamConsumerInput, arg2 ...request.Option) (*kinesis.DescribeStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -416,7 +416,7 @@ func (mr *MockKinesisAPIMockRecorder) DescribeStreamPages(arg0, arg1 interface{}
 }
 
 // DescribeStreamPagesWithContext mocks base method.
-func (m *MockKinesisAPI) DescribeStreamPagesWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 func(*kinesis.DescribeStreamOutput, bool) bool, arg3 ...request.Option) error {
+func (m *MockKinesisAPI) DescribeStreamPagesWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamInput, arg2 func(*kinesis.DescribeStreamOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -480,7 +480,7 @@ func (mr *MockKinesisAPIMockRecorder) DescribeStreamSummaryRequest(arg0 interfac
 }
 
 // DescribeStreamSummaryWithContext mocks base method.
-func (m *MockKinesisAPI) DescribeStreamSummaryWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamSummaryInput, arg2 ...request.Option) (*kinesis.DescribeStreamSummaryOutput, error) {
+func (m *MockKinesisAPI) DescribeStreamSummaryWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamSummaryInput, arg2 ...request.Option) (*kinesis.DescribeStreamSummaryOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -500,7 +500,7 @@ func (mr *MockKinesisAPIMockRecorder) DescribeStreamSummaryWithContext(arg0, arg
 }
 
 // DescribeStreamWithContext mocks base method.
-func (m *MockKinesisAPI) DescribeStreamWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.Option) (*kinesis.DescribeStreamOutput, error) {
+func (m *MockKinesisAPI) DescribeStreamWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.Option) (*kinesis.DescribeStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -550,7 +550,7 @@ func (mr *MockKinesisAPIMockRecorder) DisableEnhancedMonitoringRequest(arg0 inte
 }
 
 // DisableEnhancedMonitoringWithContext mocks base method.
-func (m *MockKinesisAPI) DisableEnhancedMonitoringWithContext(arg0 aws.Context, arg1 *kinesis.DisableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
+func (m *MockKinesisAPI) DisableEnhancedMonitoringWithContext(arg0 context.Context, arg1 *kinesis.DisableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -600,7 +600,7 @@ func (mr *MockKinesisAPIMockRecorder) EnableEnhancedMonitoringRequest(arg0 inter
 }
 
 // EnableEnhancedMonitoringWithContext mocks base method.
-func (m *MockKinesisAPI) EnableEnhancedMonitoringWithContext(arg0 aws.Context, arg1 *kinesis.EnableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
+func (m *MockKinesisAPI) EnableEnhancedMonitoringWithContext(arg0 context.Context, arg1 *kinesis.EnableEnhancedMonitoringInput, arg2 ...request.Option) (*kinesis.EnhancedMonitoringOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -650,7 +650,7 @@ func (mr *MockKinesisAPIMockRecorder) GetRecordsRequest(arg0 interface{}) *gomoc
 }
 
 // GetRecordsWithContext mocks base method.
-func (m *MockKinesisAPI) GetRecordsWithContext(arg0 aws.Context, arg1 *kinesis.GetRecordsInput, arg2 ...request.Option) (*kinesis.GetRecordsOutput, error) {
+func (m *MockKinesisAPI) GetRecordsWithContext(arg0 context.Context, arg1 *kinesis.GetRecordsInput, arg2 ...request.Option) (*kinesis.GetRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -700,7 +700,7 @@ func (mr *MockKinesisAPIMockRecorder) GetShardIteratorRequest(arg0 interface{}) 
 }
 
 // GetShardIteratorWithContext mocks base method.
-func (m *MockKinesisAPI) GetShardIteratorWithContext(arg0 aws.Context, arg1 *kinesis.GetShardIteratorInput, arg2 ...request.Option) (*kinesis.GetShardIteratorOutput, error) {
+func (m *MockKinesisAPI) GetShardIteratorWithContext(arg0 context.Context, arg1 *kinesis.GetShardIteratorInput, arg2 ...request.Option) (*kinesis.GetShardIteratorOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -750,7 +750,7 @@ func (mr *MockKinesisAPIMockRecorder) IncreaseStreamRetentionPeriodRequest(arg0 
 }
 
 // IncreaseStreamRetentionPeriodWithContext mocks base method.
-func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodWithContext(arg0 aws.Context, arg1 *kinesis.IncreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.IncreaseStreamRetentionPeriodOutput, error) {
+func (m *MockKinesisAPI) IncreaseStreamRetentionPeriodWithContext(arg0 context.Context, arg1 *kinesis.IncreaseStreamRetentionPeriodInput, arg2 ...request.Option) (*kinesis.IncreaseStreamRetentionPeriodOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -800,7 +800,7 @@ func (mr *MockKinesisAPIMockRecorder) ListShardsRequest(arg0 interface{}) *gomoc
 }
 
 // ListShardsWithContext mocks base method.
-func (m *MockKinesisAPI) ListShardsWithContext(arg0 aws.Context, arg1 *kinesis.ListShardsInput, arg2 ...request.Option) (*kinesis.ListShardsOutput, error) {
+func (m *MockKinesisAPI) ListShardsWithContext(arg0 context.Context, arg1 *kinesis.ListShardsInput, arg2 ...request.Option) (*kinesis.ListShardsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -849,7 +849,7 @@ func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersPages(arg0, arg1 interf
 }
 
 // ListStreamConsumersPagesWithContext mocks base method.
-func (m *MockKinesisAPI) ListStreamConsumersPagesWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 func(*kinesis.ListStreamConsumersOutput, bool) bool, arg3 ...request.Option) error {
+func (m *MockKinesisAPI) ListStreamConsumersPagesWithContext(arg0 context.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 func(*kinesis.ListStreamConsumersOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -883,7 +883,7 @@ func (mr *MockKinesisAPIMockRecorder) ListStreamConsumersRequest(arg0 interface{
 }
 
 // ListStreamConsumersWithContext mocks base method.
-func (m *MockKinesisAPI) ListStreamConsumersWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 ...request.Option) (*kinesis.ListStreamConsumersOutput, error) {
+func (m *MockKinesisAPI) ListStreamConsumersWithContext(arg0 context.Context, arg1 *kinesis.ListStreamConsumersInput, arg2 ...request.Option) (*kinesis.ListStreamConsumersOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -932,7 +932,7 @@ func (mr *MockKinesisAPIMockRecorder) ListStreamsPages(arg0, arg1 interface{}) *
 }
 
 // ListStreamsPagesWithContext mocks base method.
-func (m *MockKinesisAPI) ListStreamsPagesWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamsInput, arg2 func(*kinesis.ListStreamsOutput, bool) bool, arg3 ...request.Option) error {
+func (m *MockKinesisAPI) ListStreamsPagesWithContext(arg0 context.Context, arg1 *kinesis.ListStreamsInput, arg2 func(*kinesis.ListStreamsOutput, bool) bool, arg3 ...request.Option) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -966,7 +966,7 @@ func (mr *MockKinesisAPIMockRecorder) ListStreamsRequest(arg0 interface{}) *gomo
 }
 
 // ListStreamsWithContext mocks base method.
-func (m *MockKinesisAPI) ListStreamsWithContext(arg0 aws.Context, arg1 *kinesis.ListStreamsInput, arg2 ...request.Option) (*kinesis.ListStreamsOutput, error) {
+func (m *MockKinesisAPI) ListStreamsWithContext(arg0 context.Context, arg1 *kinesis.ListStreamsInput, arg2 ...request.Option) (*kinesis.ListStreamsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1016,7 +1016,7 @@ func (mr *MockKinesisAPIMockRecorder) ListTagsForStreamRequest(arg0 interface{})
 }
 
 // ListTagsForStreamWithContext mocks base method.
-func (m *MockKinesisAPI) ListTagsForStreamWithContext(arg0 aws.Context, arg1 *kinesis.ListTagsForStreamInput, arg2 ...request.Option) (*kinesis.ListTagsForStreamOutput, error) {
+func (m *MockKinesisAPI) ListTagsForStreamWithContext(arg0 context.Context, arg1 *kinesis.ListTagsForStreamInput, arg2 ...request.Option) (*kinesis.ListTagsForStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1066,7 +1066,7 @@ func (mr *MockKinesisAPIMockRecorder) MergeShardsRequest(arg0 interface{}) *gomo
 }
 
 // MergeShardsWithContext mocks base method.
-func (m *MockKinesisAPI) MergeShardsWithContext(arg0 aws.Context, arg1 *kinesis.MergeShardsInput, arg2 ...request.Option) (*kinesis.MergeShardsOutput, error) {
+func (m *MockKinesisAPI) MergeShardsWithContext(arg0 context.Context, arg1 *kinesis.MergeShardsInput, arg2 ...request.Option) (*kinesis.MergeShardsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1116,7 +1116,7 @@ func (mr *MockKinesisAPIMockRecorder) PutRecordRequest(arg0 interface{}) *gomock
 }
 
 // PutRecordWithContext mocks base method.
-func (m *MockKinesisAPI) PutRecordWithContext(arg0 aws.Context, arg1 *kinesis.PutRecordInput, arg2 ...request.Option) (*kinesis.PutRecordOutput, error) {
+func (m *MockKinesisAPI) PutRecordWithContext(arg0 context.Context, arg1 *kinesis.PutRecordInput, arg2 ...request.Option) (*kinesis.PutRecordOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1166,7 +1166,7 @@ func (mr *MockKinesisAPIMockRecorder) PutRecordsRequest(arg0 interface{}) *gomoc
 }
 
 // PutRecordsWithContext mocks base method.
-func (m *MockKinesisAPI) PutRecordsWithContext(arg0 aws.Context, arg1 *kinesis.PutRecordsInput, arg2 ...request.Option) (*kinesis.PutRecordsOutput, error) {
+func (m *MockKinesisAPI) PutRecordsWithContext(arg0 context.Context, arg1 *kinesis.PutRecordsInput, arg2 ...request.Option) (*kinesis.PutRecordsOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1216,7 +1216,7 @@ func (mr *MockKinesisAPIMockRecorder) RegisterStreamConsumerRequest(arg0 interfa
 }
 
 // RegisterStreamConsumerWithContext mocks base method.
-func (m *MockKinesisAPI) RegisterStreamConsumerWithContext(arg0 aws.Context, arg1 *kinesis.RegisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.RegisterStreamConsumerOutput, error) {
+func (m *MockKinesisAPI) RegisterStreamConsumerWithContext(arg0 context.Context, arg1 *kinesis.RegisterStreamConsumerInput, arg2 ...request.Option) (*kinesis.RegisterStreamConsumerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1266,7 +1266,7 @@ func (mr *MockKinesisAPIMockRecorder) RemoveTagsFromStreamRequest(arg0 interface
 }
 
 // RemoveTagsFromStreamWithContext mocks base method.
-func (m *MockKinesisAPI) RemoveTagsFromStreamWithContext(arg0 aws.Context, arg1 *kinesis.RemoveTagsFromStreamInput, arg2 ...request.Option) (*kinesis.RemoveTagsFromStreamOutput, error) {
+func (m *MockKinesisAPI) RemoveTagsFromStreamWithContext(arg0 context.Context, arg1 *kinesis.RemoveTagsFromStreamInput, arg2 ...request.Option) (*kinesis.RemoveTagsFromStreamOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1316,7 +1316,7 @@ func (mr *MockKinesisAPIMockRecorder) SplitShardRequest(arg0 interface{}) *gomoc
 }
 
 // SplitShardWithContext mocks base method.
-func (m *MockKinesisAPI) SplitShardWithContext(arg0 aws.Context, arg1 *kinesis.SplitShardInput, arg2 ...request.Option) (*kinesis.SplitShardOutput, error) {
+func (m *MockKinesisAPI) SplitShardWithContext(arg0 context.Context, arg1 *kinesis.SplitShardInput, arg2 ...request.Option) (*kinesis.SplitShardOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1366,7 +1366,7 @@ func (mr *MockKinesisAPIMockRecorder) StartStreamEncryptionRequest(arg0 interfac
 }
 
 // StartStreamEncryptionWithContext mocks base method.
-func (m *MockKinesisAPI) StartStreamEncryptionWithContext(arg0 aws.Context, arg1 *kinesis.StartStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StartStreamEncryptionOutput, error) {
+func (m *MockKinesisAPI) StartStreamEncryptionWithContext(arg0 context.Context, arg1 *kinesis.StartStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StartStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1416,7 +1416,7 @@ func (mr *MockKinesisAPIMockRecorder) StopStreamEncryptionRequest(arg0 interface
 }
 
 // StopStreamEncryptionWithContext mocks base method.
-func (m *MockKinesisAPI) StopStreamEncryptionWithContext(arg0 aws.Context, arg1 *kinesis.StopStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StopStreamEncryptionOutput, error) {
+func (m *MockKinesisAPI) StopStreamEncryptionWithContext(arg0 context.Context, arg1 *kinesis.StopStreamEncryptionInput, arg2 ...request.Option) (*kinesis.StopStreamEncryptionOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1433,6 +1433,56 @@ func (mr *MockKinesisAPIMockRecorder) StopStreamEncryptionWithContext(arg0, arg1
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopStreamEncryptionWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).StopStreamEncryptionWithContext), varargs...)
+}
+
+// SubscribeToShard mocks base method.
+func (m *MockKinesisAPI) SubscribeToShard(arg0 *kinesis.SubscribeToShardInput) (*kinesis.SubscribeToShardOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscribeToShard", arg0)
+	ret0, _ := ret[0].(*kinesis.SubscribeToShardOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SubscribeToShard indicates an expected call of SubscribeToShard.
+func (mr *MockKinesisAPIMockRecorder) SubscribeToShard(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeToShard", reflect.TypeOf((*MockKinesisAPI)(nil).SubscribeToShard), arg0)
+}
+
+// SubscribeToShardRequest mocks base method.
+func (m *MockKinesisAPI) SubscribeToShardRequest(arg0 *kinesis.SubscribeToShardInput) (*request.Request, *kinesis.SubscribeToShardOutput) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SubscribeToShardRequest", arg0)
+	ret0, _ := ret[0].(*request.Request)
+	ret1, _ := ret[1].(*kinesis.SubscribeToShardOutput)
+	return ret0, ret1
+}
+
+// SubscribeToShardRequest indicates an expected call of SubscribeToShardRequest.
+func (mr *MockKinesisAPIMockRecorder) SubscribeToShardRequest(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeToShardRequest", reflect.TypeOf((*MockKinesisAPI)(nil).SubscribeToShardRequest), arg0)
+}
+
+// SubscribeToShardWithContext mocks base method.
+func (m *MockKinesisAPI) SubscribeToShardWithContext(arg0 context.Context, arg1 *kinesis.SubscribeToShardInput, arg2 ...request.Option) (*kinesis.SubscribeToShardOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SubscribeToShardWithContext", varargs...)
+	ret0, _ := ret[0].(*kinesis.SubscribeToShardOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SubscribeToShardWithContext indicates an expected call of SubscribeToShardWithContext.
+func (mr *MockKinesisAPIMockRecorder) SubscribeToShardWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeToShardWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).SubscribeToShardWithContext), varargs...)
 }
 
 // UpdateShardCount mocks base method.
@@ -1466,7 +1516,7 @@ func (mr *MockKinesisAPIMockRecorder) UpdateShardCountRequest(arg0 interface{}) 
 }
 
 // UpdateShardCountWithContext mocks base method.
-func (m *MockKinesisAPI) UpdateShardCountWithContext(arg0 aws.Context, arg1 *kinesis.UpdateShardCountInput, arg2 ...request.Option) (*kinesis.UpdateShardCountOutput, error) {
+func (m *MockKinesisAPI) UpdateShardCountWithContext(arg0 context.Context, arg1 *kinesis.UpdateShardCountInput, arg2 ...request.Option) (*kinesis.UpdateShardCountOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1485,6 +1535,56 @@ func (mr *MockKinesisAPIMockRecorder) UpdateShardCountWithContext(arg0, arg1 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateShardCountWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateShardCountWithContext), varargs...)
 }
 
+// UpdateStreamMode mocks base method.
+func (m *MockKinesisAPI) UpdateStreamMode(arg0 *kinesis.UpdateStreamModeInput) (*kinesis.UpdateStreamModeOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStreamMode", arg0)
+	ret0, _ := ret[0].(*kinesis.UpdateStreamModeOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStreamMode indicates an expected call of UpdateStreamMode.
+func (mr *MockKinesisAPIMockRecorder) UpdateStreamMode(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStreamMode", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateStreamMode), arg0)
+}
+
+// UpdateStreamModeRequest mocks base method.
+func (m *MockKinesisAPI) UpdateStreamModeRequest(arg0 *kinesis.UpdateStreamModeInput) (*request.Request, *kinesis.UpdateStreamModeOutput) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStreamModeRequest", arg0)
+	ret0, _ := ret[0].(*request.Request)
+	ret1, _ := ret[1].(*kinesis.UpdateStreamModeOutput)
+	return ret0, ret1
+}
+
+// UpdateStreamModeRequest indicates an expected call of UpdateStreamModeRequest.
+func (mr *MockKinesisAPIMockRecorder) UpdateStreamModeRequest(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStreamModeRequest", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateStreamModeRequest), arg0)
+}
+
+// UpdateStreamModeWithContext mocks base method.
+func (m *MockKinesisAPI) UpdateStreamModeWithContext(arg0 context.Context, arg1 *kinesis.UpdateStreamModeInput, arg2 ...request.Option) (*kinesis.UpdateStreamModeOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateStreamModeWithContext", varargs...)
+	ret0, _ := ret[0].(*kinesis.UpdateStreamModeOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStreamModeWithContext indicates an expected call of UpdateStreamModeWithContext.
+func (mr *MockKinesisAPIMockRecorder) UpdateStreamModeWithContext(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStreamModeWithContext", reflect.TypeOf((*MockKinesisAPI)(nil).UpdateStreamModeWithContext), varargs...)
+}
+
 // WaitUntilStreamExists mocks base method.
 func (m *MockKinesisAPI) WaitUntilStreamExists(arg0 *kinesis.DescribeStreamInput) error {
 	m.ctrl.T.Helper()
@@ -1500,7 +1600,7 @@ func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamExists(arg0 interface{}) *g
 }
 
 // WaitUntilStreamExistsWithContext mocks base method.
-func (m *MockKinesisAPI) WaitUntilStreamExistsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
+func (m *MockKinesisAPI) WaitUntilStreamExistsWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -1533,7 +1633,7 @@ func (mr *MockKinesisAPIMockRecorder) WaitUntilStreamNotExists(arg0 interface{})
 }
 
 // WaitUntilStreamNotExistsWithContext mocks base method.
-func (m *MockKinesisAPI) WaitUntilStreamNotExistsWithContext(arg0 aws.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
+func (m *MockKinesisAPI) WaitUntilStreamNotExistsWithContext(arg0 context.Context, arg1 *kinesis.DescribeStreamInput, arg2 ...request.WaiterOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {

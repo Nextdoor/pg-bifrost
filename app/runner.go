@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package app
 
@@ -20,7 +20,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/filter"
