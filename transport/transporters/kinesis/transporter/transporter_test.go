@@ -18,6 +18,7 @@ package transporter
 
 import (
 	"fmt"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -28,6 +29,9 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
 
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
@@ -35,8 +39,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 var (
@@ -74,7 +76,7 @@ func TestPutOk(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -200,7 +202,7 @@ func TestPutRetryWithError(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -279,7 +281,7 @@ func TestPutWithFailuresNoError(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -373,8 +375,8 @@ func TestRetryOnlyFailures(t *testing.T) {
 		Transaction:  "124",
 	}
 
-	b.Add(&firstMessage)
-	b.Add(&secondMessage)
+	_, _ = b.Add(&firstMessage)
+	_, _ = b.Add(&secondMessage)
 
 	// Input
 	firstPk := fmt.Sprintf("%v", firstMessage.WalStart)
@@ -553,7 +555,7 @@ func TestTerminationContextInRetry(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -626,7 +628,7 @@ func TestPanicHandling(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)
@@ -690,7 +692,7 @@ func TestMissMatchReply(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	// Expects
 	pk := fmt.Sprintf("%v", marshalledMessage.WalStart)

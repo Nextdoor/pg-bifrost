@@ -18,14 +18,15 @@ package client
 
 import (
 	"context"
-	"github.com/Nextdoor/parselogical"
-	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgproto3"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Nextdoor/parselogical"
+	"github.com/jackc/pglogrepl"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgproto3"
 
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
@@ -116,7 +117,7 @@ func (c *Replicator) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 	close(c.outputChan)
 

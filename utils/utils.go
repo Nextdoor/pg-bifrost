@@ -18,12 +18,13 @@ package utils
 
 import (
 	"fmt"
+	"hash/crc32"
+
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/cevaris/ordered_map"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
-	"hash/crc32"
 
 	"context"
 )

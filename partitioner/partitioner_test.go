@@ -12,18 +12,18 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package partitioner
 
 import (
+	"testing"
+
+	"github.com/Nextdoor/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/Nextdoor/parselogical"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func _setupPartitioner(partMethod PartitionMethod, buckets int) (Partitioner, chan *replication.WalMessage, chan stats.Stat) {
@@ -34,24 +34,6 @@ func _setupPartitioner(partMethod PartitionMethod, buckets int) (Partitioner, ch
 	p := New(sh, in, statsChan, partMethod, buckets)
 
 	return p, in, statsChan
-}
-
-func _collectOutput(outputChan chan *replication.WalMessage) []*replication.WalMessage {
-	actual := make([]*replication.WalMessage, 0)
-
-	func() {
-		for {
-			select {
-			case <-time.After(5 * time.Millisecond):
-				// Got all the stats
-				return
-			case m := <-outputChan:
-				actual = append(actual, m)
-			}
-		}
-	}()
-
-	return actual
 }
 
 func _testMessage(relation string, transaction string) *replication.WalMessage {
@@ -84,7 +66,7 @@ func TestNone(t *testing.T) {
 	go p.Start()
 
 	in <- msg
-	outMsg := <- p.OutputChan
+	outMsg := <-p.OutputChan
 
 	assert.Equal(t, "", outMsg.PartitionKey)
 }
@@ -97,7 +79,7 @@ func TestTableName(t *testing.T) {
 	go p.Start()
 
 	in <- msg
-	outMsg := <- p.OutputChan
+	outMsg := <-p.OutputChan
 
 	assert.Equal(t, "users", outMsg.PartitionKey)
 }
@@ -110,7 +92,7 @@ func TestTransaction(t *testing.T) {
 	go p.Start()
 
 	in <- msg
-	outMsg := <- p.OutputChan
+	outMsg := <-p.OutputChan
 
 	assert.Equal(t, "19", outMsg.PartitionKey)
 }
@@ -121,10 +103,10 @@ func TestTransactionBuckets(t *testing.T) {
 	go p.Start()
 
 	in <- _testMessage("users", "111111")
-	outMsgA := <- p.OutputChan
+	outMsgA := <-p.OutputChan
 	assert.Equal(t, "4", outMsgA.PartitionKey)
 
 	in <- _testMessage("users", "333333")
-	outMsgB := <- p.OutputChan
+	outMsgB := <-p.OutputChan
 	assert.Equal(t, "1", outMsgB.PartitionKey)
 }

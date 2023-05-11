@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package progress
 
@@ -74,8 +74,8 @@ type ProgressTracker struct {
 
 	txnSeenChan <-chan *Seen
 	txnsWritten <-chan *ordered_map.OrderedMap // <transaction:progress.written>
-	statsChan    chan stats.Stat
-	OutputChan  chan uint64                    // channel to send overall (youngest) progress on
+	statsChan   chan stats.Stat
+	OutputChan  chan uint64 // channel to send overall (youngest) progress on
 
 	ledger Ledger // ordered map which contains batches seen & written per transaction
 
@@ -87,7 +87,7 @@ type ProgressTracker struct {
 func New(shutdownHandler shutdown.ShutdownHandler,
 	txnSeenChan <-chan *Seen,
 	txnsWritten <-chan *ordered_map.OrderedMap,
-	statsChan    chan stats.Stat) ProgressTracker {
+	statsChan chan stats.Stat) ProgressTracker {
 
 	outputChan := make(chan uint64, outputChanSize)
 	stopChan := make(chan struct{})
@@ -107,7 +107,7 @@ func (p ProgressTracker) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing output channel")

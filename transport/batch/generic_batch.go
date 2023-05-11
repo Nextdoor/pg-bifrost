@@ -1,9 +1,10 @@
 package batch
 
 import (
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
-	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/cevaris/ordered_map"
@@ -72,10 +73,7 @@ func (b *GenericBatch) GetPartitionKey() string {
 }
 
 func (b *GenericBatch) IsFull() bool {
-	if len(b.messages) >= b.maxSize {
-		return true
-	}
-	return false
+	return len(b.messages) >= b.maxSize
 }
 
 func (b *GenericBatch) IsEmpty() bool {

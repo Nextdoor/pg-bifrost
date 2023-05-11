@@ -38,7 +38,9 @@ func TestGetConnection(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer fakeServer.Stop()
+	defer func() {
+		_ = fakeServer.Stop()
+	}()
 
 	connMan := NewConnectionManager(connString, log, makeDialer(connString))
 	conn, err := connMan.GetConnection(context.Background())
@@ -68,13 +70,15 @@ func TestGetConnectionAfterFailure(t *testing.T) {
 	if conn == nil {
 		t.Error()
 	}
-	fakeServer.Stop()
+	_ = fakeServer.Stop()
 
 	err = fakeServer.Start()
 	if err != nil {
 		t.Error(err)
 	}
-	defer fakeServer.Stop()
+	defer func() {
+		_ = fakeServer.Stop()
+	}()
 	conn, err = connMan.GetConnection(context.Background())
 	if err != nil {
 		t.Error(err)

@@ -12,16 +12,17 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package progress
 
 import (
 	"fmt"
-	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/Nextdoor/pg-bifrost.git/stats"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/cevaris/ordered_map"
@@ -155,7 +156,7 @@ func TestSingleSeenEntry(t *testing.T) {
 		testCase{"seen", nil, &Seen{"1", "1-1", 1, 111}},
 	}
 	entries := []testExpected{
-		testExpected{"1","1-1", 111, 0,  1},
+		testExpected{"1", "1-1", 111, 0, 1},
 	}
 	expecteds := testExpecteds{
 		entries: entries,
@@ -163,7 +164,6 @@ func TestSingleSeenEntry(t *testing.T) {
 
 	testRunner(t, cases, expecteds, 0)
 }
-
 
 // TODO(#9): add a test case to panic if you see two COMMITs with the same timeBasedKey
 //func TestDoubleSeenEntry(t *testing.T) {
@@ -192,8 +192,8 @@ func TestTwoDistinctSeenEntry(t *testing.T) {
 		testCase{"seen", nil, &Seen{"2", "2-1", 1, 222}},
 	}
 	entries := []testExpected{
-		testExpected{"1","1-1", 111, 0,  1},
-		testExpected{"2","2-1", 222, 0,  1},
+		testExpected{"1", "1-1", 111, 0, 1},
+		testExpected{"2", "2-1", 222, 0, 1},
 	}
 	expecteds := testExpecteds{
 		entries: entries,
@@ -350,11 +350,7 @@ func TestDualShutdown(t *testing.T) {
 	close(written)
 
 	// Give time for ProgressTracker to handle shutdown
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	select {
-	case <-timeout.C:
-	}
+	time.Sleep(25 * time.Millisecond)
 
 	// Catch panic if it does happen
 	defer func() {

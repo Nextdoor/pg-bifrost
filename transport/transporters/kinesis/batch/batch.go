@@ -12,12 +12,14 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package batch
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
@@ -25,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/cevaris/ordered_map"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const (
@@ -77,7 +78,6 @@ func (b *KinesisBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 	switch b.partitionMethod {
 	case utils.KINESIS_PART_WALSTART:
 		partitionKey = fmt.Sprintf("%v", msg.WalStart)
-		break
 	case utils.KINESIS_PART_BATCH:
 		partitionKey = msg.PartitionKey
 	}
@@ -140,11 +140,7 @@ func (b *KinesisBatch) CreateTime() int64 {
 }
 
 func (b *KinesisBatch) IsFull() bool {
-	if len(b.records) >= MAX_RECORDS {
-		return true
-	}
-
-	return false
+	return len(b.records) >= MAX_RECORDS
 }
 
 func (b *KinesisBatch) IsEmpty() bool {

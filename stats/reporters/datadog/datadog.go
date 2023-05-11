@@ -63,10 +63,9 @@ func (r *DataDogReporter) Start() {
 
 		switch s.StatType {
 		case stats.Count:
-			r.client.Count(statName, s.Value, nil, 1)
-			break
+			_ = r.client.Count(statName, s.Value, nil, 1)
 		case stats.Histogram:
-			r.client.Gauge(statName, float64(s.Value), nil, 1)
+			_ = r.client.Gauge(statName, float64(s.Value), nil, 1)
 		}
 
 		err := r.client.Flush()

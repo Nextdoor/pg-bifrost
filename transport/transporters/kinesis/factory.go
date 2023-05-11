@@ -17,11 +17,12 @@
 package kinesis
 
 import (
+	"os"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis/utils"
-	"os"
-	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"

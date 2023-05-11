@@ -8,8 +8,9 @@ FROM golang:1.20.4-buster as intermediate
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf
 
-# Build dependencies
+# Build/test dependencies
 RUN go install github.com/golang/mock/mockgen@v1.6.0
+RUN go install golang.org/x/tools/cmd/goimports@latest
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 

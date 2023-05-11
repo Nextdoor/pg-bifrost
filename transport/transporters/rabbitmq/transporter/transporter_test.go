@@ -18,10 +18,11 @@ package transporter
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/NeowayLabs/wabbit"
 	w_amqp "github.com/NeowayLabs/wabbit/amqp"
@@ -66,7 +67,9 @@ func TestPutOk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer fakeServer.Stop()
+	defer func() {
+		_ = fakeServer.Stop()
+	}()
 
 	connMan := NewConnectionManager(connString, log, makeDialer(connString))
 	mockConn, err := connMan.GetConnection(context.Background())
@@ -121,7 +124,7 @@ func TestPutOk(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -231,7 +234,7 @@ func TestConnectionDies(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -242,7 +245,7 @@ func TestConnectionDies(t *testing.T) {
 			expectChan <- 1
 		})
 
-	fakeServer.Stop()
+	_ = fakeServer.Stop()
 
 	in <- b
 
@@ -252,7 +255,9 @@ func TestConnectionDies(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer fakeServer.Stop()
+	defer func() {
+		_ = fakeServer.Stop()
+	}()
 
 	select {
 	case <-time.After(400 * time.Millisecond):
@@ -284,7 +289,9 @@ func TestRetryAfterWaitForConnectionError(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer fakeServer.Stop()
+	defer func() {
+		_ = fakeServer.Stop()
+	}()
 
 	connMan := NewConnectionManager(connString, log, makeDialer(connString))
 	mockConn, err := connMan.GetConnection(context.Background())
@@ -340,7 +347,7 @@ func TestRetryAfterWaitForConnectionError(t *testing.T) {
 		Transaction:  "123",
 	}
 
-	b.Add(&marshalledMessage)
+	_, _ = b.Add(&marshalledMessage)
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))

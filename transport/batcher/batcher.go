@@ -2,6 +2,9 @@ package batcher
 
 import (
 	"container/heap"
+	"os"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -10,8 +13,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (
@@ -48,7 +49,7 @@ func GetRoutingMethod(name string) BatchRouting {
 
 const (
 	DEFAULT_MAX_MEMORY_BYTES = int64(1024 * 1024 * 100)
-	TICKER_RATE = 1 * time.Second
+	TICKER_RATE              = 1 * time.Second
 )
 
 func init() {
@@ -123,7 +124,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 func safeCloseChan(c chan transport.Batch) {
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	close(c)
@@ -147,7 +148,7 @@ func (b *Batcher) shutdown() {
 	// Also close the transaction progress channel
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	close(b.txnsSeenChan)
@@ -382,10 +383,8 @@ func (b *Batcher) sendBatch(batch transport.Batch) bool {
 		} else {
 			b.roundRobinPosition++
 		}
-		break
 	case BATCH_ROUTING_PARTITION:
 		channelIndex = utils.QuickHash(batch.GetPartitionKey(), b.workers)
-		break
 	}
 
 	log.Debugf("sending batch to worker %d", channelIndex)

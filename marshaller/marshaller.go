@@ -17,7 +17,7 @@
 package marshaller
 
 import (
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 
 	"os"
 	"time"
@@ -83,7 +83,7 @@ func (m Marshaller) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	log.Debug("closing output channel")

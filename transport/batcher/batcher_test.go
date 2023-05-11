@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"fmt"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -14,7 +16,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
-	"time"
 )
 
 func TestBatchSizeOneOneTxnOneData(t *testing.T) {

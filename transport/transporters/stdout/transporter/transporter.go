@@ -12,12 +12,13 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package transporter
 
 import (
 	"fmt"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -68,7 +69,7 @@ func (t StdoutTransporter) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	t.log.Debug("closing progress channel")
@@ -120,7 +121,7 @@ func (t StdoutTransporter) StartTransporting() {
 		}
 
 		for _, msg := range messagesSlice {
-			fmt.Println(fmt.Sprintf("%d: %s", t.id, string(msg.Json)))
+			fmt.Printf("%d: %s\n", t.id, string(msg.Json))
 		}
 
 		// report transactions written in this batch

@@ -12,12 +12,11 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package progress
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/cevaris/ordered_map"
@@ -84,7 +83,7 @@ func (l *Ledger) updateSeen(seen *Seen) error {
 
 		// Sanity check. Don't allow overwriting ledger entries. Duplicates should have been removed above.
 		if ledgerEntry.CommitWalStart != 0 {
-			return errors.New(fmt.Sprintf("Transaction ID %s CommitWalStart was not 0", seen.TimeBasedKey))
+			return fmt.Errorf("transaction ID %s CommitWalStart was not 0", seen.TimeBasedKey)
 		}
 
 		ledgerEntry.TotalMsgs = seen.TotalMsgs

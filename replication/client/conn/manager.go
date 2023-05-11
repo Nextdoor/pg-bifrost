@@ -18,17 +18,16 @@ package conn
 
 import (
 	"context"
+	"os"
+
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 var (
-	logger              = logrus.New()
-	log                 = logger.WithField("package", "conn")
-	logProgressInterval = int64(30 * time.Second)
+	logger = logrus.New()
+	log    = logger.WithField("package", "conn")
 )
 
 func init() {

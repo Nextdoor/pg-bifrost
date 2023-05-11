@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"os"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -9,7 +11,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/stats/reporters/datadog"
 	"github.com/Nextdoor/pg-bifrost.git/stats/reporters/stdout"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 var (
@@ -32,7 +33,6 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	switch reporterType {
 	case reporters.STDOUT:
 		r = stdout.New(shutdownHandler, inputChan)
-		break
 	case reporters.DATADOG:
 		addr, ok := reporterConfig[config.VAR_NAME_DD_HOST].(string)
 		if !ok {
@@ -55,7 +55,6 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		}
 
 		r = datadog.New(shutdownHandler, inputChan, c)
-		break
 	}
 
 	return r, nil

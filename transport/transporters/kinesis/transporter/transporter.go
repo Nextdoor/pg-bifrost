@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"fmt"
+
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -134,7 +135,7 @@ func (t *KinesisTransporter) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	t.log.Debug("closing progress channel")

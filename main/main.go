@@ -274,7 +274,7 @@ func runReplicate(
 			// If it's a SIGUSR1 and the cpuprofile flag was set, then dump pprof files and continue running.
 			// https://golang.org/pkg/runtime/pprof
 			if sig == syscall.SIGUSR1 && cpuprofile != "" {
-				if stoppedCpuProfiling != true {
+				if !stoppedCpuProfiling {
 					log.Warn("Stopping CPU profiling")
 					pprof.StopCPUProfile()
 					log.Infof("Wrote pprof cpu profile to: '%s'", cpuprofile)
@@ -292,7 +292,7 @@ func runReplicate(
 			// https://golang.org/pkg/runtime/pprof
 			if sig == syscall.SIGUSR2 && memprofile != "" {
 				time.Sleep(1 * time.Second)
-				memProfile(fmt.Sprintf(memprofile))
+				memProfile(memprofile)
 
 				continue
 			}
@@ -300,7 +300,7 @@ func runReplicate(
 			log.Info("pg-bifrost received a shutdown")
 
 			// Stop profiling on shutdown
-			if cpuprofile != "" && stoppedCpuProfiling != true {
+			if cpuprofile != "" && !stoppedCpuProfiling {
 				log.Warn("Stopping CPU profiling")
 				pprof.StopCPUProfile()
 			}

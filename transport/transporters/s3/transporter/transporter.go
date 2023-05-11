@@ -21,7 +21,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -174,7 +174,7 @@ func (t *S3Transporter) shutdown() {
 
 	defer func() {
 		// recover if channel is already closed
-		recover()
+		_ = recover()
 	}()
 
 	t.log.Debug("closing progress channel")
@@ -200,7 +200,9 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 		if _, err := gz.Write(msg.Json); err != nil {
 			return err, cancelled
 		}
-		gz.Write([]byte("\n"))
+		if _, err := gz.Write([]byte("\n")); err != nil {
+			return err, cancelled
+		}
 	}
 
 	if err := gz.Flush(); err != nil {
@@ -210,19 +212,15 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 		return err, cancelled
 	}
 
-	gz.Reset(ioutil.Discard)
+	gz.Reset(io.Discard)
 
 	firstWalStart := messagesSlice[0].WalStart
-
-	// Free up messagesSlice now that we're done with it
-	messagesSlice = nil
 
 	// Clear out every allocation in the conversion
 	byteArray := buf.Bytes()
 	buf.Reset()
 
 	byteReader := bytes.NewReader(byteArray)
-	byteArray = nil
 
 	// Partition the S3 keys into days
 	year, month, day, hour, full := ts.DateString()

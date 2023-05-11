@@ -1,11 +1,12 @@
 package batch
 
 import (
+	"testing"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/cevaris/ordered_map"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestAddTransaction(t *testing.T) {
@@ -35,9 +36,9 @@ func TestAddTransaction(t *testing.T) {
 		Transaction:  "1",
 	}
 
-	b.Add(begin)
-	b.Add(insert)
-	b.Add(commit)
+	_, _ = b.Add(begin)
+	_, _ = b.Add(insert)
+	_, _ = b.Add(commit)
 
 	messages := b.GetPayload()
 	messagesSlice, ok := messages.([]*marshaller.MarshalledMessage)
@@ -127,11 +128,11 @@ func TestPartialTransaction(t *testing.T) {
 		Transaction:  "2",
 	}
 
-	b.Add(begin1)
-	b.Add(insert1)
-	b.Add(commit1)
-	b.Add(begin2)
-	b.Add(insert2)
+	_, _ = b.Add(begin1)
+	_, _ = b.Add(insert1)
+	_, _ = b.Add(commit1)
+	_, _ = b.Add(begin2)
+	_, _ = b.Add(insert2)
 	assert.Equal(t, true, b.IsFull(), "Batch should be full")
 
 	messages := b.GetPayload()
@@ -184,7 +185,7 @@ func TestIsEmptyFalse(t *testing.T) {
 		Transaction:  "2",
 	}
 
-	b.Add(insert)
+	_, _ = b.Add(insert)
 
 	assert.Equal(t, false, b.IsEmpty())
 	assert.Equal(t, 1, b.NumMessages())
@@ -207,7 +208,7 @@ func TestNewBatchFromFactory(t *testing.T) {
 		Transaction:  "2",
 	}
 
-	b.Add(insert)
+	_, _ = b.Add(insert)
 
 	b = f.NewBatch("")
 	assert.Equal(t, true, b.IsEmpty())

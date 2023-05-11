@@ -12,11 +12,13 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
- */
+*/
 
 package batch
 
 import (
+	"testing"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
@@ -24,7 +26,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/cevaris/ordered_map"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestAddTransaction(t *testing.T) {
@@ -54,9 +55,9 @@ func TestAddTransaction(t *testing.T) {
 		Transaction:  "1",
 	}
 
-	batch.Add(begin)
-	batch.Add(insert)
-	batch.Add(commit)
+	_, _ = batch.Add(begin)
+	_, _ = batch.Add(insert)
+	_, _ = batch.Add(commit)
 
 	payload := batch.GetPayload()
 	prre, ok := payload.([]*kinesis.PutRecordsRequestEntry)
@@ -70,7 +71,7 @@ func TestAddTransaction(t *testing.T) {
 	assert.Equal(t, insert.Json, prre[0].Data, "Batch should only contain INSERT")
 
 	omap := ordered_map.NewOrderedMap()
-	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count:1})
+	omap.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count: 1})
 
 	assert.Equal(t, true, progress.CompareBatchTransactions(omap, batch.GetTransactions()), "Batch should have expected transactions")
 }
@@ -148,7 +149,7 @@ func TestFullBatchCommit(t *testing.T) {
 
 	// Verify COMMIT recorded in transactions
 	omap := ordered_map.NewOrderedMap()
-	omap.Set("0-0", &progress.Written{Transaction: "0", TimeBasedKey: "0-0", Count:MAX_RECORDS})
+	omap.Set("0-0", &progress.Written{Transaction: "0", TimeBasedKey: "0-0", Count: MAX_RECORDS})
 
 	assert.Equal(t, true, progress.CompareBatchTransactions(omap, batch.GetTransactions()), "Batch should have expected transactions")
 }
@@ -237,7 +238,7 @@ func TestInvalid(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	batch := NewKinesisBatch("",utils.KINESIS_PART_WALSTART)
+	batch := NewKinesisBatch("", utils.KINESIS_PART_WALSTART)
 
 	ok, err := batch.Close()
 	assert.Equal(t, true, ok)

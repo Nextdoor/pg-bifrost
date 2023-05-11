@@ -22,6 +22,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -30,7 +32,6 @@ import (
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/stretchr/testify/assert"
-	"time"
 
 	"testing"
 )
@@ -112,8 +113,7 @@ func waitForShutdown(t *testing.T, mockManager *mocks.MockManagerInterface, hand
 	handler.CancelFunc()
 
 	// Add a little delay to ensure shutdown ran
-	var timeout *time.Timer
-	timeout = time.NewTimer(4000 * time.Millisecond)
+	var timeout = time.NewTimer(4000 * time.Millisecond)
 
 	// Check to see if shutdown closed output channel
 	select {
@@ -819,8 +819,7 @@ func TestClosedProgressChan(t *testing.T) {
 	close(progChan)
 
 	// Add a little delay to ensure shutdown ran
-	var timeout *time.Timer
-	timeout = time.NewTimer(100 * time.Millisecond)
+	var timeout = time.NewTimer(100 * time.Millisecond)
 
 	// Check to see if shutdown closed output channel
 	select {
@@ -987,18 +986,14 @@ func TestWithMultipleProgress(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// Wait for first replicator to start
-	select {
-	case <-time.After(100 * time.Millisecond):
-	}
+	time.Sleep(100 * time.Millisecond)
 
 	progChan <- uint64(progress1)
 	progChan <- uint64(progress2)
 	progChan <- uint64(progress3)
 
 	// Wait a little bit for replicator to process progress
-	select {
-	case <-time.After(200 * time.Millisecond):
-	}
+	time.Sleep(200 * time.Millisecond)
 
 	// Wait for shutdown
 	waitForShutdown(t, mockManager, sh, stoppedChan)
@@ -1298,8 +1293,7 @@ func TestHeartbeatRequestedShutdown(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// Add a little delay to ensure shutdown ran
-	var timeout *time.Timer
-	timeout = time.NewTimer(1000 * time.Millisecond)
+	var timeout = time.NewTimer(1000 * time.Millisecond)
 
 	// Check to see if shutdown closed output channel
 	select {
@@ -1581,8 +1575,7 @@ func TestRecoveryFailed(t *testing.T) {
 	sh.CancelFunc()
 
 	// Add a little delay to ensure shutdown ran
-	var timeout *time.Timer
-	timeout = time.NewTimer(100 * time.Millisecond)
+	var timeout = time.NewTimer(100 * time.Millisecond)
 
 	// Check to see if shutdown closed output channel
 	select {

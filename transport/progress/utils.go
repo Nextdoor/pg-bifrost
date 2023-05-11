@@ -33,7 +33,7 @@ func CompareBatchTransactions(a *ordered_map.OrderedMap, b *ordered_map.OrderedM
 		key := kv.Key.(string)
 		value := kv.Value.(*Written)
 
-		if packedVal, ok := b.Get(key); ok == true {
+		if packedVal, ok := b.Get(key); ok {
 			val := packedVal.(*Written)
 
 			if val.Transaction != value.Transaction {
