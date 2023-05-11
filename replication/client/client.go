@@ -28,11 +28,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
 
-	"github.com/Nextdoor/parselogical"
-	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgproto3"
-
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
