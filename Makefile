@@ -1,5 +1,7 @@
 # Makefile for building and testing
 
+include contrib/Docker.mk
+
 GO_LDFLAGS ?= -w -extldflags "-static"
 
 GIT_REVISION := $(shell git rev-parse --short HEAD)
@@ -49,22 +51,18 @@ clean:
 	@echo "Cleaning binary"
 	rm -rf target || true
 
-build: generate
+build:
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
-build_mac: generate
+build_mac:
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
-
-docker_build:
-	@echo "Building pg-bifrost docker image"
-	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
 
 docker_get_binary:
 	@echo "Copying binary from docker image"
