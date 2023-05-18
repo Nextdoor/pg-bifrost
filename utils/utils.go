@@ -17,6 +17,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"hash/crc32"
 
@@ -25,8 +26,6 @@ import (
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
-
-	"context"
 )
 
 // QuickHash buckets the string into i buckets based on crc32 hashing
@@ -50,7 +49,7 @@ func PgCreateReplicationSlot(ctx context.Context, sourceConfig *pgconn.Config, s
 
 	_, err = rplConn.CreateReplicationSlot(ctx, slot, "test_decoding", pglogrepl.CreateReplicationSlotOptions{Temporary: false})
 	if err != nil {
-		return errors.Wrapf(err, "unable to create slot %s", slot)
+		return fmt.Errorf("unable to create slot %s: %w", slot, err)
 	}
 
 	return err

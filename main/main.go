@@ -153,9 +153,9 @@ func sourceConfig(c *cli.Context) *pgconn.Config {
 func runCreate(sourceConfig *pgconn.Config, replicationSlot string) error {
 	err := utils.PgCreateReplicationSlot(context.Background(), sourceConfig, replicationSlot)
 
-	// TODO proper error handling
 	if err != nil {
-		if strings.HasSuffix(err.Error(), "(SQLSTATE 42710)") {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42710" {
 			fmt.Printf("Replication slot '%s' already exists.\n", replicationSlot)
 			return nil
 		} else {
