@@ -164,7 +164,7 @@ func runCreate(sourceConfig *pgconn.Config, replicationSlot string) error {
 		}
 	}
 
-	fmt.Printf("Created replication slot '%s'\n", replicationSlot)
+	log.Infof("Created replication slot '%s'", replicationSlot)
 	return nil
 }
 
@@ -177,7 +177,7 @@ func runDrop(sourceConfig *pgconn.Config, replicationSlot string) error {
 		return err
 	}
 
-	fmt.Printf("Dropped replication slot '%s'\n", replicationSlot)
+	log.Infof("Dropped replication slot '%s'", replicationSlot)
 	return nil
 }
 
