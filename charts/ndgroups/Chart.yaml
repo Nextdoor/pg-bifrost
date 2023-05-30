@@ -1,0 +1,13 @@
+apiVersion: v2
+name: ndgroups
+description: ndgrouops log replication
+version: 0.0.1
+appVersion: latest  # unused, ignored.
+dependencies:
+  - name: pg-bifrost
+    alias: ndgroups
+    version: 0.1.42
+    repository: file://../pg-bifrost/
+#  - name: simple-app
+#    version: 0.27.5
+#    repository: https://k8s-charts.nextdoor.com  # https://github.com/Nextdoor/k8s-charts.git

@@ -1,0 +1,66 @@
+ndgroups:
+  pg-bifrost:
+    # ## Local Build
+    # $ make docker_build docker_sideload
+    #
+    # ## Pulling Existing Version
+    # $ DOCKER_TAG=release-... make docker_pull docker_sideload
+    #
+    image:
+      repository: pg-bifrost
+      # overrides .Chart.appVersion
+      tag: local
+      pullPolicy: Never
+
+    replicaCount: 1
+
+    podDisruptionBudget: false
+
+    virtualService:
+      enabled: false
+
+    ingress:
+      enabled: true
+      hosts:
+        - host: localhost
+          path: ''
+          sslRedirect: false
+
+    istio:
+      enabled: false
+
+    istio-alerts:
+      enabled: false
+
+    prometheusRules:
+      enabled: false
+
+    serviceAccount:
+      create: true
+
+    monitor:
+      enabled: false
+
+  localstack:
+    enabled: false
+
+  environment:
+    config:
+      awsRegion: "us-west-1"
+      batchFlushMaxAge: "120000"
+      batchFlushUpdateAge: "60000"
+      batcherMemorySoftLimit: "104857600"
+      bifrostS3BatchSize: "1000000"
+      bifrostS3Bucket: 'test'
+      bifrostS3KeySpace: 'test'
+      createSlot: "1"
+      noMarshalOldValue: "true"
+      pgDatabase: "postgres"
+      pgHost: "my-postgresql.pg-bifrost.svc.cluster.local"
+      pgPort: "5432"
+      localPostgres:
+        enabled: true
+        pgUser: "postgres"
+        pgPassword: "postgres"
+      pgSSL: ""
+      workers: "1"
