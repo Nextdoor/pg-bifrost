@@ -1,0 +1,4 @@
+# Used for local testing with postgres
+primary:
+  extendedConfiguration: |-
+    wal_level = logical

@@ -76,6 +76,11 @@ deps:
 	@echo Pulling dependencies in...
 	helm dependency update .
 
+.PHONY: local_postgres
+local_postgres:
+	@echo createing bitnami postgres release
+	helm install my-postgresql bitnami/postgresql -f psql.yaml
+
 ###############################################################################
 # Shortcut for generating a printed-out template of all the resources that
 # will be created for this target. This is the most useful script for testing
@@ -93,7 +98,7 @@ template: $(VALUES) deps
 # Please document WHY you are setting this if you do.
 ###############################################################################
 .PHONY: install
-install: $(LOCAL_DEPS_TARGET) $(VALUES) deps
+install: $(LOCAL_DEPS_TARGET) $(VALUES) local_postgres deps
 	helm install $(VALUE_ARGS) $(CREATE_NS) $(CHART_NAME) .
 
 ###############################################################################
@@ -105,7 +110,7 @@ upgrade: $(VALUES)
 	helm upgrade --install $(VALUE_ARGS) $(CHART_NAME) .
 
 ###############################################################################
-# See the status of the current Helm deployment for an app
+# See the status of the current Helm deployment for an pg-bifrost
 ###############################################################################
 .PHONY: status
 status:
@@ -123,7 +128,12 @@ list:
 # Delete any installed hooks (e.g. localstack hooks)
 ###############################################################################
 .PHONY: uninstall
-uninstall:
+uninstall: uninstall_local_postgres
 	helm delete $(CHART_NAME)
 	kubectl -n $(NAMESPACE) delete svc,cm,sa,pod,deployment,ingress,job -l 'app.kubernetes.io/managed-by=Helm,app.kubernetes.io/instance=$(CHART_NAME)'
+
+.PHONY: uninstall_local_postgres
+uninstall_local_postgres:
+	helm delete my-postgresql
+
 

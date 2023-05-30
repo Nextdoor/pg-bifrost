@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  AWS_REGION: {{ .Values.environment.config.awsRegion }}
+  BATCH_FLUSH_MAX_AGE: {{ .Values.environment.config.batchFlushMaxAge | quote}}
+  BATCH_FLUSH_UPDATE_AGE: {{ .Values.environment.config.batchFlushUpdateAge | quote}}
+  BATCHER_MEMORY_SOFT_LIMIT: {{ .Values.environment.config.batcherMemorySoftLimit | quote }}
+  BIFROST_S3_BATCH_SIZE: {{ .Values.environment.config.bifrostS3BatchSize | quote }}
+  BIFROST_S3_BUCKET: {{ .Values.environment.config.bifrostS3Bucket }}
+  BIFROST_S3_KEY_SPACE: {{ .Values.environment.config.bifrostS3KeySpace }}
+  CREATE_SLOT: {{ .Values.environment.config.createSlot | quote }}
+  NO_MARSHAL_OLD_VALUE: {{ .Values.environment.config.noMarshalOldValue | quote }}
+  PGDATABASE: {{ .Values.environment.config.pgDatabase }}
+  PGHOST: {{ .Values.environment.config.pgHost }}
+  PGPORT: {{ .Values.environment.config.pgPort | quote }}
+  {{- if .Values.environment.config.localPostgres.enabled }}
+  PGUSER: {{ .Values.environment.config.localPostgres.pgUser | quote }}
+  PGPASSWORD: {{ .Values.environment.config.localPostgres.pgPassword | quote }}
+  {{- end }}
+  PGSSLMODE: {{ .Values.environment.config.pgSSL }}
+  WORKERS: {{ .Values.environment.config.workers | quote }}
+
+
+

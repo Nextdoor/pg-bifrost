@@ -1,0 +1,99 @@
+pg-bifrost:
+  image:
+    # -- The ECR repository that holds the image. The "repository url" is going
+    # to be unique for each EKS cluster you launch this in if they are in
+    # different regions - because we don't allow cross-region image pulls. Each
+    # of your "values.<cluster name>.yaml" files will have a pointer to the
+    # local version of that repo.
+    repository: 364942603424.dkr.ecr.us-west-2.amazonaws.com/nextdoor/pg-bifrost
+
+  replicaCount: 1
+
+  podDisruptionBudget: false
+
+  # Comment this out to specifically rely on launching on amd64 instances. If
+  # your image is a multi-arch build (hint, it should be by now... go make it
+  # one), then you can leave this here.
+  #
+  # Set it to "amd64" to explicitly disable the nodeSelector label on
+  # kubernetes.io/arch label.
+  targetArchitecture: ""
+
+  command:
+    - /pg-bifrost
+    - r
+    - stdout
+
+  ports:
+    # The web service inside the container listens on port 8080, but we'll
+    # route port 80 to it via the Service resource.
+    - name: http
+      containerPort: 8080
+      protocol: TCP
+      port: 80
+
+  virtualService:
+    enabled: false
+
+  ingress:
+    enabled: true
+    hosts:
+      - host: localhost
+        path: ''
+        sslRedirect: false
+
+  # -- A PodSpec container "livenessProbe" configuration object. Note that this
+  # livenessProbe will be applied to the proxySidecar container instead if that
+  # is enabled.
+  livenessProbe:
+    httpGet:
+      path: /liveness
+      port: http
+
+  # -- A PodSpec container "readinessProbe" configuration object. Note that this
+  # readinessProbe will be applied to the proxySidecar container instead if that
+  # is enabled.
+  readinessProbe:
+    httpGet:
+      path: /readiness
+      port: http
+
+  istio:
+    enabled: true
+
+  istio-alerts:
+    enabled: true
+
+  prometheusRules:
+    enabled: false
+
+  serviceAccount:
+    create: true
+
+  monitor:
+    enabled: true
+
+  envFrom:
+    - configMapRef:
+        name: '{{ .Release.Name }}-config'
+
+environment:
+  config:
+    awsRegion: "us-west-1"
+    batchFlushMaxAge: "120000"
+    batchFlushUpdateAge: "60000"
+    batcherMemorySoftLimit: "104857600"
+    bifrostS3BatchSize: "1000000"
+    bifrostS3Bucket: 'test'
+    bifrostS3KeySpace: 'test'
+    createSlot: "1"
+    noMarshalOldValue: "true"
+    pgDatabase: "postgres"
+    pgHost: "my-postgresql.pg-bifrost.svc.cluster.local"
+    pgPort: "5432"
+    localPostgres:
+      enabled: false
+      pgUser: ""
+      pgPassword: ""
+    pgSSL: ""
+    workers: "1"

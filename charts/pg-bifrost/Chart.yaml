@@ -1,0 +1,17 @@
+apiVersion: v2
+name: pg-bifrost
+description: Postgres Log Replication Service
+version: 0.1.42
+appVersion: latest  # unused, ignored.
+sources:
+  - https://github.com/Nextdoor/k8s-charts.git
+dependencies:
+  - name: simple-app
+    alias: pg-bifrost
+    version: 0.27.5
+    repository: https://k8s-charts.nextdoor.com  # https://github.com/Nextdoor/k8s-charts.git
+  - name: localstack
+    alias: localstack
+    version: 0.6.0
+    repository: https://localstack.github.io/helm-charts
+    condition: localstack.enabled

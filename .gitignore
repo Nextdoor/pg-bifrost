@@ -13,3 +13,11 @@ itests/tests/*/*/output/*
 itests/test_output/*
 itests/tests/*/*/perf_output/*
 itests/perf_output/*
+
+charts/pg-bifrost/Chart.lock
+charts/pg-bifrost/charts/
+
+charts/ndgroups/Chart.lock
+charts/ndgroups/charts/
+
+bin/

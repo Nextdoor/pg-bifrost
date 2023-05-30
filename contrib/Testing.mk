@@ -27,7 +27,7 @@ ifeq ($(HELM_TEST_ALL_CHARTS),true)
 	ALL_FLAG := --all
 endif
 
-HELM_VERSION   ?= v3.7.0
+HELM_VERSION   ?= v3.12.0
 GET_HELM_URL   ?= https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 GET_CT_URL     ?= https://github.com/helm/chart-testing/releases/download/v3.4.0/chart-testing_3.4.0_$(OSNAME)_amd64.tar.gz
 GET_KIND_URL   ?= https://kind.sigs.k8s.io/dl/v0.11.1/kind-$(OSNAME)-amd64
