@@ -86,6 +86,7 @@ workflows:
             only: /.*/
 
     - publish_image:
+        context: oss-publish
         requires: [itests]
         filters:
           branches:
