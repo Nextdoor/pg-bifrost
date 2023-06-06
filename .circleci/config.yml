@@ -58,6 +58,8 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run: cp -r /tmp/workspace/project/. .
       - run:
           name: "Publish Release on GitHub and Docker Hub"
