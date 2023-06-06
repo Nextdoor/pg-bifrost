@@ -55,11 +55,12 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - run: cp -r /tmp/workspace/project/. .
       - run:
           name: "Publish Release on GitHub and Docker Hub"
           command: |
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-            docker load < /tmp/workspace/pg-bifrost/docker-cache/built-image.tar
+            docker load < docker-cache/built-image.tar
             docker tag pg-bifrost:latest "${HUB_REPO}:${RELEASE_TAG}"
             docker push "${HUB_REPO}:${RELEASE_TAG}"
 
