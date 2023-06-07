@@ -64,6 +64,13 @@ jobs:
       - run:
           name: "Publish Release on GitHub and Docker Hub"
           command: |
+            if [ -z "$CIRCLE_TAG" ]
+            then
+              RELEASE_TAG="latest"
+            else
+              RELEASE_TAG=${CIRCLE_TAG}
+            fi
+
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
             docker load < docker-cache/built-image.tar
             docker tag pg-bifrost:latest "${HUB_REPO}:${RELEASE_TAG}"
