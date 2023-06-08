@@ -42,7 +42,7 @@ func New(ctx context.Context, conf *pgconn.Config) (Conn, error) {
 	return conn, err
 }
 
-// getConnWithRetry wraps New with a retry loop. It returns a
+// NewConnWithRetry wraps New with a retry loop. It returns a
 // new replication connection without starting replication.
 func NewConnWithRetry(ctx context.Context, sourceConfig *pgconn.Config) (Conn, error) {
 	var conn Conn
@@ -84,7 +84,7 @@ func (c PgReplConnWrapper) SendStandbyStatus(ctx context.Context, status pglogre
 	return pglogrepl.SendStandbyStatusUpdate(ctx, c.conn, status)
 }
 
-// WaitForReplicationMessage wraps pgconn.PgConn.ReceiveMessage
+// ReceiveMessage wraps pgconn.PgConn.ReceiveMessage
 func (c PgReplConnWrapper) ReceiveMessage(ctx context.Context) (pgproto3.BackendMessage, error) {
 	return c.conn.ReceiveMessage(ctx)
 }
