@@ -341,6 +341,7 @@ func getFlagValue(flagGeneric interface{}) interface{} {
 }
 
 func replicateAction(c *cli.Context) error {
+	fmt.Println("Replicate action")
 	if c.GlobalBool(config.VAR_NAME_CREATE_SLOT) {
 		err := runCreate(sourceConfig(c), c.GlobalString(config.VAR_NAME_SLOT))
 		if err != nil {
@@ -490,6 +491,7 @@ func replicateAction(c *cli.Context) error {
 
 // main parses configuration information and runs a command based on that
 func main() {
+	fmt.Println("Main")
 	cli_app := cli.NewApp()
 	cli_app.Version = fmt.Sprintf("%s-%s", Version, GitRevision)
 
@@ -657,6 +659,11 @@ func main() {
 				},
 			},
 			Subcommands: []cli.Command{
+				{
+					Name:   "kafka",
+					Usage:  "replicate to kafka",
+					Action: replicateAction,
+				},
 				{
 					Name:   "stdout",
 					Usage:  "replicate to stdout",
