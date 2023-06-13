@@ -49,12 +49,12 @@ clean:
 	@echo "Cleaning binary"
 	rm -rf target || true
 
-build: generate
+build:
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
-build_mac: generate
+build_mac:
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
@@ -62,9 +62,18 @@ build_mac: generate
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
 
+KIND               ?= $(shell which kind || echo kind)
+KIND_CLUSTER_NAME  ?= default
+
+.PHONY: docker_build
 docker_build:
 	@echo "Building pg-bifrost docker image"
-	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
+	@$(DOCKER) build -t "pg-bifrost:local" --build-arg is_ci="${CI}" .
+
+.PHONY: docker_sideload
+docker_sideload:
+	@if [ ! -x $(KIND) ]; then echo 'Missing "kind" binary. Try "make tools"?'; exit 1; fi
+	$(KIND) load docker-image --name "$(KIND_CLUSTER_NAME)" "pg-bifrost:local"
 
 docker_get_binary:
 	@echo "Copying binary from docker image"

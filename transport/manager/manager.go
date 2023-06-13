@@ -103,6 +103,7 @@ func (m TransportManager) StartBatcher() {
 // StartTransporterGroup starts the transporters. This is a helper for testing.
 func (m TransportManager) StartTransporterGroup() {
 	for i := 0; i < m.workerNum; i++ {
+		log.Println("Starting transporter")
 		t := *m.transporterGroup[i]
 		go t.StartTransporting()
 	}

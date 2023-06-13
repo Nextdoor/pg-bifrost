@@ -2,6 +2,7 @@ package factory
 
 import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
 
 	"os"
@@ -59,6 +60,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		batchFactory = s3.NewBatchFactory(transportConfig)
 	case transport.RABBITMQ:
 		batchFactory = rabbitmq.NewBatchFactory(transportConfig)
+	case transport.KAFKA:
+		batchFactory = kafka.NewBatchFactory(transportConfig)
 	default:
 		panic("unrecognized TransportType")
 	}
@@ -92,6 +95,8 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 		t = s3.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
 	case transport.RABBITMQ:
 		t = rabbitmq.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
+	case transport.KAFKA:
+		t = kafka.New(shutdownHandler, txnsWritten, statsChan, workers, transportInputChans, transportConfig)
 	default:
 		panic("unrecognized TransportType")
 	}
