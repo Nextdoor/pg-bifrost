@@ -32,6 +32,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 
 	"github.com/Nextdoor/pg-bifrost.git/app"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -341,7 +342,6 @@ func getFlagValue(flagGeneric interface{}) interface{} {
 }
 
 func replicateAction(c *cli.Context) error {
-	fmt.Println("Replicate action")
 	if c.GlobalBool(config.VAR_NAME_CREATE_SLOT) {
 		err := runCreate(sourceConfig(c), c.GlobalString(config.VAR_NAME_SLOT))
 		if err != nil {
@@ -491,7 +491,6 @@ func replicateAction(c *cli.Context) error {
 
 // main parses configuration information and runs a command based on that
 func main() {
-	fmt.Println("Main")
 	cli_app := cli.NewApp()
 	cli_app.Version = fmt.Sprintf("%s-%s", Version, GitRevision)
 
@@ -533,6 +532,16 @@ func main() {
 
 	rabbitmqCmd.Before = altsrc.InitInputSourceWithContext(rabbitmq.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
 	rabbitmqCmd.Flags = rabbitmq.Flags
+
+	// Also set up rabbitmq subcommands flags from file
+	kafkaCmd := cli.Command{
+		Name:   "kafka",
+		Usage:  "replicate to kafka",
+		Action: replicateAction,
+	}
+
+	kafkaCmd.Before = altsrc.InitInputSourceWithContext(kafka.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
+	kafkaCmd.Flags = kafka.Flags
 
 	cli_app.Commands = []cli.Command{
 		{
@@ -660,15 +669,11 @@ func main() {
 			},
 			Subcommands: []cli.Command{
 				{
-					Name:   "kafka",
-					Usage:  "replicate to kafka",
-					Action: replicateAction,
-				},
-				{
 					Name:   "stdout",
 					Usage:  "replicate to stdout",
 					Action: replicateAction,
 				},
+				kafkaCmd,
 				kinesisCmd,
 				s3Cmd,
 				rabbitmqCmd,

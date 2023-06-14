@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"flag"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -20,9 +20,6 @@ import (
 var (
 	logger = logrus.New()
 	log    = logger.WithField("package", "kafka")
-
-	bootstrapHost = flag.String("kafka_bootstrap_host", "ndgroups-kafka-bootstrap", "Kafka bootstrap server host.")
-	bootstrapPort = flag.String("kafka_bootstrap_port", "9092", "Kafka bootstrap server port.")
 )
 
 func init() {
@@ -39,10 +36,30 @@ func New(
 
 	transportConfig map[string]interface{}) []*transport.Transporter {
 
-	// TODO: create ths as a flag
-	//kafkaTopic := transportConfig["kafka-topic"]
+	bootstrapHost := transportConfig[ConfVarBootstrapHost]
+	kafkaHost, ok := bootstrapHost.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarBootstrapHost, "string")
+	}
 
-	transports := make([]*transport.Transporter, 1)
+	bootstrapPort := transportConfig[ConfVarBootstrapPort]
+	kafkaPort, ok := bootstrapPort.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarBootstrapPort, "string")
+	}
+
+	kafkaTopic := transportConfig[ConfVarTopic]
+	topic, ok := kafkaTopic.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarTopic, "string")
+	}
+	config, _ := producerConfig()
+	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
+	asyncProducer, _ := sarama.NewAsyncProducer([]string{bootstrapServer}, config)
+	if err := verifySend(&asyncProducer, topic); err != nil {
+		panic(err)
+	}
+
 	retryPolicy := &backoff.ExponentialBackOff{
 		InitialInterval:     1500 * time.Millisecond,
 		RandomizationFactor: 0.5,
@@ -52,27 +69,7 @@ func New(
 		Clock:               backoff.SystemClock,
 	}
 
-	config, _ := producerConfig()
-	bootstrapServer := fmt.Sprintf("%s:%s", *bootstrapHost, *bootstrapPort)
-	asyncProducer, _ := sarama.NewAsyncProducer([]string{bootstrapServer}, config)
-	log.Info("Creating producer")
-
-	msg := &sarama.ProducerMessage{
-		Topic: "test",
-		Value: sarama.ByteEncoder("Placeholder message to verify broker communication"),
-	}
-	log.Info("Sending to input")
-	asyncProducer.Input() <- msg
-	log.Info("Sent to input")
-
-	select {
-	case <-asyncProducer.Successes():
-		log.Info("Successfully validated producer")
-	case err := <-asyncProducer.Errors():
-		log.Info("Error sending %v", err)
-	case <-time.After(15 * time.Second):
-		log.Info("timed out waiting for message receipt")
-	}
+	transports := make([]*transport.Transporter, 1)
 
 	for i := 0; i < workers; i++ {
 		t := transporter.NewTransporter(
@@ -82,8 +79,8 @@ func New(
 			txnsWritten,
 			*log,
 			retryPolicy,
-			asyncProducer)
-
+			asyncProducer,
+			topic)
 		transports[i] = &t
 	}
 
@@ -93,13 +90,28 @@ func New(
 // NewBatchFactory returns a GenericBatchFactory configured for Kafka
 func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFactory {
 	//TODO: set this as a flag
-	//batchSizeVar := transportConfig["kafka-batch-size"]
-	var batchSizeVar interface{} = 10
+	batchSizeVar := transportConfig[ConfVarKafkaBatchSize]
 	batchSize, ok := batchSizeVar.(int)
 
 	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarPutBatchSize, "int")
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
 	}
 
 	return batch.NewGenericBatchFactory(batchSize)
+}
+
+func verifySend(producer *sarama.AsyncProducer, topic string) error {
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder("Placeholder message to verify broker communication"),
+	}
+	(*producer).Input() <- msg
+	select {
+	case <-(*producer).Successes():
+		return nil
+	case err := <-(*producer).Errors():
+		return err
+	case <-time.After(15 * time.Second):
+		return errors.New("timed out verifying producer")
+	}
 }

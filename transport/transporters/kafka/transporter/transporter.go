@@ -40,6 +40,7 @@ type KafkaTransporter struct {
 	statsChan       chan stats.Stat
 	log             logrus.Entry
 	retryPolicy     backoff.BackOff
+	topic           string
 	client          *Client
 }
 
@@ -50,7 +51,8 @@ func NewTransporter(
 	txnsWritten chan<- *ordered_map.OrderedMap,
 	log logrus.Entry,
 	retryPolicy backoff.BackOff,
-	producer sarama.AsyncProducer) transport.Transporter {
+	producer sarama.AsyncProducer,
+	topic string) transport.Transporter {
 
 	return &KafkaTransporter{
 		shutdownHandler,
@@ -59,6 +61,7 @@ func NewTransporter(
 		statsChan,
 		log,
 		retryPolicy,
+		topic,
 		&Client{
 			producer:    producer,
 			pendingMsgs: 0,
@@ -72,10 +75,8 @@ func NewTransporter(
 // shutdown idempotently closes the output channel
 func (t *KafkaTransporter) shutdown() {
 	t.log.Info("shutting down transporter")
-	t.log.Info("Closing kafka client")
 	t.client.producer.Close()
 	t.client.listening.Wait()
-	t.log.Info("Kafka client closed")
 	t.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
 	if r := recover(); r != nil {
@@ -95,13 +96,12 @@ func (t *KafkaTransporter) trackSuccess() {
 	t.log.Info("Starting success tracker")
 	for {
 		select {
-		case msg, open := <-t.client.producer.Successes():
+		case _, open := <-t.client.producer.Successes():
 			if !open {
 				t.client.listening.Done()
 				return
 			} else {
 				t.log.Info("successfully sent message")
-				t.log.Info("successfully sent message %v", msg.Value)
 			}
 		}
 	}
@@ -123,10 +123,10 @@ func (t *KafkaTransporter) trackError() {
 }
 
 func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessages []*sarama.ProducerMessage) (error, bool) {
+	// TODO: Retry messages that didn't make it to kafka
 	for _, msg := range produceMessages {
 		t.client.producer.Input() <- msg
 	}
-	t.log.Info()
 	return nil, false
 }
 
@@ -134,7 +134,6 @@ func (t *KafkaTransporter) StartTransporting() {
 	t.log.Info("starting transporter")
 
 	defer t.shutdown()
-	t.log.Info("adding to wait group")
 	t.client.listening.Add(2)
 
 	go t.trackError()
@@ -173,7 +172,7 @@ func (t *KafkaTransporter) StartTransporting() {
 		var producerMessageSlice []*sarama.ProducerMessage
 		for _, message := range messagesSlice {
 			msg := &sarama.ProducerMessage{
-				Topic: "topic",
+				Topic: t.topic,
 				Value: sarama.ByteEncoder(message.Json),
 			}
 			producerMessageSlice = append(producerMessageSlice, msg)
@@ -202,8 +201,6 @@ func (t *KafkaTransporter) StartTransporting() {
 		if cancelled {
 			continue
 		}
-
-		t.log.Debug("successfully wrote batch")
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
