@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -60,6 +61,8 @@ func New(
 		panic(err)
 	}
 
+	go kafkaConsumer(kafkaHost, kafkaPort, topic)
+
 	retryPolicy := &backoff.ExponentialBackOff{
 		InitialInterval:     1500 * time.Millisecond,
 		RandomizationFactor: 0.5,
@@ -114,4 +117,57 @@ func verifySend(producer *sarama.AsyncProducer, topic string) error {
 	case <-time.After(15 * time.Second):
 		return errors.New("timed out verifying producer")
 	}
+}
+
+func kafkaConsumer(bootstrapHost string, bootstrapPort string, topic string) {
+	log.Info("starting consumer")
+	// Set up configuration
+	bootstrapServer := fmt.Sprintf("%s:%s", bootstrapHost, bootstrapPort)
+	config := sarama.NewConfig()
+	config.Producer.Return.Errors = true
+	config, _ = configureTLS(config)
+	// NewConsumer creates a new consumer using the given broker addresses and configuration.
+	consumer, _ := sarama.NewConsumer([]string{bootstrapServer}, config)
+
+	defer func() {
+		if err := consumer.Close(); err != nil {
+			log.Println("Failed to close consumer:", err)
+		}
+	}()
+
+	partition := int32(0)
+
+	// Start consuming from the specified topic and partition
+	partitionConsumer, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
+	if err != nil {
+		log.Fatalln("Failed to start consumer for partition:", err)
+	}
+	defer func() {
+		if err := partitionConsumer.Close(); err != nil {
+			log.Println("Failed to close partition consumer:", err)
+		}
+	}()
+
+	// Handle messages
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+
+	// Start a goroutine to consume messages
+	go func() {
+		for {
+			select {
+			case msg := <-partitionConsumer.Messages():
+				log.Printf("Received message: Topic = %s, Partition = %d, Offset = %d, Key = %s, Value = %s\n",
+					msg.Topic, msg.Partition, msg.Offset, string(msg.Key), string(msg.Value))
+			case err := <-partitionConsumer.Errors():
+				log.Println("Consumer error:", err)
+			case <-signals:
+				return
+			}
+		}
+	}()
+
+	// Wait for termination signal
+	<-signals
+	log.Println("Consumer terminated")
 }
