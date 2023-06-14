@@ -95,12 +95,13 @@ func (t *KafkaTransporter) trackSuccess() {
 	t.log.Info("Starting success tracker")
 	for {
 		select {
-		case _, open := <-t.client.producer.Successes():
+		case msg, open := <-t.client.producer.Successes():
 			if !open {
 				t.client.listening.Done()
 				return
 			} else {
 				t.log.Info("successfully sent message")
+				t.log.Info("successfully sent message %v", msg.Value)
 			}
 		}
 	}
