@@ -49,12 +49,12 @@ clean:
 	@echo "Cleaning binary"
 	rm -rf target || true
 
-build:
+build: generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
-build_mac:
+build_mac: generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
@@ -62,11 +62,16 @@ build_mac:
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
 
+docker_build:
+	@echo "Building pg-bifrost docker image"
+	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
+
+# Temporary use for k8s local cluster development
 KIND               ?= $(shell which kind || echo kind)
 KIND_CLUSTER_NAME  ?= default
 
-.PHONY: docker_build
-docker_build:
+.PHONY: docker_build_k8s
+docker_build_k8s:
 	@echo "Building pg-bifrost docker image"
 	@$(DOCKER) build -t "pg-bifrost:local" --build-arg is_ci="${CI}" .
 

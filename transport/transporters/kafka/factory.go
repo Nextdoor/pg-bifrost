@@ -88,7 +88,6 @@ func New(
 
 // NewBatchFactory returns a GenericBatchFactory configured for Kafka
 func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFactory {
-	//TODO: set this as a flag
 	batchSizeVar := transportConfig[ConfVarKafkaBatchSize]
 	batchSize, ok := batchSizeVar.(int)
 
