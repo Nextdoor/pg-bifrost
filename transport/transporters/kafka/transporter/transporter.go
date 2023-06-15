@@ -99,11 +99,6 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 			panic("produceErrors is not type sarama.ProducerErrors")
 		}
 
-		if len(produceErrors) == 0 {
-			t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
-			return nil
-		}
-
 		produceMessages = produceMessages[:0]
 		errorMessages := map[string]int{} // Keep track of error messages
 

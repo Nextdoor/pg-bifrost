@@ -32,10 +32,10 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/app/config"
 	"github.com/Nextdoor/pg-bifrost.git/partitioner"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batcher"
-	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 
 	"github.com/Nextdoor/pg-bifrost.git/app"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
