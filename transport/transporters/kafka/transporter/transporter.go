@@ -22,24 +22,15 @@ var (
 	TimeSource utils.TimeSource = &utils.RealTime{}
 )
 
-type Client struct {
-	producer           sarama.SyncProducer
-	pendingMsgs        uint64
-	trackInterval      time.Duration
-	stopTracking       chan bool
-	bufferClosed       chan bool
-	bufferCloseTimeout chan bool
-}
-
 type KafkaTransporter struct {
 	shutdownHandler shutdown.ShutdownHandler
 	inputChan       <-chan transport.Batch         // receive a batch (slice) of MarshalledMessages
 	txnsWritten     chan<- *ordered_map.OrderedMap // Map of <transaction:progress.Written>
 	statsChan       chan stats.Stat
 	log             logrus.Entry
+	kafkaProducer   sarama.SyncProducer
 	retryPolicy     backoff.BackOff
 	topic           string
-	client          *Client
 }
 
 func NewTransporter(
@@ -58,12 +49,9 @@ func NewTransporter(
 		txnsWritten,
 		statsChan,
 		log,
+		producer,
 		retryPolicy,
 		topic,
-		&Client{
-			producer:    producer,
-			pendingMsgs: 0,
-		},
 	}
 
 }
@@ -71,7 +59,7 @@ func NewTransporter(
 // shutdown idempotently closes the output channel
 func (t *KafkaTransporter) shutdown() {
 	t.log.Info("shutting down transporter")
-	_ = t.client.producer.Close()
+	_ = t.kafkaProducer.Close()
 	t.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
 	if r := recover(); r != nil {
@@ -100,7 +88,7 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 		default:
 		}
 
-		err := t.client.producer.SendMessages(produceMessages)
+		err := t.kafkaProducer.SendMessages(produceMessages)
 		if err == nil {
 			t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
 			return nil
@@ -201,7 +189,6 @@ func (t *KafkaTransporter) StartTransporting() {
 				Value: sarama.ByteEncoder(message.Json),
 				Key:   sarama.StringEncoder(message.PartitionKey),
 			}
-			t.log.Info("key: %v", msg.Key)
 			producerMessageSlice = append(producerMessageSlice, msg)
 		}
 
