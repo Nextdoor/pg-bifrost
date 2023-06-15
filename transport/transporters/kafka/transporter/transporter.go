@@ -3,7 +3,6 @@ package transporter
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -25,7 +24,6 @@ var (
 
 type Client struct {
 	producer           sarama.SyncProducer
-	listening          *sync.WaitGroup
 	pendingMsgs        uint64
 	trackInterval      time.Duration
 	stopTracking       chan bool
@@ -65,7 +63,6 @@ func NewTransporter(
 		&Client{
 			producer:    producer,
 			pendingMsgs: 0,
-			listening:   &sync.WaitGroup{},g
 		},
 	}
 
@@ -74,8 +71,7 @@ func NewTransporter(
 // shutdown idempotently closes the output channel
 func (t *KafkaTransporter) shutdown() {
 	t.log.Info("shutting down transporter")
-	t.client.producer.Close()
-	t.client.listening.Wait()
+	_ = t.client.producer.Close()
 	t.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
 	if r := recover(); r != nil {
@@ -105,6 +101,11 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 		}
 
 		err := t.client.producer.SendMessages(produceMessages)
+		if err == nil {
+			t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
+			return nil
+		}
+
 		produceErrors, ok := err.(sarama.ProducerErrors)
 		if !ok {
 			panic("produceErrors is not type sarama.ProducerErrors")
@@ -125,7 +126,6 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 			produceMessages = append(produceMessages, r)
 		}
 
-		// TODO: log errors and stats
 		err = errors.New(fmt.Sprintf("%d messages failed to be written to kafka: %v", len(errorMessages), errorMessages))
 		t.log.Warnf("err %s", err)
 		t.statsChan <- stats.NewStatCount("kafka_transport", "failure", 1, ts.UnixNano())
@@ -152,7 +152,6 @@ func (t *KafkaTransporter) StartTransporting() {
 	t.log.Info("starting transporter")
 
 	defer t.shutdown()
-	t.client.listening.Add(2)
 
 	var b interface{}
 	var ok bool
