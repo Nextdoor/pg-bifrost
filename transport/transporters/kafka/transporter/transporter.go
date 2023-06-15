@@ -24,12 +24,11 @@ var (
 )
 
 type Client struct {
-	producer      sarama.SyncProducer
-	listening     *sync.WaitGroup
-	pendingMsgs   uint64
-	trackInterval time.Duration
-	stopTracking  chan bool
-	//statsClient        stats.NDStatsdClient //TODO: use correct stats client.
+	producer           sarama.SyncProducer
+	listening          *sync.WaitGroup
+	pendingMsgs        uint64
+	trackInterval      time.Duration
+	stopTracking       chan bool
 	bufferClosed       chan bool
 	bufferCloseTimeout chan bool
 }
@@ -66,8 +65,7 @@ func NewTransporter(
 		&Client{
 			producer:    producer,
 			pendingMsgs: 0,
-			listening:   &sync.WaitGroup{},
-			//statsClient:        statsClient,
+			listening:   &sync.WaitGroup{},g
 		},
 	}
 
