@@ -47,10 +47,10 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarBootstrapPort, "string")
 	}
 
-	kafkaTopic := transportConfig[ConfVarTopic]
+	kafkaTopic := transportConfig[ConfVarKafkaTopic]
 	topic, ok := kafkaTopic.(string)
 	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarTopic, "string")
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTopic, "string")
 	}
 
 	kafkaTls := transportConfig[ConfVarKafkaTls]
@@ -59,7 +59,25 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTls, "bool")
 	}
 
-	config, _ := producerConfig(tls)
+	clusterCA := transportConfig[ConfVarKafakClusterCA]
+	ca, ok := clusterCA.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafakClusterCA, "string")
+	}
+
+	clientPrivateKey := transportConfig[ConfVarKafakPrivateKey]
+	privateKey, ok := clientPrivateKey.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafakPrivateKey, "string")
+	}
+
+	clientPublicKey := transportConfig[ConfVarKafakPublicKey]
+	publicKey, ok := clientPublicKey.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafakPublicKey, "string")
+	}
+
+	config, _ := producerConfig(tls, ca, privateKey, publicKey)
 	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
 	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
 	if err := verifySend(&syncProducer, topic); err != nil {

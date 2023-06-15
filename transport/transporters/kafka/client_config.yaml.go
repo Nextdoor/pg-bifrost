@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"flag"
 	"math"
 	"math/big"
 	"os"
@@ -14,13 +13,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-var (
-	clusterCA        = flag.String("kafka_cluster_ca", "/ssl/cluster/ca.crt", "Path to certificate for the cluster CA.")
-	clientPrivateKey = flag.String("kafka_client_key_file", "/ssl/client/user.key", "Path to client's private key used for authentication.")
-	clientPublicKey  = flag.String("kafka_client_cert_file", "/ssl/client/user.crt", "Path to client's certificate containing the client's public key.")
-)
-
-func producerConfig(kafkaTLS bool) (*sarama.Config, error) {
+func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string) (*sarama.Config, error) {
 	// TODO: Set up a custom logger for Sarama debug logging.
 	//sarama.Logger = clientLogger(true)
 
@@ -84,7 +77,7 @@ func producerConfig(kafkaTLS bool) (*sarama.Config, error) {
 
 	var err error
 	if kafkaTLS {
-		config, err = configureTLS(config)
+		config, err = configureTLS(config, clusterCA, clientPrivateKey, clientPublicKey)
 	}
 	return config, err
 }
@@ -99,13 +92,13 @@ func metadataBackoff(retries, maxRetries int) time.Duration {
 	return duration + jitter
 }
 
-func configureTLS(config *sarama.Config) (*sarama.Config, error) {
-	clientCert, err := tls.LoadX509KeyPair(*clientPublicKey, *clientPrivateKey)
+func configureTLS(config *sarama.Config, clusterCA, clientPrivateKey, clientPublicKey string) (*sarama.Config, error) {
+	clientCert, err := tls.LoadX509KeyPair(clientPublicKey, clientPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterCert, err := os.ReadFile(*clusterCA)
+	clusterCert, err := os.ReadFile(clusterCA)
 	if err != nil {
 		return nil, err
 	}

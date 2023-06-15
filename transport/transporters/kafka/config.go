@@ -6,11 +6,14 @@ import (
 )
 
 const (
-	ConfVarKafkaBatchSize = "kafka-batch-size"
-	ConfVarTopic          = "kafka-topic"
-	ConfVarBootstrapHost  = "kafka-bootstrap-host"
-	ConfVarBootstrapPort  = "kafka-bootstrap-port"
-	ConfVarKafkaTls       = "kafka-tls"
+	ConfVarKafkaBatchSize  = "kafka-batch-size"
+	ConfVarKafkaTopic      = "kafka-topic"
+	ConfVarBootstrapHost   = "kafka-bootstrap-host"
+	ConfVarBootstrapPort   = "kafka-bootstrap-port"
+	ConfVarKafkaTls        = "kafka-tls"
+	ConfVarKafakClusterCA  = "kafka-cluster-ca"
+	ConfVarKafakPrivateKey = "kafka-private-key"
+	ConfVarKafakPublicKey  = "kafka-public-key"
 )
 
 var Flags = []cli.Flag{
@@ -21,7 +24,7 @@ var Flags = []cli.Flag{
 		Value:  5000,
 	}),
 	cli.StringFlag{
-		Name:   ConfVarTopic,
+		Name:   ConfVarKafkaTopic,
 		Usage:  "Kafka topic name ",
 		EnvVar: "BIFROST_KAFKA_TOPIC",
 	},
@@ -39,5 +42,20 @@ var Flags = []cli.Flag{
 		Name:   ConfVarKafkaTls,
 		Usage:  "Whether to use TLS when writing to kafka",
 		EnvVar: "KAFKA_TLS",
+	},
+	cli.StringFlag{
+		Name:   ConfVarKafakClusterCA,
+		Usage:  "File path of kafka cluster ca",
+		EnvVar: "KAFKA_CLUSTER_CA",
+	},
+	cli.StringFlag{
+		Name:   ConfVarKafakPrivateKey,
+		Usage:  "File path of kafka client private key",
+		EnvVar: "KAFKA_CLIENT_PRIVATE_KEY",
+	},
+	cli.StringFlag{
+		Name:   ConfVarKafakPublicKey,
+		Usage:  "File path of kafka client public key",
+		EnvVar: "KAFKA_CLIENT_PUBLIC_KEY",
 	},
 }
