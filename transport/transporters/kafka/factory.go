@@ -52,25 +52,32 @@ func New(
 	if !ok {
 		log.Fatalf("Expected type for %s is %s", ConfVarTopic, "string")
 	}
-	config, _ := producerConfig()
+
+	kafkaTls := transportConfig[ConfVarKafkaTls]
+	tls, ok := kafkaTls.(bool)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTls, "bool")
+	}
+
+	config, _ := producerConfig(tls)
 	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
 	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
 	if err := verifySend(&syncProducer, topic); err != nil {
 		panic(err)
 	}
 
-	retryPolicy := &backoff.ExponentialBackOff{
-		InitialInterval:     1500 * time.Millisecond,
-		RandomizationFactor: 0.5,
-		Multiplier:          1.2,
-		MaxInterval:         5 * time.Second,
-		MaxElapsedTime:      time.Duration(time.Minute * 5),
-		Clock:               backoff.SystemClock,
-	}
-
-	transports := make([]*transport.Transporter, 1)
+	transports := make([]*transport.Transporter, workers)
 
 	for i := 0; i < workers; i++ {
+
+		retryPolicy := &backoff.ExponentialBackOff{
+			InitialInterval:     1500 * time.Millisecond,
+			RandomizationFactor: 0.5,
+			Multiplier:          1.2,
+			MaxInterval:         5 * time.Second,
+			MaxElapsedTime:      time.Duration(time.Minute * 5),
+			Clock:               backoff.SystemClock,
+		}
 		t := transporter.NewTransporter(
 			shutdownHandler,
 			inputChans[i],

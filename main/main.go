@@ -533,7 +533,7 @@ func main() {
 	rabbitmqCmd.Before = altsrc.InitInputSourceWithContext(rabbitmq.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
 	rabbitmqCmd.Flags = rabbitmq.Flags
 
-	// Also set up rabbitmq subcommands flags from file
+	// Also set up kafka subcommands flags from file
 	kafkaCmd := cli.Command{
 		Name:   "kafka",
 		Usage:  "replicate to kafka",

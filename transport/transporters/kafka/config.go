@@ -10,6 +10,7 @@ const (
 	ConfVarTopic          = "kafka-topic"
 	ConfVarBootstrapHost  = "kafka-bootstrap-host"
 	ConfVarBootstrapPort  = "kafka-bootstrap-port"
+	ConfVarKafkaTls       = "kafka-tls"
 )
 
 var Flags = []cli.Flag{
@@ -33,5 +34,10 @@ var Flags = []cli.Flag{
 		Name:   ConfVarBootstrapPort,
 		Usage:  "Kafka bootstrap port",
 		EnvVar: "KAFKA_BOOTSTRAP_PORT",
+	},
+	cli.BoolFlag{
+		Name:   ConfVarKafkaTls,
+		Usage:  "Whether to use TLS when writing to kafka",
+		EnvVar: "KAFKA_TLS",
 	},
 }

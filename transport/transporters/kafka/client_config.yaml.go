@@ -15,15 +15,12 @@ import (
 )
 
 var (
-	kafkaTLS = flag.Bool("kafka_tls", true, "Whether or not to use TLS. This should only be false when an application "+
-		"running on a local machine (not in Docker) needs to communicate with a Kafka cluster in Kubernetes in Docker.")
-
 	clusterCA        = flag.String("kafka_cluster_ca", "/ssl/cluster/ca.crt", "Path to certificate for the cluster CA.")
 	clientPrivateKey = flag.String("kafka_client_key_file", "/ssl/client/user.key", "Path to client's private key used for authentication.")
 	clientPublicKey  = flag.String("kafka_client_cert_file", "/ssl/client/user.crt", "Path to client's certificate containing the client's public key.")
 )
 
-func producerConfig() (*sarama.Config, error) {
+func producerConfig(kafkaTLS bool) (*sarama.Config, error) {
 	// TODO: Set up a custom logger for Sarama debug logging.
 	//sarama.Logger = clientLogger(true)
 
@@ -68,11 +65,11 @@ func producerConfig() (*sarama.Config, error) {
 	// issues, but hasn't been actively tuned / optimized.
 	config.Producer.Retry.Backoff = 500 * time.Millisecond
 
-	// Reduce memory usage by only holding onto the metadata needed for GoFlask's topic(s).
+	// Reduce memory usage by only holding onto the metadata needed for PG-Bifrost's topic(s).
 	config.Metadata.Full = false
 
 	// By default, Kafka closes idle connections after 10 minutes.
-	// For brokers that don't have any GoFlask partitions, the connection is idle other
+	// For brokers that don't have any PG-Bifrost partitions, the connection is idle other
 	// than metadata refreshing, so at times the client will try to use a connection
 	// that the broker has closed.
 	config.Metadata.RefreshFrequency = 5 * time.Minute
@@ -86,7 +83,7 @@ func producerConfig() (*sarama.Config, error) {
 	config.Metadata.Retry.BackoffFunc = metadataBackoff
 
 	var err error
-	if *kafkaTLS {
+	if kafkaTLS {
 		config, err = configureTLS(config)
 	}
 	return config, err
