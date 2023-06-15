@@ -6,14 +6,15 @@ import (
 )
 
 const (
-	ConfVarKafkaBatchSize  = "kafka-batch-size"
-	ConfVarKafkaTopic      = "kafka-topic"
-	ConfVarBootstrapHost   = "kafka-bootstrap-host"
-	ConfVarBootstrapPort   = "kafka-bootstrap-port"
-	ConfVarKafkaTls        = "kafka-tls"
-	ConfVarKafakClusterCA  = "kafka-cluster-ca"
-	ConfVarKafakPrivateKey = "kafka-private-key"
-	ConfVarKafakPublicKey  = "kafka-public-key"
+	ConfVarKafkaBatchSize       = "kafka-batch-size"
+	ConfVarKafkaMaxMessageBytes = "kafka-max-message-bytes"
+	ConfVarKafkaTopic           = "kafka-topic"
+	ConfVarBootstrapHost        = "kafka-bootstrap-host"
+	ConfVarBootstrapPort        = "kafka-bootstrap-port"
+	ConfVarKafkaTls             = "kafka-tls"
+	ConfVarKafakClusterCA       = "kafka-cluster-ca"
+	ConfVarKafakPrivateKey      = "kafka-private-key"
+	ConfVarKafakPublicKey       = "kafka-public-key"
 )
 
 var Flags = []cli.Flag{
@@ -22,6 +23,12 @@ var Flags = []cli.Flag{
 		Usage:  "Kafka Number of messages to write before waiting for confirmations",
 		EnvVar: "KAFKA_BATCH_SIZE",
 		Value:  5000,
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
+		Name:   ConfVarKafkaMaxMessageBytes,
+		Usage:  "Max byte size of a message",
+		EnvVar: "KAFKA_MAX_MESSAGE_SIZE",
+		Value:  1000000,
 	}),
 	cli.StringFlag{
 		Name:   ConfVarKafkaTopic,

@@ -8,7 +8,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
-	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/transporter"
 	"github.com/Shopify/sarama"
 	"github.com/cenkalti/backoff/v4"
@@ -111,16 +111,10 @@ func New(
 	return transports
 }
 
-// NewBatchFactory returns a GenericBatchFactory configured for Kafka
-func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFactory {
-	batchSizeVar := transportConfig[ConfVarKafkaBatchSize]
-	batchSize, ok := batchSizeVar.(int)
-
-	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
-	}
-
-	return batch.NewGenericBatchFactory(batchSize)
+type KafkaBatchFactory struct {
+	topic           string
+	maxMessageBytes int
+	batchSize       int
 }
 
 func verifySend(producer *sarama.SyncProducer, topic string) error {
@@ -132,4 +126,32 @@ func verifySend(producer *sarama.SyncProducer, topic string) error {
 		return err
 	}
 	return nil
+}
+
+func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFactory {
+	kafkaTopic := transportConfig[ConfVarKafkaTopic]
+	topic, ok := kafkaTopic.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTopic, "string")
+	}
+
+	maxMessageBytesVar := transportConfig[ConfVarKafkaMaxMessageBytes]
+	maxMessageBytes, ok := maxMessageBytesVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaMaxMessageBytes, "int")
+	}
+
+	batchSizeVar := transportConfig[ConfVarKafkaBatchSize]
+	batchSize, ok := batchSizeVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
+	}
+
+	return KafkaBatchFactory{topic, maxMessageBytes, batchSize}
+}
+
+func (f KafkaBatchFactory) NewBatch(partitionKey string) transport.Batch {
+	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes)
 }

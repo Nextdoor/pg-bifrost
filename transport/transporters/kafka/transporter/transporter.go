@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
-	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/batch"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	"github.com/Shopify/sarama"
 	"github.com/cenkalti/backoff/v4"
@@ -94,10 +93,7 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 			return nil
 		}
 
-		produceErrors, ok := err.(sarama.ProducerErrors)
-		if !ok {
-			panic("produceErrors is not type sarama.ProducerErrors")
-		}
+		produceErrors := err.(sarama.ProducerErrors)
 
 		produceMessages = produceMessages[:0]
 		errorMessages := map[string]int{} // Keep track of error messages
@@ -163,28 +159,17 @@ func (t *KafkaTransporter) StartTransporting() {
 			return
 		}
 
-		genericBatch, ok := b.(*batch.GenericBatch)
+		genericBatch, ok := b.(*batch.KafkaBatch)
 
 		if !ok {
-			panic("Batch is not a GenericBatch")
+			panic("Batch is not a KafkaBatch")
 		}
 
 		messages := genericBatch.GetPayload()
-		messagesSlice, ok := messages.([]*marshaller.MarshalledMessage)
+		producerMessageSlice, ok := messages.([]*sarama.ProducerMessage)
 
 		if !ok {
-			panic("Batch payload is not a []*marshaller.MarshalledMessage")
-		}
-
-		var producerMessageSlice []*sarama.ProducerMessage
-
-		for _, message := range messagesSlice {
-			msg := &sarama.ProducerMessage{
-				Topic: t.topic,
-				Value: sarama.ByteEncoder(message.Json),
-				Key:   sarama.StringEncoder(message.PartitionKey),
-			}
-			producerMessageSlice = append(producerMessageSlice, msg)
+			panic("Batch payload is not a []*sarama.ProducerMessage")
 		}
 
 		// Begin timer
