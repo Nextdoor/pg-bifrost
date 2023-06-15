@@ -2,6 +2,7 @@ package transporter
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,13 +24,12 @@ var (
 )
 
 type Client struct {
-	producer      sarama.AsyncProducer
+	producer      sarama.SyncProducer
 	listening     *sync.WaitGroup
 	pendingMsgs   uint64
 	trackInterval time.Duration
 	stopTracking  chan bool
 	//statsClient        stats.NDStatsdClient //TODO: use correct stats client.
-	log                logrus.Entry
 	bufferClosed       chan bool
 	bufferCloseTimeout chan bool
 }
@@ -51,7 +52,7 @@ func NewTransporter(
 	txnsWritten chan<- *ordered_map.OrderedMap,
 	log logrus.Entry,
 	retryPolicy backoff.BackOff,
-	producer sarama.AsyncProducer,
+	producer sarama.SyncProducer,
 	topic string) transport.Transporter {
 
 	return &KafkaTransporter{
@@ -92,42 +93,61 @@ func (t *KafkaTransporter) shutdown() {
 	close(t.txnsWritten)
 }
 
-func (t *KafkaTransporter) trackSuccess() {
-	t.log.Info("Starting success tracker")
-	for {
-		select {
-		case _, open := <-t.client.producer.Successes():
-			if !open {
-				t.client.listening.Done()
-				return
-			} else {
-				t.log.Info("successfully sent message")
-			}
-		}
-	}
-}
-
-func (t *KafkaTransporter) trackError() {
-	t.log.Info("Starting error tracker")
-	for {
-		select {
-		case _, open := <-t.client.producer.Errors():
-			if !open {
-				t.client.listening.Done()
-				return
-			} else {
-				t.log.Info("Error sending message")
-			}
-		}
-	}
-}
-
 func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessages []*sarama.ProducerMessage) (error, bool) {
-	// TODO: Retry messages that didn't make it to kafka
-	for _, msg := range produceMessages {
-		t.client.producer.Input() <- msg
+	var cancelled bool
+	var ts = TimeSource
+
+	operation := func() error {
+		select {
+		case <-ctx.Done():
+			t.log.Debug("received terminateCtx cancellation")
+			cancelled = true
+			return nil
+		default:
+		}
+
+		err := t.client.producer.SendMessages(produceMessages)
+		produceErrors, ok := err.(sarama.ProducerErrors)
+		if !ok {
+			panic("produceErrors is not type sarama.ProducerErrors")
+		}
+
+		if len(produceErrors) == 0 {
+			t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
+			return nil
+		}
+
+		produceMessages = produceMessages[:0]
+		errorMessages := map[string]int{} // Keep track of error messages
+
+		for i := 0; i < len(produceErrors); i++ {
+			e := produceErrors[i].Err.Error()
+			errorMessages[e] += 1
+			r := produceErrors[i].Msg
+			produceMessages = append(produceMessages, r)
+		}
+
+		// TODO: log errors and stats
+		err = errors.New(fmt.Sprintf("%d messages failed to be written to kafka: %v", len(errorMessages), errorMessages))
+		t.log.Warnf("err %s", err)
+		t.statsChan <- stats.NewStatCount("kafka_transport", "failure", 1, ts.UnixNano())
+
+		// return err to signify a retry is needed
+		return err
+
 	}
-	return nil, false
+
+	defer func() {
+		t.retryPolicy.Reset()
+	}()
+
+	err := backoff.Retry(operation, t.retryPolicy)
+
+	if err != nil {
+		return err, cancelled
+	}
+
+	return nil, cancelled
 }
 
 func (t *KafkaTransporter) StartTransporting() {
@@ -135,9 +155,6 @@ func (t *KafkaTransporter) StartTransporting() {
 
 	defer t.shutdown()
 	t.client.listening.Add(2)
-
-	go t.trackError()
-	go t.trackSuccess()
 
 	var b interface{}
 	var ok bool
@@ -167,19 +184,28 @@ func (t *KafkaTransporter) StartTransporting() {
 		}
 
 		genericBatch, ok := b.(*batch.GenericBatch)
+
+		if !ok {
+			panic("Batch is not a GenericBatch")
+		}
+
 		messages := genericBatch.GetPayload()
 		messagesSlice, ok := messages.([]*marshaller.MarshalledMessage)
+
+		if !ok {
+			panic("Batch payload is not a []*marshaller.MarshalledMessage")
+		}
+
 		var producerMessageSlice []*sarama.ProducerMessage
+
 		for _, message := range messagesSlice {
 			msg := &sarama.ProducerMessage{
 				Topic: t.topic,
 				Value: sarama.ByteEncoder(message.Json),
+				Key:   sarama.StringEncoder(message.PartitionKey),
 			}
+			t.log.Info("key: %v", msg.Key)
 			producerMessageSlice = append(producerMessageSlice, msg)
-		}
-
-		if !ok {
-			panic("Batch is not a GenericBatch")
 		}
 
 		// Begin timer
@@ -190,7 +216,7 @@ func (t *KafkaTransporter) StartTransporting() {
 		// End timer and send stat
 
 		total := (ts.UnixNano() - start) / int64(time.Millisecond)
-		t.statsChan <- stats.NewStatHistogram("kinesis_transport", "duration", total, ts.UnixNano(), "ms")
+		t.statsChan <- stats.NewStatHistogram("kafka_transport", "duration", total, ts.UnixNano(), "ms")
 
 		if err != nil {
 			t.log.Error("max retries exceeded")
@@ -201,6 +227,9 @@ func (t *KafkaTransporter) StartTransporting() {
 		if cancelled {
 			continue
 		}
+
+		t.log.Debug("successfully wrote batch to kafka")
+		t.statsChan <- stats.NewStatCount("kafka_transport", "written", int64(len(producerMessageSlice)), ts.UnixNano())
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()

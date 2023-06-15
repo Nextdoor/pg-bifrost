@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -55,8 +54,8 @@ func New(
 	}
 	config, _ := producerConfig()
 	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
-	asyncProducer, _ := sarama.NewAsyncProducer([]string{bootstrapServer}, config)
-	if err := verifySend(&asyncProducer, topic); err != nil {
+	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
+	if err := verifySend(&syncProducer, topic); err != nil {
 		panic(err)
 	}
 
@@ -79,7 +78,7 @@ func New(
 			txnsWritten,
 			*log,
 			retryPolicy,
-			asyncProducer,
+			syncProducer,
 			topic)
 		transports[i] = &t
 	}
@@ -100,18 +99,13 @@ func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFact
 	return batch.NewGenericBatchFactory(batchSize)
 }
 
-func verifySend(producer *sarama.AsyncProducer, topic string) error {
+func verifySend(producer *sarama.SyncProducer, topic string) error {
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
 		Value: sarama.StringEncoder("Placeholder message to verify broker communication"),
 	}
-	(*producer).Input() <- msg
-	select {
-	case <-(*producer).Successes():
-		return nil
-	case err := <-(*producer).Errors():
+	if _, _, err := (*producer).SendMessage(msg); err != nil {
 		return err
-	case <-time.After(15 * time.Second):
-		return errors.New("timed out verifying producer")
 	}
+	return nil
 }

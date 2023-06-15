@@ -22,7 +22,7 @@ var Flags = []cli.Flag{
 	cli.StringFlag{
 		Name:   ConfVarTopic,
 		Usage:  "Kafka topic name ",
-		EnvVar: "KAFKA_TOPIC",
+		EnvVar: "BIFROST_KAFKA_TOPIC",
 	},
 	cli.StringFlag{
 		Name:   ConfVarBootstrapHost,
