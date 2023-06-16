@@ -70,7 +70,7 @@ func (t *KafkaTransporter) shutdown() {
 	close(t.txnsWritten)
 }
 
-func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessages []*sarama.ProducerMessage) (error, bool) {
+func (t *KafkaTransporter) sendBatchToKafka(ctx context.Context, produceMessages []*sarama.ProducerMessage) (error, bool) {
 	var cancelled bool
 	var ts = TimeSource
 
@@ -82,6 +82,7 @@ func (t *KafkaTransporter) transportWithRetry(ctx context.Context, produceMessag
 	default:
 	}
 
+	// Let the underlying Sarama client handle the individual retries of messages.
 	err := t.kafkaProducer.SendMessages(produceMessages)
 	if err == nil {
 		t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
@@ -155,7 +156,7 @@ func (t *KafkaTransporter) StartTransporting() {
 		// Begin timer
 		start := ts.UnixNano()
 
-		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, producerMessageSlice)
+		err, cancelled := t.sendBatchToKafka(t.shutdownHandler.TerminateCtx, producerMessageSlice)
 
 		// End timer and send stat
 
