@@ -49,6 +49,7 @@ services:
     ports:
       - "9092:9092"
       - "29092:29092"
+      - "19092:19092"
       - "9999:9999"
     environment:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092

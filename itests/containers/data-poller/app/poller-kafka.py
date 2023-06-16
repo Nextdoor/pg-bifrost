@@ -7,19 +7,20 @@ from retry import retry
 from confluent_kafka import Consumer
 from confluent_kafka.admin import AdminClient, NewTopic
 
-
+KAFKA_BOOTSTRAP_HOST = os.getenv('KAFKA_BOOTSTRAP_HOST', 'kafka1')
+KAFKA_BOOTSTRAP_PORT = os.getenv('KAFKA_BOOTSTRAP_PORT', '19092')
 TOPIC_NAME = os.getenv('BIFROST_KAFKA_TOPIC', 'itests')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KAFKA_POLLER_WAIT_TIME', '90'))
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 
 
-admin_conf = {'bootstrap.servers': "kafka1:29092"}
+admin_conf = {'bootstrap.servers': f"{KAFKA_BOOTSTRAP_HOST}:{KAFKA_BOOTSTRAP_PORT}"}
 admin_client = AdminClient(admin_conf)
 
 
-consumer_conf = {'bootstrap.servers': "kafka1:29092",
-                 'group.id': "itests4",
+consumer_conf = {'bootstrap.servers': f"{KAFKA_BOOTSTRAP_HOST}:{KAFKA_BOOTSTRAP_PORT}",
+                 'group.id': "itests",
                  'auto.offset.reset': 'earliest'}
 consumer = Consumer(consumer_conf)
 
