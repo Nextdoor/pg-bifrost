@@ -217,7 +217,7 @@ func TestFailedSend(t *testing.T) {
 	TimeSource = mockTime
 	sh := shutdown.NewShutdownHandler()
 	topic := "test"
-	batchSize := 1
+	batchSize := 2
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
@@ -240,25 +240,10 @@ func TestFailedSend(t *testing.T) {
 	}
 
 	_, _ = b.Add(&marshalledMessageOne)
-
 	_, _ = b.Add(&marshalledMessageTwo)
 
-	firstErr := &sarama.ProducerError{
-		&sarama.ProducerMessage{
-			Value: sarama.StringEncoder("test-1"),
-		},
-		errors.New("failed send"),
-	}
-	secondErr := &sarama.ProducerError{
-		&sarama.ProducerMessage{
-			Value: sarama.StringEncoder("test-2"),
-		},
-		errors.New("failed send"),
-	}
-
-	var produceError sarama.ProducerErrors = []*sarama.ProducerError{firstErr, secondErr}
-
-	mockProducer.ExpectSendMessageAndFail(produceError)
+	mockProducer.ExpectSendMessageAndFail(errors.New("failed send"))
+	mockProducer.ExpectSendMessageAndFail(errors.New("failed send"))
 
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
@@ -276,6 +261,70 @@ func TestFailedSend(t *testing.T) {
 	// Verify stats
 	expected := []stats.Stat{
 		stats.NewStatCount("kafka_transport", "failure", int64(2), int64(1000*time.Millisecond)),
+		stats.NewStatHistogram("kafka_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
+	}
+	stats.VerifyStats(t, statsChan, expected)
+
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestSucceedAndFailSend(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	defer resetTimeSource()
+
+	in := make(chan transport.Batch, 1000)
+	txns := make(chan *ordered_map.OrderedMap, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+	mockProducer := mockProducer(t)
+	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
+	TimeSource = mockTime
+	sh := shutdown.NewShutdownHandler()
+	topic := "test"
+	batchSize := 2
+	maxMessageBytes := 1000000
+
+	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+
+	marshalledMessageOne := marshaller.MarshalledMessage{
+		Operation:    "INSERT",
+		Json:         []byte("test-1"),
+		TimeBasedKey: "123",
+		WalStart:     1234,
+		Transaction:  "123",
+	}
+
+	marshalledMessageTwo := marshaller.MarshalledMessage{
+		Operation:    "INSERT",
+		Json:         []byte("test-1"),
+		TimeBasedKey: "123",
+		WalStart:     1234,
+		Transaction:  "123",
+	}
+
+	_, _ = b.Add(&marshalledMessageOne)
+	_, _ = b.Add(&marshalledMessageTwo)
+
+	mockProducer.ExpectSendMessageAndSucceed()
+	mockProducer.ExpectSendMessageAndFail(errors.New("failed send"))
+
+	mockTime.EXPECT().UnixNano().Return(int64(0))
+	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+
+	in <- b
+
+	// Start test
+	go tp.StartTransporting()
+
+	// Wait for data to go through
+	time.Sleep(time.Millisecond * 1000)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("kafka_transport", "failure", int64(1), int64(1000*time.Millisecond)),
 		stats.NewStatHistogram("kafka_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
 	}
 	stats.VerifyStats(t, statsChan, expected)

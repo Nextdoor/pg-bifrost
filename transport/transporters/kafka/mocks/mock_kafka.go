@@ -107,27 +107,36 @@ func (sp *SyncProducer) SendMessages(msgs []*sarama.ProducerMessage) error {
 	if len(sp.expectations) >= len(msgs) {
 		expectations := sp.expectations[0:len(msgs)]
 		sp.expectations = sp.expectations[len(msgs):]
-
+		var produceErrors sarama.ProducerErrors
 		for i, expectation := range expectations {
 			topic := msgs[i].Topic
+			errFlag := false
 			partition, err := sp.partitioner(topic).Partition(msgs[i], sp.partitions(topic))
 			if err != nil {
 				sp.t.Errorf("Partitioner returned an error: %s", err.Error())
-				return err
+				produceErrors = append(produceErrors, &sarama.ProducerError{Msg: msgs[i], Err: err})
+				errFlag = true
 			}
 			msgs[i].Partition = partition
 			if expectation.CheckFunction != nil {
 				errCheck := expectation.CheckFunction(msgs[i])
 				if errCheck != nil {
 					sp.t.Errorf("Check function returned an error: %s", errCheck.Error())
-					return errCheck
+					produceErrors = append(produceErrors, &sarama.ProducerError{Msg: msgs[i], Err: errCheck})
+					errFlag = true
 				}
 			}
 			if !errors.Is(expectation.Result, errProduceSuccess) {
-				return expectation.Result
+				produceErrors = append(produceErrors, &sarama.ProducerError{Msg: msgs[i], Err: expectation.Result})
+				errFlag = true
 			}
-			sp.lastOffset++
-			msgs[i].Offset = sp.lastOffset
+			if errFlag {
+				sp.lastOffset++
+				msgs[i].Offset = sp.lastOffset
+			}
+		}
+		if len(produceErrors) > 0 {
+			return produceErrors
 		}
 		return nil
 	}
@@ -297,9 +306,8 @@ func messageValueChecker(f ValueChecker) MessageChecker {
 }
 
 var (
-	errProduceSuccess              error = nil
-	errOutOfExpectations                 = errors.New("No more expectations set on mock")
-	errPartitionConsumerNotStarted       = errors.New("The partition consumer was never started")
+	errProduceSuccess    error = nil
+	errOutOfExpectations       = errors.New("No more expectations set on mock")
 )
 
 const AnyOffset int64 = -1000
