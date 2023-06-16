@@ -24,11 +24,11 @@ type KafkaBatch struct {
 	topic           string
 }
 
-func NewKafkaBatch(topic string, partitionKey string, maxSize, maxMessageBytes int) transport.Batch {
+func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageBytes int) transport.Batch {
 	messages := []*sarama.ProducerMessage{}
 	transactions := ordered_map.NewOrderedMap()
 
-	return &KafkaBatch{maxSize, maxMessageBytes, messages, transactions, 0, time.Now().UnixNano(), time.Now().UnixNano(), partitionKey, topic}
+	return &KafkaBatch{maxBathSize, maxMessageBytes, messages, transactions, 0, time.Now().UnixNano(), time.Now().UnixNano(), partitionKey, topic}
 }
 
 func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
