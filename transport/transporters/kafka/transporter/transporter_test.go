@@ -290,9 +290,6 @@ func testMessageCheckerWithPanic() mocks.MessageChecker {
 }
 
 func mockProducer(t *testing.T) *mocks.SyncProducer {
-	//maxMessageBytes := 1000000
-	//config, err := kafka.ProducerConfig(false, "empty", "empty", "empty", maxMessageBytes)
-	//assert.Nil(t, err)
 	config := mocks.NewTestConfig()
 	producer := mocks.NewSyncProducer(t, config)
 	return producer
