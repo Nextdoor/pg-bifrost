@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	TimeSource utils.TimeSource = &utils.RealTime{}
+	TimeSource    utils.TimeSource = &utils.RealTime{}
+	shutdownDelay                  = 3 * time.Second
 )
 
 type KafkaTransporter struct {
@@ -54,6 +55,10 @@ func NewTransporter(
 // shutdown idempotently closes the output channel
 func (t *KafkaTransporter) shutdown() {
 	t.log.Info("shutting down transporter")
+
+	t.log.Info("Waiting for internal Kafka buffers to be flushed")
+	time.Sleep(shutdownDelay)
+
 	_ = t.kafkaProducer.Close()
 	t.shutdownHandler.CancelFunc() // initiate shutdown on other modules as well
 
@@ -90,20 +95,16 @@ func (t *KafkaTransporter) sendBatchToKafka(ctx context.Context, produceMessages
 	}
 
 	produceErrors := err.(sarama.ProducerErrors)
-
-	produceMessages = produceMessages[:0]
 	errorMessages := map[string]int{} // Keep track of error messages
 
 	for i := 0; i < len(produceErrors); i++ {
 		e := produceErrors[i].Err.Error()
 		errorMessages[e] += 1
-		r := produceErrors[i].Msg
-		produceMessages = append(produceMessages, r)
 	}
 
-	err = errors.New(fmt.Sprintf("%d messages failed to be written to kafka: %v", len(errorMessages), errorMessages))
+	err = errors.New(fmt.Sprintf("%d messages failed to be written to kafka: %v", len(produceErrors), errorMessages))
 	t.log.Warnf("err %s", err)
-	t.statsChan <- stats.NewStatCount("kafka_transport", "failure", 1, ts.UnixNano())
+	t.statsChan <- stats.NewStatCount("kafka_transport", "failure", int64(len(produceErrors)), ts.UnixNano())
 
 	return err, cancelled
 }
