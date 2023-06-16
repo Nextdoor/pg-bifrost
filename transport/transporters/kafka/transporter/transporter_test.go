@@ -87,6 +87,68 @@ func TestSendOk(t *testing.T) {
 
 }
 
+func TestSendMultipleInBatchOk(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	defer resetTimeSource()
+
+	in := make(chan transport.Batch, 1000)
+	txns := make(chan *ordered_map.OrderedMap, 1000)
+	statsChan := make(chan stats.Stat, 1000)
+	mockProducer := mockProducer(t)
+	mockTime := utils_mocks.NewMockTimeSource(mockCtrl)
+	TimeSource = mockTime
+	sh := shutdown.NewShutdownHandler()
+	topic := "test"
+	batchSize := 5
+	maxMessageBytes := 1000000
+
+	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+
+	for i := 0; i < 5; i++ {
+		marshalledMessage := &marshaller.MarshalledMessage{
+			Operation:    "INSERT",
+			Json:         []byte(fmt.Sprintf("data-%v", i)),
+			TimeBasedKey: "123",
+			WalStart:     1234,
+			Transaction:  "123",
+		}
+		_, _ = b.Add(marshalledMessage)
+	}
+
+	mockProducer.ExpectSendMessageAndSucceed()
+	mockProducer.ExpectSendMessageAndSucceed()
+	mockProducer.ExpectSendMessageAndSucceed()
+	mockProducer.ExpectSendMessageAndSucceed()
+	mockProducer.ExpectSendMessageAndSucceed()
+
+	mockTime.EXPECT().UnixNano().Return(int64(0))
+	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
+	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
+
+	in <- b
+
+	// Start test
+	go tp.StartTransporting()
+
+	// Wait for data to go through
+	time.Sleep(time.Millisecond * 25)
+
+	// Verify stats
+	expected := []stats.Stat{
+		stats.NewStatCount("kafka_transport", "success", int64(1), int64(1000*time.Millisecond)),
+		stats.NewStatHistogram("kafka_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
+		stats.NewStatCount("kafka_transport", "written", int64(5), int64(4000*time.Millisecond)),
+	}
+	stats.VerifyStats(t, statsChan, expected)
+
+	time.Sleep(50 * time.Millisecond)
+
+}
+
 func TestInputClosed(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
