@@ -15,6 +15,7 @@ const (
 	ConfVarKafakClusterCA       = "kafka-cluster-ca"
 	ConfVarKafakPrivateKey      = "kafka-private-key"
 	ConfVarKafakPublicKey       = "kafka-public-key"
+	ConfVarKafkaVerifyProducer  = "kafka-verify-producer"
 )
 
 var Flags = []cli.Flag{
@@ -35,34 +36,44 @@ var Flags = []cli.Flag{
 		Usage:  "Kafka topic name ",
 		EnvVar: "BIFROST_KAFKA_TOPIC",
 	},
-	cli.StringFlag{
+	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarBootstrapHost,
 		Usage:  "Kafka bootstrap host",
 		EnvVar: "KAFKA_BOOTSTRAP_HOST",
-	},
-	cli.StringFlag{
+	}),
+
+	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarBootstrapPort,
 		Usage:  "Kafka bootstrap port",
 		EnvVar: "KAFKA_BOOTSTRAP_PORT",
-	},
-	cli.BoolFlag{
+	}),
+
+	altsrc.NewBoolFlag(cli.BoolFlag{
 		Name:   ConfVarKafkaTls,
 		Usage:  "Whether to use TLS when writing to kafka",
 		EnvVar: "KAFKA_TLS",
-	},
-	cli.StringFlag{
+	}),
+
+	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarKafakClusterCA,
 		Usage:  "File path of kafka cluster ca",
 		EnvVar: "KAFKA_CLUSTER_CA",
-	},
-	cli.StringFlag{
+	}),
+
+	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarKafakPrivateKey,
 		Usage:  "File path of kafka client private key",
 		EnvVar: "KAFKA_CLIENT_PRIVATE_KEY",
-	},
-	cli.StringFlag{
+	}),
+
+	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarKafakPublicKey,
 		Usage:  "File path of kafka client public key",
 		EnvVar: "KAFKA_CLIENT_PUBLIC_KEY",
-	},
+	}),
+	altsrc.NewBoolFlag(cli.BoolFlag{
+		Name:   ConfVarKafkaVerifyProducer,
+		Usage:  "Whether or not to verify producer upon startup",
+		EnvVar: "KAFKA_VERIFY_PRODUCER",
+	}),
 }

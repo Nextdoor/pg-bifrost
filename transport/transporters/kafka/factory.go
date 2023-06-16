@@ -82,11 +82,19 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaMaxMessageBytes, "int")
 	}
 
+	verifyProducerVar := transportConfig[ConfVarKafkaVerifyProducer]
+	verifyProducer, ok := verifyProducerVar.(bool)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaVerifyProducer, "bool")
+	}
+
 	config, _ := producerConfig(tls, ca, privateKey, publicKey, maxMessageBytes)
 	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
 	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
-	if err := verifySend(&syncProducer, topic); err != nil {
-		panic(err)
+	if verifyProducer {
+		if err := verifySend(&syncProducer, topic); err != nil {
+			panic(err)
+		}
 	}
 
 	transports := make([]*transport.Transporter, workers)
