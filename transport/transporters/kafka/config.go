@@ -20,7 +20,7 @@ const (
 var Flags = []cli.Flag{
 	altsrc.NewIntFlag(cli.IntFlag{
 		Name:   ConfVarKafkaBatchSize,
-		Usage:  "Kafka Number of messages to write before waiting for confirmations",
+		Usage:  "Maximum number of kafka messages in a batch",
 		EnvVar: "KAFKA_BATCH_SIZE",
 		Value:  5000,
 	}),

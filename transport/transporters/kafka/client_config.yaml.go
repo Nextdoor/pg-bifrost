@@ -13,7 +13,7 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string) (*sarama.Config, error) {
+func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string, maxMessageBytes int) (*sarama.Config, error) {
 	// TODO: Set up a custom logger for Sarama debug logging.
 	//sarama.Logger = clientLogger(true)
 
@@ -51,7 +51,7 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	config.Producer.Compression = sarama.CompressionSnappy
 
 	// Default client value.
-	config.Producer.MaxMessageBytes = 1000000
+	config.Producer.MaxMessageBytes = maxMessageBytes
 
 	// Default value is 100ms. During cluster restarts, we're at risk of hitting the max retry limit
 	// for a partition if we retry too quickly. This value was increased when debugging buffer flushing
