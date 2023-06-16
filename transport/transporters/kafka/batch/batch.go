@@ -108,7 +108,3 @@ func (b *KafkaBatch) ModifyTime() int64 {
 func (b *KafkaBatch) CreateTime() int64 {
 	return b.ctime
 }
-
-type KafkaBatchFactory struct {
-	size int
-}

@@ -3,7 +3,6 @@ package kafka
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -11,7 +10,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/transporter"
 	"github.com/Shopify/sarama"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
@@ -87,22 +85,12 @@ func New(
 	transports := make([]*transport.Transporter, workers)
 
 	for i := 0; i < workers; i++ {
-
-		retryPolicy := &backoff.ExponentialBackOff{
-			InitialInterval:     1500 * time.Millisecond,
-			RandomizationFactor: 0.5,
-			Multiplier:          1.2,
-			MaxInterval:         5 * time.Second,
-			MaxElapsedTime:      time.Duration(time.Minute * 5),
-			Clock:               backoff.SystemClock,
-		}
 		t := transporter.NewTransporter(
 			shutdownHandler,
 			inputChans[i],
 			statsChan,
 			txnsWritten,
 			*log,
-			retryPolicy,
 			syncProducer,
 			topic)
 		transports[i] = &t
