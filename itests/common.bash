@@ -43,7 +43,7 @@ _startup() {
   FAILED=0
 
   log "Running docker-compose down"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all down -v
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all rm -f -s -v
 
   log "Running docker-compose build"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all build
@@ -266,11 +266,8 @@ teardown() {
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs data-poller
 
-  log "Running docker-compose down"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all down -v
-
   log "Running docker-compose rm"
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all rm -v
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all rm -f -s -v
 
   _write_junit_xml
 }
