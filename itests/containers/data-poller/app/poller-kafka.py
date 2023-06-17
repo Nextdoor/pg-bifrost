@@ -4,7 +4,7 @@ import time
 
 from retry import retry
 
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer, KafkaError, KafkaException
 from confluent_kafka.admin import AdminClient, NewTopic
 
 KAFKA_BOOTSTRAP_HOST = os.getenv('KAFKA_BOOTSTRAP_HOST', 'kafka1')
@@ -33,6 +33,10 @@ def _create_topic(name):
         try:
             f.result()  # The result itself is None
             print("Topic {} created".format(topic))
+        except KafkaException as e:
+            if e.args[0].code() == KafkaError.TOPIC_ALREADY_EXISTS:
+                return
+            raise e
         except Exception as e:
             print("Failed to create topic {}: {}".format(topic, e))
             exit(1)
