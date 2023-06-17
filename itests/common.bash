@@ -269,6 +269,9 @@ teardown() {
   log "Running docker-compose down"
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all down -v
 
+  log "Running docker-compose rm"
+  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose --profile all rm -v
+
   _write_junit_xml
 }
 
