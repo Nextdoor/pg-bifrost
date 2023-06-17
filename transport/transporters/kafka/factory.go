@@ -57,22 +57,22 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTls, "bool")
 	}
 
-	clusterCA := transportConfig[ConfVarKafakClusterCA]
+	clusterCA := transportConfig[ConfVarKafkaClusterCA]
 	ca, ok := clusterCA.(string)
 	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarKafakClusterCA, "string")
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaClusterCA, "string")
 	}
 
-	clientPrivateKey := transportConfig[ConfVarKafakPrivateKey]
+	clientPrivateKey := transportConfig[ConfVarKafkaPrivateKey]
 	privateKey, ok := clientPrivateKey.(string)
 	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarKafakPrivateKey, "string")
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaPrivateKey, "string")
 	}
 
-	clientPublicKey := transportConfig[ConfVarKafakPublicKey]
+	clientPublicKey := transportConfig[ConfVarKafkaPublicKey]
 	publicKey, ok := clientPublicKey.(string)
 	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarKafakPublicKey, "string")
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaPublicKey, "string")
 	}
 
 	maxMessageBytesVar := transportConfig[ConfVarKafkaMaxMessageBytes]
