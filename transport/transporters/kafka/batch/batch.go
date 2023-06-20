@@ -53,14 +53,6 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 		return true, nil
 	}
 
-	// Sarama client only permits messages up to size `MaxMessageBytes`
-	if len(msg.Json) > b.maxMessageBytes {
-		// Still update transactions even though message is being dropped. If we do not
-		// then the progress ledger will block waiting for this message.
-		progress.UpdateTransactions(msg, b.transactions)
-		return false, errors.New(transport.ERR_MSG_TOOBIG)
-	}
-
 	if len(b.kafkaMessages) == b.maxBatchSize {
 		return false, errors.New("batch is full")
 	}
@@ -69,6 +61,14 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 		Topic: b.topic,
 		Value: sarama.ByteEncoder(msg.Json),
 		Key:   sarama.StringEncoder(msg.PartitionKey),
+	}
+
+	// Sarama client only permits messages up to size `MaxMessageBytes`
+	if kafkaMsg.ByteSize(2) > b.maxMessageBytes {
+		// Still update transactions even though message is being dropped. If we do not
+		// then the progress ledger will block waiting for this message.
+		progress.UpdateTransactions(msg, b.transactions)
+		return false, errors.New(transport.ERR_MSG_TOOBIG)
 	}
 
 	// Update counts
