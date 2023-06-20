@@ -78,8 +78,8 @@ func TestSendOk(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for data to go through
-	time.Sleep(time.Millisecond * 25)
+	// Wait for transactions to be reported
+	_ = <-txns
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -145,8 +145,8 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for data to go through
-	time.Sleep(time.Millisecond * 25)
+	// Wait for transactions to be reported
+	_ = <-txns
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -184,12 +184,21 @@ func TestInputClosed(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for transporter to start
-	time.Sleep(time.Millisecond * 5)
-
 	// Close input
 	close(in)
-	time.Sleep(time.Millisecond * 5)
+
+	// Wait or timeout on shutdown
+	shutdownChan := make(chan bool)
+	go blockOnWait(&wg, shutdownChan)
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout shutting down Kafka Transporter after input closed")
+		sh.CancelFunc()
+	case _, ok := <-shutdownChan:
+		if !ok {
+			break
+		}
+	}
 
 	// Verify shutdown
 	_, ok := <-txns
@@ -202,7 +211,6 @@ func TestInputClosed(t *testing.T) {
 	if ok {
 		assert.Fail(t, "context not cancelled")
 	}
-	wg.Wait()
 }
 
 func TestTerminationContext(t *testing.T) {
@@ -229,19 +237,26 @@ func TestTerminationContext(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for transporter to start
-	time.Sleep(time.Millisecond * 5)
-
 	// Cancel
 	sh.CancelFunc()
-	time.Sleep(time.Millisecond * 5)
+
+	// Wait or timeout on shutdown
+	shutdownChan := make(chan bool)
+	go blockOnWait(&wg, shutdownChan)
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout shutting down Kafka Transporter after terminating context")
+	case _, ok := <-shutdownChan:
+		if !ok {
+			break
+		}
+	}
 
 	// Verify shutdown
 	_, ok := <-txns
 	if ok {
 		assert.Fail(t, "output channel not properly closed")
 	}
-	wg.Wait()
 }
 
 func TestPanicHandling(t *testing.T) {
@@ -287,15 +302,23 @@ func TestPanicHandling(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Sleep a little to ensure retries had time to run
-	time.Sleep(time.Millisecond * 25)
+	// Wait or timeout on shutdown
+	shutdownChan := make(chan bool)
+	go blockOnWait(&wg, shutdownChan)
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout shutting down Kafka Transporter after panic")
+	case _, ok := <-shutdownChan:
+		if !ok {
+			break
+		}
+	}
 
 	// Verify shutdown
 	_, ok := <-sh.TerminateCtx.Done()
 	if ok {
 		assert.Fail(t, "context not cancelled")
 	}
-	wg.Wait()
 }
 
 func TestFailedSend(t *testing.T) {
@@ -354,8 +377,17 @@ func TestFailedSend(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for data to go through
-	time.Sleep(time.Millisecond * 1000)
+	// Wait or timeout on shutdown
+	shutdownChan := make(chan bool)
+	go blockOnWait(&wg, shutdownChan)
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout shutting down Kafka Transporter during send failure")
+	case _, ok := <-shutdownChan:
+		if !ok {
+			break
+		}
+	}
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -364,8 +396,11 @@ func TestFailedSend(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	sh.CancelFunc()
-	wg.Wait()
+	// Verify shutdown
+	_, ok := <-sh.TerminateCtx.Done()
+	if ok {
+		assert.Fail(t, "context not cancelled")
+	}
 }
 
 func TestSucceedAndFailSend(t *testing.T) {
@@ -424,8 +459,17 @@ func TestSucceedAndFailSend(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for data to go through
-	time.Sleep(time.Millisecond * 1000)
+	// Wait or timeout on shutdown
+	shutdownChan := make(chan bool)
+	go blockOnWait(&wg, shutdownChan)
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout shutting down Kafka Transporter during send failure")
+	case _, ok := <-shutdownChan:
+		if !ok {
+			break
+		}
+	}
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -434,8 +478,11 @@ func TestSucceedAndFailSend(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	sh.CancelFunc()
-	wg.Wait()
+	// Verify shutdown
+	_, ok := <-sh.TerminateCtx.Done()
+	if ok {
+		assert.Fail(t, "context not cancelled")
+	}
 }
 
 func testMessageCheckerWithPanic() mocks.MessageChecker {
@@ -448,4 +495,9 @@ func mockProducer(t *testing.T) *mocks.SyncProducer {
 	config := mocks.NewTestConfig()
 	producer := mocks.NewSyncProducer(t, config)
 	return producer
+}
+
+func blockOnWait(group *sync.WaitGroup, closedChan chan bool) {
+	group.Wait()
+	close(closedChan)
 }
