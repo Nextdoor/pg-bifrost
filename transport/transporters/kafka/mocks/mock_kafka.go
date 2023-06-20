@@ -35,6 +35,11 @@ import (
 	"github.com/Shopify/sarama"
 )
 
+var (
+	errProduceSuccess    error = nil
+	errOutOfExpectations       = errors.New("No more expectations set on mock")
+)
+
 // SyncProducer implements sarama's SyncProducer interface for testing purposes.
 // Before you can use it, you have to set expectations on the mock SyncProducer
 // to tell it how to handle calls to SendMessage, so you can easily test success
@@ -300,7 +305,10 @@ func (sp *SyncProducer) AddMessageToTxn(msg *sarama.ConsumerMessage, groupId str
 	return nil
 }
 
-////
+////////////////////////////////////////////////
+// Provides mocks that can be used for testing
+// applications that use Sarama
+////////////////////////////////////////////////
 
 // ErrorReporter is a simple interface that includes the testing.T methods we use to report
 // expectation violations when using the mock objects.
@@ -331,11 +339,6 @@ func messageValueChecker(f ValueChecker) MessageChecker {
 		return f(val)
 	}
 }
-
-var (
-	errProduceSuccess    error = nil
-	errOutOfExpectations       = errors.New("No more expectations set on mock")
-)
 
 const AnyOffset int64 = -1000
 
