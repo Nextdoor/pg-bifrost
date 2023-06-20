@@ -49,7 +49,7 @@ clean:
 	@echo "Cleaning binary"
 	rm -rf target || true
 
-build:
+build: generate
 	@echo "Creating GO binary"
 	mkdir -p target
 	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
@@ -62,7 +62,7 @@ build_mac: generate
 # Standard settings that will be used later
 DOCKER := $(shell which docker)
 
-docker_build: generate
+docker_build:
 	@echo "Building pg-bifrost docker image"
 	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
 
