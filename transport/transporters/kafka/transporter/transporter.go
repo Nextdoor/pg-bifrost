@@ -89,6 +89,7 @@ func (t *KafkaTransporter) sendBatchToKafka(ctx context.Context, produceMessages
 
 	// Let the underlying Sarama client handle the individual retries of messages.
 	err := t.kafkaProducer.SendMessages(produceMessages)
+	t.log.Debug(fmt.Sprintf("send error: %v", err))
 	if err == nil {
 		t.statsChan <- stats.NewStatCount("kafka_transport", "success", 1, ts.UnixNano())
 		return nil, cancelled
