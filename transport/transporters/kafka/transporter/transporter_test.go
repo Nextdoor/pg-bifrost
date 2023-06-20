@@ -187,7 +187,7 @@ func TestInputClosed(t *testing.T) {
 	// Close input
 	close(in)
 
-	// Wait or timeout on shutdown
+	// Wait or timeout on transporter shutdown
 	shutdownChan := make(chan bool)
 	go blockOnWait(&wg, shutdownChan)
 	select {
@@ -240,7 +240,7 @@ func TestTerminationContext(t *testing.T) {
 	// Cancel
 	sh.CancelFunc()
 
-	// Wait or timeout on shutdown
+	// Wait or timeout on transporter shutdown
 	shutdownChan := make(chan bool)
 	go blockOnWait(&wg, shutdownChan)
 	select {
@@ -302,7 +302,7 @@ func TestPanicHandling(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait or timeout on shutdown
+	// Wait or timeout on transporter shutdown
 	shutdownChan := make(chan bool)
 	go blockOnWait(&wg, shutdownChan)
 	select {
@@ -377,7 +377,7 @@ func TestFailedSend(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait or timeout on shutdown
+	// Wait or timeout on transporter shutdown
 	shutdownChan := make(chan bool)
 	go blockOnWait(&wg, shutdownChan)
 	select {
@@ -459,7 +459,7 @@ func TestSucceedAndFailSend(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait or timeout on shutdown
+	// Wait or timeout on transporter shutdown
 	shutdownChan := make(chan bool)
 	go blockOnWait(&wg, shutdownChan)
 	select {
