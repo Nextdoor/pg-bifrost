@@ -20,6 +20,7 @@ AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KINESIS_POLLER_WAIT_TIME', '90'))
 SHARD_COUNT = int(os.getenv('KINESIS_POLLER_SHARD_COUNT', '1'))
+TEST_FAIL = int(os.getenv('TEST_FAIL', '0'))
 
 client = boto3.client('kinesis',
                       endpoint_url=ENDPOINT_URL,
@@ -120,15 +121,18 @@ while total < EXPECTED_COUNT:
         )
 
         shard_iterators[i] = response['NextShardIterator']
+        if TEST_FAIL:
+            print("Record Count: {}".format(len(response['Records'])))
+        else:
+            with open(OUT_FILE + "." + str(i), "a") as fp:
+                for record in response['Records']:
+                    fp.write(record['Data'].decode('utf-8'))
+                    fp.write('\n')
 
-        with open(OUT_FILE + "." + str(i), "a") as fp:
-            for record in response['Records']:
-                fp.write(record['Data'].decode('utf-8'))
-                fp.write('\n')
-
-            fp.flush()
-
+                fp.flush()
         record_count += len(response['Records'])
+
+        print("Record count: {}".format(record_count))
 
     total += record_count
     print("{} total so far: {}".format(time.time(), total))
