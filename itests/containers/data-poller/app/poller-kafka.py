@@ -14,6 +14,10 @@ EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KAFKA_POLLER_WAIT_TIME', '90'))
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 
+TEST_ENV_COUNT = int(os.getenv('TEST_ENV_COUNT', '0'))
+
+expected_count = TEST_ENV_COUNT if TEST_ENV_COUNT != 0 else  EXPECTED_COUNT
+
 
 admin_conf = {'bootstrap.servers': f"{KAFKA_BOOTSTRAP_HOST}:{KAFKA_BOOTSTRAP_PORT}"}
 admin_client = AdminClient(admin_conf)
@@ -48,11 +52,11 @@ end = time.time() + WAIT_TIME
 
 total = 0
 
-print("Records expected: {}".format(EXPECTED_COUNT))
+print("Records expected: {}".format(expected_count))
 
 try:
     consumer.subscribe([TOPIC_NAME])
-    while total < EXPECTED_COUNT:
+    while total < expected_count:
         if time.time() >= end:
             break
 
