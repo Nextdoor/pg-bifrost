@@ -79,7 +79,7 @@ func TestSendOk(t *testing.T) {
 	}()
 
 	// Wait for transactions to be reported
-	_ = <-txns
+	<-txns
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -146,7 +146,7 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 	}()
 
 	// Wait for transactions to be reported
-	_ = <-txns
+	<-txns
 
 	// Verify stats
 	expected := []stats.Stat{
