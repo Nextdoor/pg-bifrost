@@ -78,8 +78,13 @@ func TestSendOk(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for transactions to be reported
-	<-txns
+	// Wait for transactions to be reported or timeout
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout waiting for batch send")
+	case <-txns:
+		break
+	}
 
 	// Verify stats
 	expected := []stats.Stat{
@@ -145,8 +150,13 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 		tp.StartTransporting()
 	}()
 
-	// Wait for transactions to be reported
-	<-txns
+	// Wait for transactions to be reported or timeout
+	select {
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "timeout waiting for batch send")
+	case <-txns:
+		break
+	}
 
 	// Verify stats
 	expected := []stats.Stat{
