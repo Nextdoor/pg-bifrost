@@ -4,9 +4,11 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"math"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -14,8 +16,7 @@ import (
 )
 
 func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string, maxMessageBytes int) (*sarama.Config, error) {
-	// TODO: Set up a custom logger for Sarama debug logging.
-	//sarama.Logger = clientLogger(true)
+	sarama.Logger = clientLogger(true)
 
 	// We don't have a registry set up, so might as well disable these.
 	metrics.UseNilMetrics = true
@@ -107,4 +108,42 @@ func configureTLS(config *sarama.Config, clusterCA, clientPrivateKey, clientPubl
 	config.Net.TLS.Config = tlsConfig
 	config.Net.TLS.Enable = true
 	return config, nil
+}
+
+type saramaLogger struct {
+	prefix string
+
+	logFn func(args ...interface{})
+}
+
+func clientLogger(debug bool) sarama.StdLogger {
+
+	prefix := "Sarama: "
+
+	if debug {
+
+		return &saramaLogger{prefix, log.Debug}
+
+	}
+
+	return &saramaLogger{prefix, log.Info}
+
+}
+
+func (s *saramaLogger) Printf(format string, v ...interface{}) {
+
+	s.logFn(fmt.Sprintf(strings.Replace(s.prefix+format, "\n", "", -1), v...))
+
+}
+
+func (s *saramaLogger) Println(v ...interface{}) {
+
+	s.logFn(fmt.Sprintf(strings.Replace(s.prefix+"%v", "\n", "", -1), v))
+
+}
+
+func (s *saramaLogger) Print(v ...interface{}) {
+
+	s.logFn(fmt.Sprintf(strings.Replace(s.prefix+"%v", "\n", "", -1), v))
+
 }
