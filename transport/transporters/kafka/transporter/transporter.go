@@ -87,6 +87,10 @@ func (t *KafkaTransporter) sendBatchToKafka(ctx context.Context, produceMessages
 	default:
 	}
 
+	for i := range produceMessages {
+		t.log.Debug(fmt.Sprintf("Kafka send batched item: %s", produceMessages[i].Value))
+	}
+
 	// Let the underlying Sarama client handle the individual retries of messages.
 	err := t.kafkaProducer.SendMessages(produceMessages)
 	t.log.Debug(fmt.Sprintf("send error: %v", err))
@@ -152,7 +156,7 @@ func (t *KafkaTransporter) StartTransporting() {
 		producerMessageSlice, ok := messages.([]*sarama.ProducerMessage)
 
 		for i := range producerMessageSlice {
-			t.log.Debug(fmt.Sprintf("Kafka batch item: %s", producerMessageSlice[i].Value))
+			t.log.Debug(fmt.Sprintf("Kafka type casted batch item: %s", producerMessageSlice[i].Value))
 		}
 
 		if !ok {
