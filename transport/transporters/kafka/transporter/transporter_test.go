@@ -3,6 +3,7 @@ package transporter
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -70,7 +71,12 @@ func TestSendOk(t *testing.T) {
 	in <- b
 
 	// Start test
-	go tp.StartTransporting()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for data to go through
 	time.Sleep(time.Millisecond * 25)
@@ -83,8 +89,8 @@ func TestSendOk(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	time.Sleep(50 * time.Millisecond)
-
+	sh.CancelFunc()
+	wg.Wait()
 }
 
 func TestSendMultipleInBatchOk(t *testing.T) {
@@ -132,7 +138,12 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 	in <- b
 
 	// Start test
-	go tp.StartTransporting()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for data to go through
 	time.Sleep(time.Millisecond * 25)
@@ -145,8 +156,8 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	time.Sleep(50 * time.Millisecond)
-
+	sh.CancelFunc()
+	wg.Wait()
 }
 
 func TestInputClosed(t *testing.T) {
@@ -165,7 +176,13 @@ func TestInputClosed(t *testing.T) {
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
 
-	go tp.StartTransporting()
+	// Start test
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for transporter to start
 	time.Sleep(time.Millisecond * 5)
@@ -185,6 +202,7 @@ func TestInputClosed(t *testing.T) {
 	if ok {
 		assert.Fail(t, "context not cancelled")
 	}
+	wg.Wait()
 }
 
 func TestTerminationContext(t *testing.T) {
@@ -203,7 +221,13 @@ func TestTerminationContext(t *testing.T) {
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
 
-	go tp.StartTransporting()
+	// Start test
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for transporter to start
 	time.Sleep(time.Millisecond * 5)
@@ -217,6 +241,7 @@ func TestTerminationContext(t *testing.T) {
 	if ok {
 		assert.Fail(t, "output channel not properly closed")
 	}
+	wg.Wait()
 }
 
 func TestPanicHandling(t *testing.T) {
@@ -254,7 +279,13 @@ func TestPanicHandling(t *testing.T) {
 	// Start Test
 	in <- b
 
-	go tp.StartTransporting()
+	// Start test
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Sleep a little to ensure retries had time to run
 	time.Sleep(time.Millisecond * 25)
@@ -264,6 +295,7 @@ func TestPanicHandling(t *testing.T) {
 	if ok {
 		assert.Fail(t, "context not cancelled")
 	}
+	wg.Wait()
 }
 
 func TestFailedSend(t *testing.T) {
@@ -315,7 +347,12 @@ func TestFailedSend(t *testing.T) {
 	in <- b
 
 	// Start test
-	go tp.StartTransporting()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for data to go through
 	time.Sleep(time.Millisecond * 1000)
@@ -327,7 +364,8 @@ func TestFailedSend(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	time.Sleep(50 * time.Millisecond)
+	sh.CancelFunc()
+	wg.Wait()
 }
 
 func TestSucceedAndFailSend(t *testing.T) {
@@ -379,7 +417,12 @@ func TestSucceedAndFailSend(t *testing.T) {
 	in <- b
 
 	// Start test
-	go tp.StartTransporting()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		tp.StartTransporting()
+	}()
 
 	// Wait for data to go through
 	time.Sleep(time.Millisecond * 1000)
@@ -391,7 +434,8 @@ func TestSucceedAndFailSend(t *testing.T) {
 	}
 	stats.VerifyStats(t, statsChan, expected)
 
-	time.Sleep(50 * time.Millisecond)
+	sh.CancelFunc()
+	wg.Wait()
 }
 
 func testMessageCheckerWithPanic() mocks.MessageChecker {
