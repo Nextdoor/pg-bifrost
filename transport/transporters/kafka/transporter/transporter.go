@@ -150,6 +150,10 @@ func (t *KafkaTransporter) StartTransporting() {
 		messages := kafkaBatch.GetPayload()
 		producerMessageSlice, ok := messages.([]*sarama.ProducerMessage)
 
+		for i := range producerMessageSlice {
+			t.log.Debug(fmt.Sprintf("Kafka batch item: %s", producerMessageSlice[i].Value))
+		}
+
 		if !ok {
 			panic("Batch payload is not a []*sarama.ProducerMessage")
 		}
