@@ -35,6 +35,7 @@ import (
 
 	"github.com/Nextdoor/pg-bifrost.git/app"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kinesis"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/rabbitmq"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
@@ -532,6 +533,16 @@ func main() {
 	rabbitmqCmd.Before = altsrc.InitInputSourceWithContext(rabbitmq.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
 	rabbitmqCmd.Flags = rabbitmq.Flags
 
+	// Also set up kafka subcommands flags from file
+	kafkaCmd := cli.Command{
+		Name:   "kafka",
+		Usage:  "replicate to kafka",
+		Action: replicateAction,
+	}
+
+	kafkaCmd.Before = altsrc.InitInputSourceWithContext(kafka.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
+	kafkaCmd.Flags = kafka.Flags
+
 	cli_app.Commands = []cli.Command{
 		{
 			Name:    "create",
@@ -662,6 +673,7 @@ func main() {
 					Usage:  "replicate to stdout",
 					Action: replicateAction,
 				},
+				kafkaCmd,
 				kinesisCmd,
 				s3Cmd,
 				rabbitmqCmd,

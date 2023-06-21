@@ -28,6 +28,7 @@ const (
 	KINESIS  TransportType = "kinesis"
 	S3       TransportType = "s3"
 	RABBITMQ TransportType = "rabbitmq"
+	KAFKA    TransportType = "kafka"
 )
 
 type Transporter interface {
