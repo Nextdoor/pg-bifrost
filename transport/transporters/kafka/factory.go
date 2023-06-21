@@ -91,6 +91,20 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaPublicKey, "string")
 	}
 
+	kafkaFlushBytesVar := transportConfig[ConfVarKafkaFlushBytes]
+	kafkaFlushBytes, ok := kafkaFlushBytesVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaFlushBytes, "int")
+	}
+
+	kafkaFlushFrequencyVar := transportConfig[ConfVarKafkaFlushFrequency]
+	kafkaFlushFrequency, ok := kafkaFlushFrequencyVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaFlushFrequency, "int")
+	}
+
 	maxMessageBytesVar := transportConfig[ConfVarKafkaMaxMessageBytes]
 	maxMessageBytes, ok := maxMessageBytesVar.(int)
 
@@ -98,15 +112,23 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaMaxMessageBytes, "int")
 	}
 
+	kafkaRetryMaxVar := transportConfig[ConfVarKafkaRetryMax]
+	kafkaRetryMax, ok := kafkaRetryMaxVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaRetryMax, "int")
+	}
+
+	config, _ := producerConfig(tls, ca, privateKey, publicKey, kafkaFlushBytes, kafkaFlushFrequency, maxMessageBytes, kafkaRetryMax)
+	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
+	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
+
 	verifyProducerVar := transportConfig[ConfVarKafkaVerifyProducer]
 	verifyProducer, ok := verifyProducerVar.(bool)
 	if !ok {
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaVerifyProducer, "bool")
 	}
 
-	config, _ := producerConfig(tls, ca, privateKey, publicKey, maxMessageBytes)
-	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
-	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
 	if verifyProducer {
 		if err := verifySend(&syncProducer, topic); err != nil {
 			panic(err)

@@ -23,7 +23,10 @@ import (
 
 const (
 	ConfVarKafkaBatchSize       = "kafka-batch-size"
+	ConfVarKafkaFlushBytes      = "kafka-flush-bytes"
+	ConfVarKafkaFlushFrequency  = "kafka-flush-frequency"
 	ConfVarKafkaMaxMessageBytes = "kafka-max-message-bytes"
+	ConfVarKafkaRetryMax        = "kafka-flush-retry-max"
 	ConfVarKafkaTopic           = "kafka-topic"
 	ConfVarBootstrapHost        = "kafka-bootstrap-host"
 	ConfVarBootstrapPort        = "kafka-bootstrap-port"
@@ -42,10 +45,28 @@ var Flags = []cli.Flag{
 		Value:  5000,
 	}),
 	altsrc.NewIntFlag(cli.IntFlag{
+		Name:   ConfVarKafkaFlushBytes,
+		Usage:  "Number of bytes needed to trigger a flush",
+		EnvVar: "KAFKA_FLUSH_BYTES",
+		Value:  262144,
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
+		Name:   ConfVarKafkaFlushFrequency,
+		Usage:  "Best-effort frequency of flushes in ms",
+		EnvVar: "KAFKA_FLUSH_FREQUENCY",
+		Value:  2500,
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
 		Name:   ConfVarKafkaMaxMessageBytes,
 		Usage:  "Max byte size of a message",
 		EnvVar: "KAFKA_MAX_MESSAGE_SIZE",
 		Value:  1000000,
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
+		Name:   ConfVarKafkaRetryMax,
+		Usage:  "Max retries for a failed send",
+		EnvVar: "KAFKA_RETRY_MAX",
+		Value:  10,
 	}),
 	cli.StringFlag{
 		Name:   ConfVarKafkaTopic,

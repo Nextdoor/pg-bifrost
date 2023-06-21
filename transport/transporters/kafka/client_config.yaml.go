@@ -31,10 +31,10 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string, maxMessageBytes int) (*sarama.Config, error) {
+func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey string, kafkaFlushBytes, kafkaFlushFrequency, maxMessageBytes, kafkaRetryMax int) (*sarama.Config, error) {
 	sarama.Logger = clientLogger(true)
 
-	// We don't have a registry set up, so might as well disable these.
+	// We don't have a registry set up, so we'll disable these.
 	metrics.UseNilMetrics = true
 
 	config := sarama.NewConfig()
@@ -43,16 +43,16 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	// Internal channel buffer size.
 	config.ChannelBufferSize = 256
 
-	// Default value is 30 seconds, which is too high. We haven't actively tried to optimize these values.
+	// Default value is 30 seconds, which is too high.
 	config.Net.DialTimeout = 10 * time.Second
 	config.Net.ReadTimeout = 10 * time.Second
 	config.Net.WriteTimeout = 10 * time.Second
 
-	// This produces reasonably efficient batching.
-	config.Producer.Flush.Bytes = 262144
+	// The best-effort number of bytes needed to trigger a flush
+	config.Producer.Flush.Bytes = kafkaFlushBytes
 
 	// The best-effort frequency of flushes.
-	config.Producer.Flush.Frequency = 2500 * time.Millisecond
+	config.Producer.Flush.Frequency = time.Duration(kafkaFlushFrequency) * time.Millisecond
 
 	// Required to be set to true for producer to function.
 	config.Producer.Return.Successes = true
@@ -66,10 +66,6 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	// The maximum permitted size of a message
 	config.Producer.MaxMessageBytes = maxMessageBytes
 
-	// During cluster restarts, we're at risk of hitting the max retry limit for a
-	// partition if we retry too quickly.
-	config.Producer.Retry.Backoff = 500 * time.Millisecond
-
 	// Reduce memory usage by only holding onto the metadata needed for PG-Bifrost's topic(s).
 	config.Metadata.Full = false
 
@@ -82,8 +78,9 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	// Timeout for fetching metadata.
 	config.Metadata.Timeout = 20 * time.Second
 
-	config.Metadata.Retry.Max = 10
+	config.Metadata.Retry.Max = kafkaRetryMax
 
+	// Retry backoff function
 	config.Metadata.Retry.BackoffFunc = metadataBackoff
 
 	var err error
