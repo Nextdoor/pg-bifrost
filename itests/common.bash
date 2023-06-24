@@ -206,8 +206,8 @@ _verify() {
     if ! $output; then
       ret_code=$?
       FAILED=1
-      log "Only showing first 20 diff lines"
-      echo "$output" | head -n 20
+      log "Only showing all diff lines"
+      echo "$output"
       exit $ret_code
     fi
   done

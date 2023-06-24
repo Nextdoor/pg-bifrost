@@ -71,6 +71,7 @@ try:
                 raise KafkaException(msg.error())
             continue
 
+        print(msg.value().decode('utf-8'), msg.partition())
         with open(f"{OUT_FILE}.{msg.partition()}", "a") as fp:
             fp.write(msg.value().decode('utf-8'))
             fp.write('\n')
