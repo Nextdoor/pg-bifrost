@@ -17,6 +17,7 @@
 package partitioner
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -152,6 +153,8 @@ func (f *Partitioner) Start() {
 		case PART_METHOD_TXN_BUCKET:
 			partitionKey = strconv.Itoa(utils.QuickHash(msg.Pr.Transaction, f.buckets))
 		}
+
+		log.Info(fmt.Sprintf("partition key: %v", partitionKey))
 
 		msg.PartitionKey = partitionKey
 
