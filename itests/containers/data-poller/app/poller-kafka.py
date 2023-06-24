@@ -29,7 +29,7 @@ consumer = Consumer(consumer_conf)
 @retry(Exception, tries=60, delay=.5)
 def _create_topic(name):
     print("Trying to create topic {}".format(name))
-    fs = admin_client.create_topics([NewTopic(name, num_partitions=KAFKA_PARTITION_COUNT, replication_factor=1)])
+    fs = admin_client.create_topics([NewTopic(name, num_partitions=20, replication_factor=1)])
     for topic, f in fs.items():
         try:
             f.result()  # The result itself is None
