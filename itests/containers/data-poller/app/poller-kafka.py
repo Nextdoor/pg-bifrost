@@ -13,6 +13,7 @@ TOPIC_NAME = os.getenv('BIFROST_KAFKA_TOPIC', 'itests')
 EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KAFKA_POLLER_WAIT_TIME', '90'))
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
+KAFKA_PARTITION_COUNT = int(os.getenv('KAFKA_PARTITION_COUNT', '1'))
 
 
 admin_conf = {'bootstrap.servers': f"{KAFKA_BOOTSTRAP_HOST}:{KAFKA_BOOTSTRAP_PORT}"}
@@ -28,7 +29,7 @@ consumer = Consumer(consumer_conf)
 @retry(Exception, tries=60, delay=.5)
 def _create_topic(name):
     print("Trying to create topic {}".format(name))
-    fs = admin_client.create_topics([NewTopic(name, num_partitions=1, replication_factor=1)])
+    fs = admin_client.create_topics([NewTopic(name, num_partitions=KAFKA_PARTITION_COUNT, replication_factor=1)])
     for topic, f in fs.items():
         try:
             f.result()  # The result itself is None
