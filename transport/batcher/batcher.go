@@ -2,6 +2,7 @@ package batcher
 
 import (
 	"container/heap"
+	"fmt"
 	"os"
 	"time"
 
@@ -248,6 +249,7 @@ func (b *Batcher) StartBatching() {
 
 		// Add to batch, note addToBatch may send the batch and return a new batch if
 		// for example the message could not fit into the batch.
+		log.Info(fmt.Sprintf("key %v, value: %s", msg.PartitionKey, msg.Json))
 		curBatch, batchError = b.addToBatch(curBatch, msg)
 
 		// Could have returned a new batch here so we need to update ref
