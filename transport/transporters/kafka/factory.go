@@ -121,7 +121,6 @@ func New(
 
 	config, _ := producerConfig(tls, ca, privateKey, publicKey, kafkaFlushBytes, kafkaFlushFrequency, maxMessageBytes, kafkaRetryMax)
 	bootstrapServer := fmt.Sprintf("%s:%s", kafkaHost, kafkaPort)
-	syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
 
 	verifyProducerVar := transportConfig[ConfVarKafkaVerifyProducer]
 	verifyProducer, ok := verifyProducerVar.(bool)
@@ -129,15 +128,15 @@ func New(
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaVerifyProducer, "bool")
 	}
 
-	if verifyProducer {
-		if err := verifySend(&syncProducer, topic); err != nil {
-			panic(err)
-		}
-	}
-
 	transports := make([]*transport.Transporter, workers)
 
 	for i := 0; i < workers; i++ {
+		syncProducer, _ := sarama.NewSyncProducer([]string{bootstrapServer}, config)
+		if verifyProducer {
+			if err := verifySend(&syncProducer, topic); err != nil {
+				panic(err)
+			}
+		}
 		t := transporter.NewTransporter(
 			shutdownHandler,
 			inputChans[i],
