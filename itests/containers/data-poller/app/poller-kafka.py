@@ -14,10 +14,6 @@ EXPECTED_COUNT = int(os.getenv('EXPECTED_COUNT', '1'))
 WAIT_TIME = int(os.getenv('KAFKA_POLLER_WAIT_TIME', '90'))
 OUT_FILE = os.getenv('OUT_FILE', '/output/test')
 KAFKA_PARTITION_COUNT = int(os.getenv('KAFKA_PARTITION_COUNT', '1'))
-TEST = int(os.getenv('KAFKA_PARTITION_COUNT', '0'))
-
-if TEST:
-    KAFKA_PARTITION_COUNT = 20
 
 
 admin_conf = {'bootstrap.servers': f"{KAFKA_BOOTSTRAP_HOST}:{KAFKA_BOOTSTRAP_PORT}"}
