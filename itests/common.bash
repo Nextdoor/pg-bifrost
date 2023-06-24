@@ -206,8 +206,8 @@ _verify() {
     if ! $output; then
       ret_code=$?
       FAILED=1
-      log "Only showing all diff lines"
-      echo "$output"
+      log "Only showing first 20 diff lines"
+      echo "$output" | head -n 20
       exit $ret_code
     fi
   done
@@ -252,6 +252,12 @@ _profile() {
   fi
 }
 
+
+_wait_for_poller_start() {
+  log "Waiting for data poller to start"
+  sleep 5
+}
+
 _wait() {
   log "Waiting for test to finish"
   grep -q 'Records read' <(docker logs --follow data-poller 2>&1)
@@ -275,6 +281,9 @@ teardown() {
 do_test() {
   _clean
   _startup
+  if [ "$1" = "poller_wait" ]; then
+    _wait_for_poller_start
+  fi
   _begin_timer
   _insert_data
   _wait

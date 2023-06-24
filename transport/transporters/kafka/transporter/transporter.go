@@ -166,11 +166,6 @@ func (t *KafkaTransporter) StartTransporting() {
 		messages := kafkaBatch.GetPayload()
 		producerMessageSlice, ok := messages.([]*sarama.ProducerMessage)
 
-		for _, val := range producerMessageSlice {
-			t.log.Info(fmt.Sprintf("kafka msg partition key: %v. and value: %v", val.Key, val.Value))
-
-		}
-
 		if !ok {
 			panic("Batch payload is not a []*sarama.ProducerMessage")
 		}
