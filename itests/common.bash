@@ -253,9 +253,10 @@ _profile() {
 }
 
 
-_wait_for_poller_start() {
-  log "Waiting for data poller to start"
-  sleep 5
+_wait_for_kafka_topic() {
+  log "Waiting for kafka topic creation"
+  grep -q 'Topic created:' <(docker logs --follow data-poller 2>&1)
+  pkill -f "docker logs.*" || true
 }
 
 _wait() {
@@ -281,8 +282,8 @@ teardown() {
 do_test() {
   _clean
   _startup
-  if [ "$1" = "poller_wait" ]; then
-    _wait_for_poller_start
+  if [ "$1" = "kafka_topic_wait" ]; then
+    _wait_for_kafka_topic
   fi
   _begin_timer
   _insert_data

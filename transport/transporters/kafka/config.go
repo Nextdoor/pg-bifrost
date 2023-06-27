@@ -28,7 +28,6 @@ const (
 	ConfVarKafkaMaxMessageBytes = "kafka-max-message-bytes"
 	ConfVarKafkaRetryMax        = "kafka-flush-retry-max"
 	ConfVarKafkaTopic           = "kafka-topic"
-	ConfVarKafkaPartitionCount  = "kafka-partition-count"
 	ConfVarBootstrapHost        = "kafka-bootstrap-host"
 	ConfVarBootstrapPort        = "kafka-bootstrap-port"
 	ConfVarKafkaTls             = "kafka-tls"
@@ -74,12 +73,6 @@ var Flags = []cli.Flag{
 		Usage:  "Kafka topic name ",
 		EnvVar: "BIFROST_KAFKA_TOPIC",
 	},
-	altsrc.NewIntFlag(cli.IntFlag{
-		Name:   ConfVarKafkaPartitionCount,
-		Usage:  "Number of Kafka partitions",
-		EnvVar: "KAFKA_PARTITION_COUNT",
-		Value:  1,
-	}),
 	altsrc.NewStringFlag(cli.StringFlag{
 		Name:   ConfVarBootstrapHost,
 		Usage:  "Kafka bootstrap host",

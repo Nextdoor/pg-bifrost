@@ -32,7 +32,7 @@ def _create_topic(name):
     for topic, f in fs.items():
         try:
             f.result()  # The result itself is None
-            print("Topic {} created".format(topic))
+            print("Topic created: {}".format(topic))
         except KafkaException as e:
             if e.args[0].code() == KafkaError.TOPIC_ALREADY_EXISTS:
                 return

@@ -70,7 +70,7 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	// partition if we retry too quickly.
 	config.Producer.Retry.Backoff = 500 * time.Millisecond
 
-	config.Producer.Partitioner = sarama.NewManualPartitioner
+	config.Producer.Partitioner = sarama.NewHashPartitioner
 
 	// Reduce memory usage by only holding onto the metadata needed for PG-Bifrost's topic(s).
 	config.Metadata.Full = false

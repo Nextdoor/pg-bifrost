@@ -17,7 +17,6 @@
 package batch
 
 import (
-	"hash/fnv"
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
@@ -30,19 +29,18 @@ import (
 )
 
 type KafkaBatch struct {
-	maxBatchSize        int
-	maxMessageBytes     int
-	kafkaMessages       []*sarama.ProducerMessage
-	transactions        *ordered_map.OrderedMap
-	byteSize            int64
-	mtime               int64
-	ctime               int64
-	partitionKey        string
-	topic               string
-	kafkaPartitionCount int32
+	maxBatchSize    int
+	maxMessageBytes int
+	kafkaMessages   []*sarama.ProducerMessage
+	transactions    *ordered_map.OrderedMap
+	byteSize        int64
+	mtime           int64
+	ctime           int64
+	partitionKey    string
+	topic           string
 }
 
-func NewKafkaBatch(topic string, partitionKey string, kafkaPartitionCount int32, maxBathSize, maxMessageBytes int) transport.Batch {
+func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageBytes int) transport.Batch {
 	messages := []*sarama.ProducerMessage{}
 	transactions := ordered_map.NewOrderedMap()
 
@@ -56,7 +54,6 @@ func NewKafkaBatch(topic string, partitionKey string, kafkaPartitionCount int32,
 		time.Now().UnixNano(),
 		partitionKey,
 		topic,
-		kafkaPartitionCount,
 	}
 }
 
@@ -70,17 +67,10 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 		return false, errors.New("batch is full")
 	}
 
-	bytes := []byte(msg.PartitionKey)
-	hasher := fnv.New32a()
-	_, err := hasher.Write(bytes)
-	if err != nil {
-		return false, err
-	}
-	partition := int32(hasher.Sum32()&0x7fffffff) % b.kafkaPartitionCount
 	kafkaMsg := &sarama.ProducerMessage{
-		Topic:     b.topic,
-		Value:     sarama.ByteEncoder(msg.Json),
-		Partition: partition,
+		Topic: b.topic,
+		Value: sarama.ByteEncoder(msg.Json),
+		Key:   sarama.StringEncoder(msg.PartitionKey),
 	}
 
 	// Sarama client only permits messages up to size `MaxMessageBytes`

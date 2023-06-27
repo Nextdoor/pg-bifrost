@@ -152,10 +152,9 @@ func New(
 }
 
 type KafkaBatchFactory struct {
-	topic               string
-	kafkaPartitionCount int32
-	maxMessageBytes     int
-	batchSize           int
+	topic           string
+	maxMessageBytes int
+	batchSize       int
 }
 
 func verifySend(producer *sarama.SyncProducer, topic string) error {
@@ -176,12 +175,6 @@ func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFact
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaTopic, "string")
 	}
 
-	KafkaPartitionCountVar := transportConfig[ConfVarKafkaPartitionCount]
-	KafkaPartitionCount, ok := KafkaPartitionCountVar.(int)
-	if !ok {
-		log.Fatalf("Expected type for %s is %s", ConfVarKafkaPartitionCount, "int")
-	}
-
 	maxMessageBytesVar := transportConfig[ConfVarKafkaMaxMessageBytes]
 	maxMessageBytes, ok := maxMessageBytesVar.(int)
 
@@ -196,9 +189,9 @@ func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFact
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
 	}
 
-	return KafkaBatchFactory{topic, int32(KafkaPartitionCount), maxMessageBytes, batchSize}
+	return KafkaBatchFactory{topic, maxMessageBytes, batchSize}
 }
 
 func (f KafkaBatchFactory) NewBatch(partitionKey string) transport.Batch {
-	return batch.NewKafkaBatch(f.topic, partitionKey, f.kafkaPartitionCount, f.batchSize, f.maxMessageBytes)
+	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes)
 }
