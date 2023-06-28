@@ -44,7 +44,17 @@ func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageByt
 	messages := []*sarama.ProducerMessage{}
 	transactions := ordered_map.NewOrderedMap()
 
-	return &KafkaBatch{maxBathSize, maxMessageBytes, messages, transactions, 0, time.Now().UnixNano(), time.Now().UnixNano(), partitionKey, topic}
+	return &KafkaBatch{
+		maxBathSize,
+		maxMessageBytes,
+		messages,
+		transactions,
+		0,
+		time.Now().UnixNano(),
+		time.Now().UnixNano(),
+		partitionKey,
+		topic,
+	}
 }
 
 func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {

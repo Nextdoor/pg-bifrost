@@ -252,6 +252,13 @@ _profile() {
   fi
 }
 
+
+_wait_for_kafka_topic() {
+  log "Waiting for kafka topic creation"
+  grep -q 'Topic created:' <(docker logs --follow data-poller 2>&1)
+  pkill -f "docker logs.*" || true
+}
+
 _wait() {
   log "Waiting for test to finish"
   grep -q 'Records read' <(docker logs --follow data-poller 2>&1)
@@ -275,6 +282,9 @@ teardown() {
 do_test() {
   _clean
   _startup
+  if [ "$1" = "kafka_topic_wait" ]; then
+    _wait_for_kafka_topic
+  fi
   _begin_timer
   _insert_data
   _wait

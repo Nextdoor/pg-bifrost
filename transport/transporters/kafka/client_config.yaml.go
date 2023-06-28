@@ -66,6 +66,12 @@ func producerConfig(kafkaTLS bool, clusterCA, clientPrivateKey, clientPublicKey 
 	// The maximum permitted size of a message
 	config.Producer.MaxMessageBytes = maxMessageBytes
 
+	// During cluster restarts, we're at risk of hitting the max retry limit for a
+	// partition if we retry too quickly.
+	config.Producer.Retry.Backoff = 500 * time.Millisecond
+
+	config.Producer.Partitioner = sarama.NewHashPartitioner
+
 	// Reduce memory usage by only holding onto the metadata needed for PG-Bifrost's topic(s).
 	config.Metadata.Full = false
 
