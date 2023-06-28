@@ -29,7 +29,7 @@ client = boto3.client('kinesis',
 # Create a stream
 @retry(exceptions.EndpointConnectionError, tries=10, delay=.5)
 def _create_stream(name):
-    print "Trying to create stream {} with {} shards".format(name, SHARD_COUNT)
+    print(f"Trying to create stream {name} with {SHARD_COUNT} shards")
     return client.create_stream(
         StreamName=name,
         ShardCount=SHARD_COUNT
@@ -69,11 +69,11 @@ def _get_shard_ids(name):
 
 
 # Create the stream
-print "Creating a stream"
+print("Creating a stream")
 try:
     _create_stream(STREAM_NAME)
 except exceptions.EndpointConnectionError:
-    print "Unable to contact endpoint at {}".format(ENDPOINT_URL)
+    print(f"Unable to contact endpoint at {ENDPOINT_URL}")
     exit(1)
 except exceptions.ClientError as e:
     if e.response['Error']['Code'] != 'ResourceInUseException':
@@ -82,11 +82,11 @@ except exceptions.ClientError as e:
 _check_stream_ready(STREAM_NAME)
 
 # Get list of shards
-print "Getting shard list..."
+print("Getting shard list...")
 shard_ids = _get_shard_ids(STREAM_NAME)
 
 # Get a shard iterator
-print "Getting shard iterators"
+print("Getting shard iterators")
 shard_iterators = []
 
 for shard_id in shard_ids:
@@ -123,7 +123,7 @@ while total < EXPECTED_COUNT:
 
         with open(OUT_FILE + "." + str(i), "a") as fp:
             for record in response['Records']:
-                fp.write(record['Data'])
+                fp.write(record['Data'].decode('utf-8'))
                 fp.write('\n')
 
             fp.flush()

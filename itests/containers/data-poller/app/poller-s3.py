@@ -125,7 +125,7 @@ while time.time() <= moving_deadline:
     records = got_text.split('\n')
 
     # filter out any empty lines
-    records = filter(None, records)
+    records = [r for r in records if r is not None]
 
     sys.stdout.flush()
 

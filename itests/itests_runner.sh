@@ -66,7 +66,7 @@ run_itests_on_transport_sink() {
     echo '################################' ; echo ''
 
     echo "Cleaning up containers, volumes and environment variables..."
-    TEST_NAME=base/test_basic docker-compose -f docker-compose.yml rm -f -s -v
+    TEST_NAME=base/test_basic docker-compose --profile all -f docker-compose.yml rm -f -s -v
     unset $(cat $_file | awk -F= '{print $1}' | xargs)
 }
 

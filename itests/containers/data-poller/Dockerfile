@@ -1,9 +1,8 @@
-FROM alpine:3.8
+FROM ubuntu:22.04
 RUN \
-  apk update && \
-  apk add python py-pip && \
-  pip install --upgrade pip && \
-  pip install boto3 botocore retry
+  apt update && \
+  apt install -yf python3 python3-pip && \
+  pip3 install boto3 botocore retry confluent-kafka
 
 ADD app /app
 VOLUME /output
