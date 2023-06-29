@@ -33,8 +33,10 @@ import (
 )
 
 var (
-	TimeSource    utils.TimeSource = &utils.RealTime{}
-	shutdownDelay                  = 3 * time.Second
+	TimeSource utils.TimeSource = &utils.RealTime{}
+	// shutdownDelay needs to be longer than config.Producer.Flush.Frequency in order to ensure all messages are
+	// flushed during shutdown
+	shutdownDelay = 3 * time.Second
 )
 
 type KafkaTransporter struct {
