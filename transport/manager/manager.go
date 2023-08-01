@@ -51,6 +51,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	flushBatchUpdateAge int,
 	flushBatchMaxAge int,
 	batchQueueDepth int,
+	batcherTickRate int,
 	batcherMemorySoftLimit int64,
 	routingMethod batcher.BatchRouting) TransportManager {
 
@@ -71,6 +72,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		flushBatchUpdateAge,
 		flushBatchMaxAge,
 		batchQueueDepth,
+		batcherTickRate,
 		batcherMemorySoftLimit,
 		routingMethod)
 

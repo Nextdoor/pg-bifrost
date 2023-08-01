@@ -42,6 +42,7 @@ const (
 	VAR_NAME_BATCH_QUEUE_DEPTH         = "batch-queue-depth"
 	VAR_NAME_BATCHER_MEMORY_SOFT_LIMIT = "batcher-memory-soft-limit"
 	VAR_NAME_BATCHER_ROUTING_METHOD    = "batcher-routing-method"
+	VAR_NAME_BATCHER_TICK_RATE         = "batcher-tick-rate"
 	VAR_NAME_WHITELIST                 = "whitelist"
 	VAR_NAME_BLACKLIST                 = "blacklist"
 	VAR_NAME_WHITELIST_REGEX           = "whitelist-regex"

@@ -158,6 +158,12 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	}
 	log.Info("batcherRoutingMethod=", batcherRoutingMethod)
 
+	batcherTickRate, ok := batcherConfig[config.VAR_NAME_BATCHER_TICK_RATE].(int)
+	if !ok {
+		log.Panic("Wrong type assertion")
+	}
+	log.Info("batcherTickRate=", batcherTickRate)
+
 	// Make replication connection
 	connManager := conn.NewManager(sourceConfig, replicationSlot)
 
@@ -204,6 +210,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		batchFlushUpdateAge,
 		batchFlushMaxAge,
 		batchQueueDepth,
+		batcherTickRate,
 		batcherMemorySoftLimit,
 		batcherRoutingMethod)
 

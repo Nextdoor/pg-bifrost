@@ -450,12 +450,18 @@ func replicateAction(c *cli.Context) error {
 
 	batcherRoutingMethod := batcher.GetRoutingMethod(c.GlobalString(config.VAR_NAME_BATCHER_ROUTING_METHOD))
 
+	batcherTickRate := c.GlobalInt(config.VAR_NAME_BATCHER_TICK_RATE)
+	if batcherTickRate < 1 {
+		return errors.New("'" + config.VAR_NAME_BATCHER_TICK_RATE + "'" + " must be a positive integer")
+	}
+
 	batcherConfig := make(map[string]interface{}, 0)
 	batcherConfig[config.VAR_NAME_BATCH_FLUSH_MAX_AGE] = batchFlushMaxAge
 	batcherConfig[config.VAR_NAME_BATCH_FLUSH_UPDATE_AGE] = batchFlushUpdateAge
 	batcherConfig[config.VAR_NAME_BATCH_QUEUE_DEPTH] = batchQueueDepth
 	batcherConfig[config.VAR_NAME_BATCHER_MEMORY_SOFT_LIMIT] = batcherMemorySoftLimit
 	batcherConfig[config.VAR_NAME_BATCHER_ROUTING_METHOD] = batcherRoutingMethod
+	batcherConfig[config.VAR_NAME_BATCHER_TICK_RATE] = batcherTickRate
 
 	//
 	// Validate and create reporter config from Flags
@@ -622,6 +628,16 @@ func main() {
 						"and 'partition'. If you require strict ordering of data then use 'partition'.",
 					EnvVar: "BATCHER_ROUTING_METHOD",
 				}),
+
+				altsrc.NewIntFlag(cli.IntFlag{
+					Name:  config.VAR_NAME_BATCHER_TICK_RATE,
+					Value: batcher.DEFAULT_TICK_RATE,
+					Usage: "amount of time in milliseconds that batcher will run. A higher value will provide lower " +
+						"CPU usage for pg-bifrost as it avoids CPU spin. A lower value will provide lower latency " +
+						"writes.",
+					EnvVar: "BATCHER_TICK_RATE",
+				}),
+
 				altsrc.NewIntFlag(cli.IntFlag{
 					Name:  config.VAR_NAME_PARTITION_COUNT,
 					Value: 1,

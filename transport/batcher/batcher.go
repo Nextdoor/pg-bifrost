@@ -49,7 +49,7 @@ func GetRoutingMethod(name string) BatchRouting {
 
 const (
 	DEFAULT_MAX_MEMORY_BYTES = int64(1024 * 1024 * 100)
-	TICKER_RATE              = 1 * time.Second
+	DEFAULT_TICK_RATE        = 1000
 )
 
 func init() {
@@ -65,6 +65,7 @@ type Batcher struct {
 	txnsSeenChan chan<- *progress.Seen                // channel to report transactions seen to ProgressTracker
 	statsChan    chan stats.Stat
 
+	tickRate               time.Duration              // controls frequency that batcher looks for input. This should be non-zero to avoid CPU spin.
 	batchFactory           transport.BatchFactory     // factory to use to create new empty batches
 	workers                int                        // number of downstream transport workers. A batcher output channel is created for each worker.
 	batches                map[string]transport.Batch // keeps track of incomplete (not full) batches that have not yet been output
@@ -84,6 +85,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 	txnsSeenChan chan<- *progress.Seen,
 	statsChan chan stats.Stat,
 
+	tickRate int, // number of milliseconds that batcher will wait to check for input.
 	batchFactory transport.BatchFactory, // factory to use to create new empty batches
 	workers int, // number of downstream transport workers. A batcher output channel is created for each worker.
 	flushBatchUpdateAge int, // number of milliseconds to wait for new messages before flushing a batch
@@ -108,6 +110,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 		outputChans,
 		txnsSeenChan,
 		statsChan,
+		time.Duration(tickRate) * time.Millisecond,
 		batchFactory,
 		workers,
 		batches,
@@ -159,7 +162,7 @@ func (b *Batcher) StartBatching() {
 	log.Info("starting batcher")
 	defer b.shutdown()
 
-	ticker := time.NewTicker(TICKER_RATE)
+	ticker := time.NewTicker(b.tickRate)
 	defer ticker.Stop()
 
 	var totalMsgsInTxn int // Counts messages in transaction. Does not include BEGIN and COMMITS
