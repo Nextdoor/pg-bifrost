@@ -127,10 +127,10 @@ var (
 				"' if it is provided or found in the env",
 			EnvVar: "DATADOG_AGENT_HOST",
 		}),
-		altsrc.NewStringFlag(cli.StringFlag{
+		altsrc.NewIntFlag(cli.IntFlag{
 			Name:   config.VAR_NAME_DD_AGENT_PORT,
 			Usage:  "datadog statsd agent port",
-			Value:  "8125",
+			Value:  8125,
 			EnvVar: "DATADOG_AGENT_PORT",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
@@ -354,7 +354,6 @@ func getFlagValue(flagGeneric interface{}) interface{} {
 }
 
 func replicateAction(c *cli.Context) error {
-	fmt.Printf("Hello from replicatoin action")
 	if c.GlobalBool(config.VAR_NAME_CREATE_SLOT) {
 		err := runCreate(sourceConfig(c), c.GlobalString(config.VAR_NAME_SLOT))
 		if err != nil {
@@ -477,7 +476,7 @@ func replicateAction(c *cli.Context) error {
 
 	if c.GlobalString(config.VAR_NAME_DD_AGENT_HOST) != "" {
 		datadogAddr = fmt.Sprintf(
-			"%s:%s", c.GlobalString(config.VAR_NAME_DD_AGENT_HOST), c.GlobalString(config.VAR_NAME_DD_AGENT_PORT),
+			"%s:%d", c.GlobalString(config.VAR_NAME_DD_AGENT_HOST), c.GlobalInt(config.VAR_NAME_DD_AGENT_PORT),
 		)
 	} else {
 		datadogAddr = c.GlobalString(config.VAR_NAME_DD_HOST)
