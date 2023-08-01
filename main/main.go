@@ -129,7 +129,7 @@ var (
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:   config.VAR_NAME_DD_AGENT_PORT,
-			Usage:  "datadog agent port",
+			Usage:  "datadog statsd agent port",
 			Value:  "8125",
 			EnvVar: "DATADOG_AGENT_PORT",
 		}),
