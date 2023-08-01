@@ -18,6 +18,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var DEFAULT_TICK_RATE_DURATION = time.Duration(DEFAULT_TICK_RATE) * time.Millisecond
+
 func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 	timeBasedKey := "1-1"
 	transaction := "1"
@@ -30,7 +32,7 @@ func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -118,7 +120,7 @@ func TestBatchSizeOneOneTxnTwoData(t *testing.T) {
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -219,7 +221,7 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -390,7 +392,7 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, batchFactory, 2, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 2, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -513,7 +515,7 @@ func TestInputChannelClose(t *testing.T) {
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -555,7 +557,7 @@ func TestErrMsgTooBig(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -606,7 +608,7 @@ func TestErrCantFit(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -664,7 +666,7 @@ func TestErrMsgInvalid(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -715,7 +717,7 @@ func TestErrUnknown(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	outs := b.GetOutputChans()
 
@@ -773,7 +775,7 @@ func TestFlushBatchTimeoutUpdate(t *testing.T) {
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	insert := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -801,7 +803,7 @@ func TestFlushBatchTimeoutUpdate(t *testing.T) {
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100)
 
 	// Shutdown test
 	close(in)
@@ -825,7 +827,7 @@ func TestFlushBatchTimeoutMaxAge(t *testing.T) {
 	flushBatchUpdateAge := 9000
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	insert := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -853,7 +855,7 @@ func TestFlushBatchTimeoutMaxAge(t *testing.T) {
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100)
 
 	// Shutdown test
 	close(in)
@@ -877,7 +879,7 @@ func TestFlushFullBatch(t *testing.T) {
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	commit := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -907,7 +909,7 @@ func TestFlushFullBatch(t *testing.T) {
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100)
 
 	// Shutdown test
 	close(in)
@@ -942,12 +944,12 @@ func TestFlushEmptyBatchTimeout(t *testing.T) {
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(time.Duration(DEFAULT_TICK_RATE) + time.Millisecond*100)
 
 	// Shutdown test
 	close(in)
@@ -982,7 +984,7 @@ func TestTxnsSeenTimeout(t *testing.T) {
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	b.txnsSeenTimeout = time.Millisecond * 50
 
 	commit := &marshaller.MarshalledMessage{
@@ -1035,7 +1037,7 @@ func getBasicSetup(t *testing.T) (*gomock.Controller, chan *marshaller.Marshalle
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	return mockCtrl, in, txnSeen, b, mockBatchFactory, mockBatch
 }
@@ -1215,8 +1217,8 @@ func TestFlushMemoryPressure(t *testing.T) {
 
 	// Ticker ticked checks
 	mockBatch.EXPECT().IsEmpty().Return(false).Times(2)
-	mockBatch.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
-	mockBatch.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
+	mockBatch.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
+	mockBatch.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
 	mockBatch.EXPECT().IsFull().Return(false)
 	mockBatch.EXPECT().GetPayloadByteSize().Return(b.batcherMemorySoftLimit + 1)
 	mockBatch.EXPECT().GetPayloadByteSize().Return(b.batcherMemorySoftLimit + 1)
@@ -1232,7 +1234,7 @@ func TestFlushMemoryPressure(t *testing.T) {
 	case <-b.outputChans[0]:
 		close(in)
 		time.Sleep(time.Millisecond * 10)
-	case <-time.After(TICKER_RATE + time.Millisecond*200):
+	case <-time.After(DEFAULT_TICK_RATE_DURATION + time.Millisecond*200):
 		assert.Fail(t, "did not get output in time")
 	}
 }
@@ -1274,14 +1276,14 @@ func TestFlushMemoryPressureTwoBatches(t *testing.T) {
 
 	// Ticker ticked
 	mockBatch1.EXPECT().IsEmpty().Return(false)
-	mockBatch1.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
-	mockBatch1.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
+	mockBatch1.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
+	mockBatch1.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
 	mockBatch1.EXPECT().IsFull().Return(false)
 	mockBatch1.EXPECT().GetPayloadByteSize().Return(b.batcherMemorySoftLimit + 1)
 
 	mockBatch2.EXPECT().IsEmpty().Return(false)
-	mockBatch2.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
-	mockBatch2.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*TICKER_RATE))
+	mockBatch2.EXPECT().ModifyTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
+	mockBatch2.EXPECT().CreateTime().Return(time.Now().UnixNano() + int64(2*DEFAULT_TICK_RATE_DURATION))
 	mockBatch2.EXPECT().IsFull().Return(false)
 	mockBatch2.EXPECT().GetPayloadByteSize().Return(b.batcherMemorySoftLimit - 1)
 
@@ -1300,7 +1302,7 @@ func TestFlushMemoryPressureTwoBatches(t *testing.T) {
 	select {
 	case <-b.outputChans[0]:
 		close(in)
-	case <-time.After(TICKER_RATE + time.Millisecond*100):
+	case <-time.After(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100):
 		assert.Fail(t, "did not get output in time")
 	}
 
@@ -1339,7 +1341,7 @@ func TestCloseBatchError(t *testing.T) {
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100)
 
 	// Verify output channels get closed
 	_, ok2 := <-b.outputChans[0]
@@ -1363,7 +1365,7 @@ func TestPartitionRouting(t *testing.T) {
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, mockBatchFactory, 2, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_PARTITION)
+	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 2, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_PARTITION)
 
 	defer mockCtrl.Finish()
 
@@ -1427,7 +1429,7 @@ func TestPartitionRouting(t *testing.T) {
 	go b.StartBatching()
 
 	// Sleep enough to trigger ticker timeout
-	time.Sleep(TICKER_RATE + time.Millisecond*100)
+	time.Sleep(DEFAULT_TICK_RATE_DURATION + time.Millisecond*100)
 	close(in)
 	time.Sleep(time.Millisecond * 100)
 
