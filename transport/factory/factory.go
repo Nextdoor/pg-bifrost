@@ -1,10 +1,11 @@
 package factory
 
 import (
+	"os"
+
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/s3"
-	"os"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
