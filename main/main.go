@@ -122,6 +122,18 @@ var (
 			EnvVar: "DATADOG_HOST",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
+			Name: config.VAR_NAME_DD_AGENT_HOST,
+			Usage: "datadog statsd agent hostname. This value takes precedence over '" + config.VAR_NAME_DD_HOST +
+				"' if it is provided or found in the env",
+			EnvVar: "DATADOG_AGENT_HOST",
+		}),
+		altsrc.NewIntFlag(cli.IntFlag{
+			Name:   config.VAR_NAME_DD_AGENT_PORT,
+			Usage:  "datadog statsd agent port",
+			Value:  8125,
+			EnvVar: "DATADOG_AGENT_PORT",
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name: config.VAR_NAME_DD_TAGS,
 			Usage: "datadog tags to add to emitted metrics. These are specified as key:value and are " +
 				"delimited by ','. For example key1:value1,key2:value2",
@@ -466,12 +478,21 @@ func replicateAction(c *cli.Context) error {
 	//
 	// Validate and create reporter config from Flags
 	//
-	datadogHost := c.GlobalString(config.VAR_NAME_DD_HOST)
+	var datadogAddr string
+
+	if c.GlobalString(config.VAR_NAME_DD_AGENT_HOST) != "" {
+		datadogAddr = fmt.Sprintf(
+			"%s:%d", c.GlobalString(config.VAR_NAME_DD_AGENT_HOST), c.GlobalInt(config.VAR_NAME_DD_AGENT_PORT),
+		)
+	} else {
+		datadogAddr = c.GlobalString(config.VAR_NAME_DD_HOST)
+	}
+
 	datadogTags := c.GlobalString(config.VAR_NAME_DD_TAGS)
 	datadogTagsList := strings.Split(datadogTags, ",")
 
 	reporterConfig := make(map[string]interface{}, 0)
-	reporterConfig[config.VAR_NAME_DD_HOST] = datadogHost
+	reporterConfig[config.VAR_NAME_DD_HOST] = datadogAddr
 	reporterConfig[config.VAR_NAME_DD_TAGS] = datadogTagsList
 
 	//

@@ -18,17 +18,19 @@ package config
 
 // Global cli flag names
 const (
-	VAR_NAME_CONFIG      = "config"
-	VAR_NAME_SLOT        = "slot"
-	VAR_NAME_USER        = "user"
-	VAR_NAME_PASSWD      = "password"
-	VAR_NAME_HOST        = "host"
-	VAR_NAME_PORT        = "port"
-	VAR_NAME_DB          = "dbname"
-	VAR_NAME_MEM_PROFILE = "memprofile"
-	VAR_NAME_CPU_PROFILE = "cpuprofile"
-	VAR_NAME_DD_HOST     = "datadog-host"
-	VAR_NAME_DD_TAGS     = "datadog-tags"
+	VAR_NAME_CONFIG        = "config"
+	VAR_NAME_SLOT          = "slot"
+	VAR_NAME_USER          = "user"
+	VAR_NAME_PASSWD        = "password"
+	VAR_NAME_HOST          = "host"
+	VAR_NAME_PORT          = "port"
+	VAR_NAME_DB            = "dbname"
+	VAR_NAME_MEM_PROFILE   = "memprofile"
+	VAR_NAME_CPU_PROFILE   = "cpuprofile"
+	VAR_NAME_DD_HOST       = "datadog-host"
+	VAR_NAME_DD_AGENT_HOST = "datadog-agent-host"
+	VAR_NAME_DD_AGENT_PORT = "datadog-agent-port"
+	VAR_NAME_DD_TAGS       = "datadog-tags"
 )
 
 // Replicate cli flag names
