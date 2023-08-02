@@ -125,7 +125,7 @@ var (
 			Name: config.VAR_NAME_DD_AGENT_HOST,
 			Usage: "datadog statsd agent hostname. This value takes precedence over '" + config.VAR_NAME_DD_HOST +
 				"' if it is provided or found in the env",
-			EnvVar: "DATADOG_AGENT_HOST",
+			EnvVar: "DD_AGENT_HOST",
 		}),
 		altsrc.NewIntFlag(cli.IntFlag{
 			Name:   config.VAR_NAME_DD_AGENT_PORT,
