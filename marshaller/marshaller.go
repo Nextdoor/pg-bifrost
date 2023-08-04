@@ -17,10 +17,10 @@
 package marshaller
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"os"
 	"time"
+
+	gojson "github.com/goccy/go-json"
 
 	"github.com/Nextdoor/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
@@ -33,7 +33,6 @@ import (
 var (
 	logger = logrus.New()
 	log    = logger.WithField("package", "marshaller")
-	json   = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 func init() {
@@ -219,7 +218,7 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 		}
 	}
 
-	return json.Marshal(&jsonWalEntry{
+	return gojson.Marshal(&jsonWalEntry{
 		Time:      &t,
 		Lsn:       &lsn,
 		Table:     &msg.Pr.Relation,

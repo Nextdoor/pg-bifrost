@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.258
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cevaris/ordered_map v0.0.0-20180310183325-0efaee1733e3
+	github.com/goccy/go-json v0.10.2
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/jackc/pglogrepl v0.0.0-20230428004623-0c5b98f52784
