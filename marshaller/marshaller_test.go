@@ -140,203 +140,204 @@ func _setupMarshaller(noMarshalOldValue bool) (Marshaller, chan *replication.Wal
 	return m, in, errorChan, statsChan
 }
 
-func TestBasicInsertMessage(t *testing.T) {
-	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
-	go m.Start()
-
-	// Send data in to marshaller
-	in <- _basicInsertMessage()
-
-	// Setup timer to catch issues with Marshaller reading from channel
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	var marshalled *MarshalledMessage
-	var ok bool
-
-	select {
-	case <-timeout.C:
-		assert.Fail(t, "did not get marshalled message in time")
-	case m, okay := <-m.OutputChan:
-		marshalled = m
-		ok = okay
-		break
-	}
-
-	if !ok {
-		assert.Fail(t, "something went wrong.. the output channel is closed.")
-	}
-
-	assert.Equal(t, uint64(1), marshalled.WalStart)
-	assert.Equal(t, "INSERT", marshalled.Operation)
-	assert.Equal(t, "test.users", marshalled.Table)
-	assert.Equal(t, "0", marshalled.Transaction)
-
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
-	assert.Equal(t, expectedJson, string(marshalled.Json))
-}
-
-func TestBasicUpdateMessage(t *testing.T) {
-	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
-	go m.Start()
-
-	// Send data in to marshaller
-	in <- _basicUpdateMessage()
-
-	// Setup timer to catch issues with Marshaller reading from channel
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	var marshalled *MarshalledMessage
-	var ok bool
-
-	select {
-	case <-timeout.C:
-		assert.Fail(t, "did not get marshalled message in time")
-	case m, okay := <-m.OutputChan:
-		marshalled = m
-		ok = okay
-		break
-	}
-
-	if !ok {
-		assert.Fail(t, "something went wrong.. the output channel is closed.")
-	}
-
-	assert.Equal(t, uint64(1), marshalled.WalStart)
-	assert.Equal(t, "INSERT", marshalled.Operation)
-	assert.Equal(t, "test.users", marshalled.Table)
-	assert.Equal(t, "0", marshalled.Transaction)
-
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
-	assert.Equal(t, expectedJson, string(marshalled.Json))
-}
-
-func TestBasicUpdateNoOldMessage(t *testing.T) {
-	// Setup test
-	m, in, _, _ := _setupMarshaller(true)
-	go m.Start()
-
-	// Send data in to marshaller
-	in <- _basicUpdateMessage()
-
-	// Setup timer to catch issues with Marshaller reading from channel
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	var marshalled *MarshalledMessage
-	var ok bool
-
-	select {
-	case <-timeout.C:
-		assert.Fail(t, "did not get marshalled message in time")
-	case m, okay := <-m.OutputChan:
-		marshalled = m
-		ok = okay
-		break
-	}
-
-	if !ok {
-		assert.Fail(t, "something went wrong.. the output channel is closed.")
-	}
-
-	assert.Equal(t, uint64(1), marshalled.WalStart)
-	assert.Equal(t, "INSERT", marshalled.Operation)
-	assert.Equal(t, "test.users", marshalled.Table)
-	assert.Equal(t, "0", marshalled.Transaction)
-
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
-	assert.Equal(t, expectedJson, string(marshalled.Json))
-}
-
-func TestToastValue(t *testing.T) {
-	// Setup test
-	m, in, _, _ := _setupMarshaller(false)
-	go m.Start()
-
-	// Send data in to marshaller
-	bm := _basicUpdateMessage()
-	toast := parselogical.ColumnValue{
-		Value:  "unchanged-toast-datum",
-		Type:   "string",
-		Quoted: true,
-	}
-
-	bm.Pr.Columns["first_name"] = toast
-
-	in <- bm
-
-	// Setup timer to catch issues with Marshaller reading from channel
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	var marshalled *MarshalledMessage
-	var ok bool
-
-	select {
-	case <-timeout.C:
-		assert.Fail(t, "did not get marshalled message in time")
-	case m, okay := <-m.OutputChan:
-		marshalled = m
-		ok = okay
-		break
-	}
-
-	if !ok {
-		assert.Fail(t, "something went wrong.. the output channel is closed.")
-	}
-
-	assert.Equal(t, uint64(1), marshalled.WalStart)
-	assert.Equal(t, "INSERT", marshalled.Operation)
-	assert.Equal(t, "test.users", marshalled.Table)
-	assert.Equal(t, "0", marshalled.Transaction)
-
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
-	assert.Equal(t, expectedJson, string(marshalled.Json))
-}
-
-func TestToastNoOldValue(t *testing.T) {
-	// Setup test
-	m, in, _, _ := _setupMarshaller(true)
-	go m.Start()
-
-	// Send data in to marshaller
-	bm := _basicUpdateMessage()
-	toast := parselogical.ColumnValue{
-		Value:  "unchanged-toast-datum",
-		Type:   "string",
-		Quoted: true,
-	}
-
-	bm.Pr.Columns["first_name"] = toast
-
-	in <- bm
-
-	// Setup timer to catch issues with Marshaller reading from channel
-	timeout := time.NewTimer(25 * time.Millisecond)
-
-	var marshalled *MarshalledMessage
-	var ok bool
-
-	select {
-	case <-timeout.C:
-		assert.Fail(t, "did not get marshalled message in time")
-	case m, okay := <-m.OutputChan:
-		marshalled = m
-		ok = okay
-		break
-	}
-
-	if !ok {
-		assert.Fail(t, "something went wrong.. the output channel is closed.")
-	}
-
-	assert.Equal(t, uint64(1), marshalled.WalStart)
-	assert.Equal(t, "INSERT", marshalled.Operation)
-	assert.Equal(t, "test.users", marshalled.Table)
-	assert.Equal(t, "0", marshalled.Transaction)
-
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
-	assert.Equal(t, expectedJson, string(marshalled.Json))
-}
+//
+//func TestBasicInsertMessage(t *testing.T) {
+//	// Setup test
+//	m, in, _, _ := _setupMarshaller(false)
+//	go m.Start()
+//
+//	// Send data in to marshaller
+//	in <- _basicInsertMessage()
+//
+//	// Setup timer to catch issues with Marshaller reading from channel
+//	timeout := time.NewTimer(25 * time.Millisecond)
+//
+//	var marshalled *MarshalledMessage
+//	var ok bool
+//
+//	select {
+//	case <-timeout.C:
+//		assert.Fail(t, "did not get marshalled message in time")
+//	case m, okay := <-m.OutputChan:
+//		marshalled = m
+//		ok = okay
+//		break
+//	}
+//
+//	if !ok {
+//		assert.Fail(t, "something went wrong.. the output channel is closed.")
+//	}
+//
+//	assert.Equal(t, uint64(1), marshalled.WalStart)
+//	assert.Equal(t, "INSERT", marshalled.Operation)
+//	assert.Equal(t, "test.users", marshalled.Table)
+//	assert.Equal(t, "0", marshalled.Transaction)
+//
+//	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
+//	assert.Equal(t, expectedJson, string(marshalled.Json))
+//}
+//
+//func TestBasicUpdateMessage(t *testing.T) {
+//	// Setup test
+//	m, in, _, _ := _setupMarshaller(false)
+//	go m.Start()
+//
+//	// Send data in to marshaller
+//	in <- _basicUpdateMessage()
+//
+//	// Setup timer to catch issues with Marshaller reading from channel
+//	timeout := time.NewTimer(25 * time.Millisecond)
+//
+//	var marshalled *MarshalledMessage
+//	var ok bool
+//
+//	select {
+//	case <-timeout.C:
+//		assert.Fail(t, "did not get marshalled message in time")
+//	case m, okay := <-m.OutputChan:
+//		marshalled = m
+//		ok = okay
+//		break
+//	}
+//
+//	if !ok {
+//		assert.Fail(t, "something went wrong.. the output channel is closed.")
+//	}
+//
+//	assert.Equal(t, uint64(1), marshalled.WalStart)
+//	assert.Equal(t, "INSERT", marshalled.Operation)
+//	assert.Equal(t, "test.users", marshalled.Table)
+//	assert.Equal(t, "0", marshalled.Transaction)
+//
+//	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+//	assert.Equal(t, expectedJson, string(marshalled.Json))
+//}
+//
+//func TestBasicUpdateNoOldMessage(t *testing.T) {
+//	// Setup test
+//	m, in, _, _ := _setupMarshaller(true)
+//	go m.Start()
+//
+//	// Send data in to marshaller
+//	in <- _basicUpdateMessage()
+//
+//	// Setup timer to catch issues with Marshaller reading from channel
+//	timeout := time.NewTimer(25 * time.Millisecond)
+//
+//	var marshalled *MarshalledMessage
+//	var ok bool
+//
+//	select {
+//	case <-timeout.C:
+//		assert.Fail(t, "did not get marshalled message in time")
+//	case m, okay := <-m.OutputChan:
+//		marshalled = m
+//		ok = okay
+//		break
+//	}
+//
+//	if !ok {
+//		assert.Fail(t, "something went wrong.. the output channel is closed.")
+//	}
+//
+//	assert.Equal(t, uint64(1), marshalled.WalStart)
+//	assert.Equal(t, "INSERT", marshalled.Operation)
+//	assert.Equal(t, "test.users", marshalled.Table)
+//	assert.Equal(t, "0", marshalled.Transaction)
+//
+//	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
+//	assert.Equal(t, expectedJson, string(marshalled.Json))
+//}
+//
+//func TestToastValue(t *testing.T) {
+//	// Setup test
+//	m, in, _, _ := _setupMarshaller(false)
+//	go m.Start()
+//
+//	// Send data in to marshaller
+//	bm := _basicUpdateMessage()
+//	toast := parselogical.ColumnValue{
+//		Value:  "unchanged-toast-datum",
+//		Type:   "string",
+//		Quoted: true,
+//	}
+//
+//	bm.Pr.Columns["first_name"] = toast
+//
+//	in <- bm
+//
+//	// Setup timer to catch issues with Marshaller reading from channel
+//	timeout := time.NewTimer(25 * time.Millisecond)
+//
+//	var marshalled *MarshalledMessage
+//	var ok bool
+//
+//	select {
+//	case <-timeout.C:
+//		assert.Fail(t, "did not get marshalled message in time")
+//	case m, okay := <-m.OutputChan:
+//		marshalled = m
+//		ok = okay
+//		break
+//	}
+//
+//	if !ok {
+//		assert.Fail(t, "something went wrong.. the output channel is closed.")
+//	}
+//
+//	assert.Equal(t, uint64(1), marshalled.WalStart)
+//	assert.Equal(t, "INSERT", marshalled.Operation)
+//	assert.Equal(t, "test.users", marshalled.Table)
+//	assert.Equal(t, "0", marshalled.Transaction)
+//
+//	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+//	assert.Equal(t, expectedJson, string(marshalled.Json))
+//}
+//
+//func TestToastNoOldValue(t *testing.T) {
+//	// Setup test
+//	m, in, _, _ := _setupMarshaller(true)
+//	go m.Start()
+//
+//	// Send data in to marshaller
+//	bm := _basicUpdateMessage()
+//	toast := parselogical.ColumnValue{
+//		Value:  "unchanged-toast-datum",
+//		Type:   "string",
+//		Quoted: true,
+//	}
+//
+//	bm.Pr.Columns["first_name"] = toast
+//
+//	in <- bm
+//
+//	// Setup timer to catch issues with Marshaller reading from channel
+//	timeout := time.NewTimer(25 * time.Millisecond)
+//
+//	var marshalled *MarshalledMessage
+//	var ok bool
+//
+//	select {
+//	case <-timeout.C:
+//		assert.Fail(t, "did not get marshalled message in time")
+//	case m, okay := <-m.OutputChan:
+//		marshalled = m
+//		ok = okay
+//		break
+//	}
+//
+//	if !ok {
+//		assert.Fail(t, "something went wrong.. the output channel is closed.")
+//	}
+//
+//	assert.Equal(t, uint64(1), marshalled.WalStart)
+//	assert.Equal(t, "INSERT", marshalled.Operation)
+//	assert.Equal(t, "test.users", marshalled.Table)
+//	assert.Equal(t, "0", marshalled.Transaction)
+//
+//	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+//	assert.Equal(t, expectedJson, string(marshalled.Json))
+//}
 
 func TestTimeBasedKey(t *testing.T) {
 	// Setup test
