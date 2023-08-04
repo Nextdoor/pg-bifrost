@@ -18,6 +18,7 @@ package marshaller
 
 import (
 	"fmt"
+
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 )
 
