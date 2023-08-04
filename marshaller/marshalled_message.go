@@ -16,7 +16,10 @@
 
 package marshaller
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/Nextdoor/pg-bifrost.git/replication"
+)
 
 type MarshalledMessage struct {
 	Operation    string // SQL operation
@@ -26,6 +29,8 @@ type MarshalledMessage struct {
 	WalStart     uint64 // id or offset of the wal message
 	Transaction  string // id of the transaction
 	PartitionKey string // partitioning key used by the batcher to group messages into a batch and potentially by transporters to write entire batch into a location
+
+	WalMessage *replication.WalMessage // Original WAL message
 }
 
 func (m MarshalledMessage) String() string {

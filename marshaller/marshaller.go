@@ -120,22 +120,23 @@ func (m Marshaller) Start() {
 			return
 		}
 
-		byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
-
-		if err != nil {
-			m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
-			log.Error("error in marshalWalToJson")
-			continue
-		}
+		//byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
+		//
+		//if err != nil {
+		//	m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
+		//	log.Error("error in marshalWalToJson")
+		//	continue
+		//}
 
 		marshalledMessage := MarshalledMessage{
 			walMessage.Pr.Operation,
 			walMessage.Pr.Relation,
-			byteMessage,
+			nil,
 			walMessage.TimeBasedKey,
 			walMessage.WalStart,
 			walMessage.Pr.Transaction,
 			walMessage.PartitionKey,
+			walMessage,
 		}
 
 		stat := stats.NewStatCount("marshaller", "success", 1, time.Now().UnixNano())
@@ -182,7 +183,7 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 }
 
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
-func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
+func MarshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
 	lsn := pglogrepl.LSN(msg.WalStart).String()
 
 	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds

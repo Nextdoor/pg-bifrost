@@ -314,6 +314,20 @@ func (t *S3Transporter) StartTransporting() {
 		messages := genericBatch.GetPayload()
 		messagesSlice, ok := messages.([]*marshaller.MarshalledMessage)
 
+		for _, message := range messagesSlice {
+			if message.Json != nil {
+				continue
+			}
+
+			byteMessage, err := marshaller.MarshalWalToJson(message.WalMessage, true)
+			if err != nil {
+				panic("Note sure what to do about this right now...")
+			}
+
+			message.Json = byteMessage
+			message.WalMessage = nil
+		}
+
 		if !ok {
 			panic("Batch payload is not a []*marshaller.MarshalledMessage")
 		}

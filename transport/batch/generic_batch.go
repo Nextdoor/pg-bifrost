@@ -40,7 +40,10 @@ func (b *GenericBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 
 	// Update counts
 	b.messages = append(b.messages, msg)
-	b.byteSize += int64(len(msg.Json))
+
+	if msg.Json != nil {
+		b.byteSize += int64(len(msg.Json))
+	}
 
 	// Add msg to list of transactions
 	progress.UpdateTransactions(msg, b.transactions)
