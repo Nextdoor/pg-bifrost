@@ -31,6 +31,7 @@ const (
 	VAR_NAME_DD_AGENT_HOST = "datadog-agent-host"
 	VAR_NAME_DD_AGENT_PORT = "datadog-agent-port"
 	VAR_NAME_DD_TAGS       = "datadog-tags"
+	VAR_NAME_DD_PROFILER   = "datadog-profiler"
 )
 
 // Replicate cli flag names
