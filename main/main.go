@@ -278,7 +278,9 @@ func runReplicate(
 			profiler.WithVersion(version),
 		}
 
-		profiler.Start(options...)
+		if err := profiler.Start(options...); err != nil {
+			logger.WithError(err).Error("failed to start profiler")
+		}
 	}
 
 	// Create a shared cancellation context for application shutdown .
