@@ -47,6 +47,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/Nextdoor/cli.v1"
 	"gopkg.in/Nextdoor/cli.v1/altsrc"
+
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 )
 
 // These vars are replaced during compile time.
@@ -140,6 +142,12 @@ var (
 			Value:  "",
 			EnvVar: "DATADOG_TAGS",
 		}),
+		altsrc.NewBoolFlag(cli.BoolFlag{
+			Name:   config.VAR_NAME_DD_PROFILER,
+			Usage:  "enables datadog continuous profiling",
+			EnvVar: "DATADOG_PROFILER",
+			Hidden: true,
+		}),
 	}
 )
 
@@ -230,7 +238,12 @@ func runReplicate(
 	transportConfig map[string]interface{},
 	reporterConfig map[string]interface{},
 	memprofile string,
-	cpuprofile string) error {
+	cpuprofile string,
+	datadogProfiling bool,
+	version string,
+	datadogTagsList []string) error {
+
+	// Manual profiling
 
 	// Start CPU profiling
 	if cpuprofile != "" {
@@ -247,6 +260,25 @@ func runReplicate(
 	// Configure memory profiling
 	if memprofile != "" {
 		runtime.MemProfileRate = 1
+	}
+
+	// Datadog Continuous profiling
+	if datadogProfiling {
+		profilePeriod := time.Duration(60) * time.Second
+		options := []profiler.Option{
+			profiler.WithPeriod(profilePeriod),
+			profiler.CPUDuration(1 * time.Second),
+			profiler.WithProfileTypes(
+				profiler.CPUProfile,
+				profiler.HeapProfile,
+				profiler.MutexProfile,
+				profiler.BlockProfile,
+			),
+			profiler.WithTags(datadogTagsList...),
+			profiler.WithVersion(version),
+		}
+
+		profiler.Start(options...)
 	}
 
 	// Create a shared cancellation context for application shutdown .
@@ -513,6 +545,9 @@ func replicateAction(c *cli.Context) error {
 		reporterConfig,
 		c.GlobalString(config.VAR_NAME_MEM_PROFILE),
 		c.GlobalString(config.VAR_NAME_CPU_PROFILE),
+		c.GlobalBool(config.VAR_NAME_DD_PROFILER),
+		c.App.Version,
+		datadogTagsList,
 	)
 }
 
