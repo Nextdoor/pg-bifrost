@@ -9,10 +9,10 @@ FROM golang:1.13.5-stretch as intermediate
 RUN mkdir /perf
 
 # Build dependencies
-RUN go get golang.org/x/tools/go/packages
-RUN go install golang.org/x/tools/go/packages
-RUN go get github.com/golang/mock/gomock
-RUN go install github.com/golang/mock/mockgen
+#RUN go get golang.org/x/tools/go/packages
+#RUN go install golang.org/x/tools/go/packages@v0.1.0
+#RUN go get github.com/golang/mock/gomock
+#RUN go install github.com/golang/mock/mockgen
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 
