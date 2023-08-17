@@ -9,13 +9,10 @@ FROM golang:1.13.5-stretch as intermediate
 RUN mkdir /perf
 
 # Build dependencies
-#RUN go get golang.org/x/tools/go/packages
-#RUN go install golang.org/x/tools/go/packages@v0.1.0
-#RUN go get github.com/golang/mock/gomock
-#RUN go install github.com/golang/mock/mockgen
+RUN GO111MODULE=on go get github.com/golang/mock/gomock@v1.6.0
+RUN cd /go/pkg/mod/github.com/golang/mock@v1.6.0/mockgen && go build -o /go/bin
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
-
 
 # Copy over go modules and get dependencies. This will ensure
 # that we don't get the deps each time but only when the files
