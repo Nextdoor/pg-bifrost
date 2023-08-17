@@ -19,7 +19,7 @@ package partitioner
 import (
 	"testing"
 
-	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"

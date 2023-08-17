@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/stretchr/testify/assert"
