@@ -17,7 +17,7 @@
 package replication
 
 import (
-	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/jackc/pglogrepl"
 )
 

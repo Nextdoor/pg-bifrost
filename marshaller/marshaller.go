@@ -22,7 +22,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 
-	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"

@@ -23,15 +23,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
 
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
