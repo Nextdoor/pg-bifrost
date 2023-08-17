@@ -19,15 +19,14 @@ package marshaller
 import (
 	"github.com/json-iterator/go"
 
-	"os"
-	"time"
-
-	"github.com/Nextdoor/parselogical"
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/jackc/pglogrepl"
 	"github.com/sirupsen/logrus"
+	"os"
+	"time"
 )
 
 var (

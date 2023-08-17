@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"github.com/Nextdoor/parselogical"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgproto3/v2"
@@ -27,10 +26,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

@@ -17,14 +17,15 @@
 package marshaller
 
 import (
-	"github.com/Nextdoor/parselogical"
+	"testing"
+	"time"
+
+	"github.com/Nextdoor/pg-bifrost.git/parselogical"
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func init() {
