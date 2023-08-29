@@ -391,10 +391,13 @@ func (b *Batcher) sendBatch(batch transport.Batch) bool {
 	}
 
 	log.Debugf("sending batch to worker %d", channelIndex)
+	start := time.Now()
 	b.outputChans[channelIndex] <- batch
+	now := time.Now()
 
-	b.statsChan <- stats.NewStatCount("batcher", "batches", 1, time.Now().UnixNano())
-	b.statsChan <- stats.NewStatHistogram("batcher", "batch_size", int64(batch.NumMessages()), time.Now().UnixNano(), "count")
+	b.statsChan <- stats.NewStatHistogram("batcher", "batch_write_wait", 1, now.Sub(start).Milliseconds(), "ms")
+	b.statsChan <- stats.NewStatCount("batcher", "batches", 1, now.UnixNano())
+	b.statsChan <- stats.NewStatHistogram("batcher", "batch_size", int64(batch.NumMessages()), now.UnixNano(), "count")
 
 	return true
 }

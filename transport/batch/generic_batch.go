@@ -16,8 +16,9 @@ type GenericBatch struct {
 	messages     []*marshaller.MarshalledMessage
 	transactions *ordered_map.OrderedMap
 	byteSize     int64
-	mtime        int64
-	ctime        int64
+	mtime        int64 // last modified
+	ctime        int64 // created
+	dtime        int64 // closed
 	partitionKey string
 }
 
@@ -25,7 +26,7 @@ func NewGenericBatch(partitionKey string, maxSize int) transport.Batch {
 	messages := []*marshaller.MarshalledMessage{}
 	transactions := ordered_map.NewOrderedMap()
 
-	return &GenericBatch{maxSize, messages, transactions, 0, time.Now().UnixNano(), time.Now().UnixNano(), partitionKey}
+	return &GenericBatch{maxSize, messages, transactions, 0, time.Now().UnixNano(), time.Now().UnixNano(), 0, partitionKey}
 }
 
 func (b *GenericBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
@@ -57,6 +58,7 @@ func (b *GenericBatch) GetTransactions() *ordered_map.OrderedMap {
 
 func (b *GenericBatch) Close() (bool, error) {
 	// Nothing special required
+	b.dtime = time.Now().UnixNano()
 	return true, nil
 }
 
@@ -90,6 +92,10 @@ func (b *GenericBatch) ModifyTime() int64 {
 
 func (b *GenericBatch) CreateTime() int64 {
 	return b.ctime
+}
+
+func (b *GenericBatch) CloseTime() int64 {
+	return b.dtime
 }
 
 type GenericBatchFactory struct {

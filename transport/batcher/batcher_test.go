@@ -102,6 +102,7 @@ func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 
 	// Verify stats
 	expected := []stats.Stat{
+		stats.NewStatHistogram("batcher", "batch_write_wait", 1, time.Now().UnixNano(), "ms"),
 		stats.NewStatCount("batcher", "batches", 1, time.Now().UnixNano()),
 		stats.NewStatHistogram("batcher", "batch_size", 1, time.Now().UnixNano(), "count"),
 	}
@@ -369,8 +370,10 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 
 	// Verify stats
 	expectedStats := []stats.Stat{
+		stats.NewStatHistogram("batcher", "batch_write_wait", 1, time.Now().UnixNano(), "ms"),
 		stats.NewStatCount("batcher", "batches", 1, time.Now().UnixNano()),
 		stats.NewStatHistogram("batcher", "batch_size", 3, time.Now().UnixNano(), "count"),
+		stats.NewStatHistogram("batcher", "batch_write_wait", 1, time.Now().UnixNano(), "ms"),
 		stats.NewStatCount("batcher", "batches", 1, time.Now().UnixNano()),
 		stats.NewStatHistogram("batcher", "batch_size", 1, time.Now().UnixNano(), "count"),
 		stats.NewStatCount("batcher", "batch_closed_early", 1, time.Now().UnixNano()),
