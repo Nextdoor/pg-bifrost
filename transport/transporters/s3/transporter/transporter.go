@@ -325,8 +325,9 @@ func (t *S3Transporter) StartTransporting() {
 		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
 
 		// End timer and send stat
-		total := (ts.UnixNano() - start) / int64(time.Millisecond)
-		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, ts.UnixNano(), "ms")
+		now := ts.UnixNano()
+		total := (now - start) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("s3_transport", "duration", total, now, "ms")
 
 		if err != nil {
 			t.log.Error("max retries exceeded")
@@ -339,7 +340,9 @@ func (t *S3Transporter) StartTransporting() {
 		}
 
 		t.log.Debug("successfully wrote batch")
-		t.statsChan <- stats.NewStatCount("s3_transport", "written", int64(genericBatch.NumMessages()), ts.UnixNano())
+		timeSinceClose := (now - genericBatch.CloseTime()) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatCount("s3_transport", "written", int64(genericBatch.NumMessages()), now)
+		t.statsChan <- stats.NewStatHistogram("s3_transport", "batch_waited", timeSinceClose, now, "ms")
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()

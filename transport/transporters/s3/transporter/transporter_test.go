@@ -168,8 +168,6 @@ func TestSinglePutOk(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
 
 	in <- b
 
@@ -183,7 +181,8 @@ func TestSinglePutOk(t *testing.T) {
 	expected := []stats.Stat{
 		stats.NewStatCount("s3_transport", "success", int64(1), int64(1000*time.Millisecond)),
 		stats.NewStatHistogram("s3_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
-		stats.NewStatCount("s3_transport", "written", int64(1), int64(4000*time.Millisecond)),
+		stats.NewStatCount("s3_transport", "written", int64(1), int64(2000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "batch_waited", 2000, int64(2000*time.Millisecond), "ms"),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 }
@@ -243,8 +242,6 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
 
 	in <- b
 
@@ -257,8 +254,9 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	// Verify stats
 	expected := []stats.Stat{
 		stats.NewStatCount("s3_transport", "success", int64(1), int64(1000*time.Millisecond)),
-		stats.NewStatHistogram("s3_transport", "duration", 2000, int64(3000*time.Millisecond), "ms"),
-		stats.NewStatCount("s3_transport", "written", int64(2), int64(4000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "duration", 2000, int64(2000*time.Millisecond), "ms"),
+		stats.NewStatCount("s3_transport", "written", int64(2), int64(2000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "batch_waited", 2000, int64(2000*time.Millisecond), "ms"),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 }
@@ -319,8 +317,6 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(5000 * time.Millisecond))
 
 	in <- b
 
@@ -334,8 +330,9 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	expected := []stats.Stat{
 		stats.NewStatCount("s3_transport", "failure", int64(1), int64(1000*time.Millisecond)),
 		stats.NewStatCount("s3_transport", "success", int64(1), int64(2000*time.Millisecond)),
-		stats.NewStatHistogram("s3_transport", "duration", 3000, int64(4000*time.Millisecond), "ms"),
-		stats.NewStatCount("s3_transport", "written", int64(1), int64(5000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "duration", 3000, int64(3000*time.Millisecond), "ms"),
+		stats.NewStatCount("s3_transport", "written", int64(1), int64(3000*time.Millisecond)),
+		stats.NewStatHistogram("s3_transport", "batch_waited", 3000, int64(3000*time.Millisecond), "ms"),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 }
@@ -395,9 +392,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	mockTime.EXPECT().UnixNano().Return(int64(0))
 	mockTime.EXPECT().UnixNano().Return(int64(1000 * time.Millisecond))
 	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(3000 * time.Millisecond))
-	mockTime.EXPECT().UnixNano().Return(int64(4000 * time.Millisecond))
-
+	mockTime.EXPECT().UnixNano().Return(int64(2000 * time.Millisecond))
 	in <- b
 
 	// Start test
@@ -410,7 +405,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	expected := []stats.Stat{
 		stats.NewStatCount("s3_transport", "failure", int64(1), int64(1000*time.Millisecond)),
 		stats.NewStatCount("s3_transport", "failure", int64(1), int64(2000*time.Millisecond)),
-		stats.NewStatHistogram("s3_transport", "duration", 3000, int64(4000*time.Millisecond), "ms"),
+		stats.NewStatHistogram("s3_transport", "duration", 2000, int64(2000*time.Millisecond), "ms"),
 	}
 	stats.VerifyStats(t, statsChan, expected)
 

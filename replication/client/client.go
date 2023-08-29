@@ -547,6 +547,7 @@ func (c *Replicator) handleXLogData(data []byte) error {
 
 	// Attempt to write to channel. If full then send a keepalive and attempt
 	// to write to channel again.
+	var sleepTotal time.Duration
 	err = func() error {
 		var curSleep = initialSleep
 
@@ -566,6 +567,8 @@ func (c *Replicator) handleXLogData(data []byte) error {
 					curSleep = initialSleep
 				}
 
+				sleepTotal += curSleep
+
 				// Sleep here to prevent spinning.
 				time.Sleep(curSleep)
 				curSleep = curSleep * 2
@@ -577,7 +580,13 @@ func (c *Replicator) handleXLogData(data []byte) error {
 		return err
 	}
 
-	c.statsChan <- stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())
+	now := time.Now().UnixNano()
+	c.statsChan <- stats.NewStatCount("replication", "received", 1, now)
+
+	if sleepTotal > 0 {
+		c.statsChan <- stats.NewStatHistogram("replication", "blocked", sleepTotal.Milliseconds(), now, "ms")
+	}
+
 	return nil
 }
 
