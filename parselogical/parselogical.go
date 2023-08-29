@@ -112,7 +112,7 @@ func (pr *ParseResult) parse(preludeOnly bool) error {
 		switch message[0:5] {
 		case "BEGIN":
 			fallthrough
-		case "COMMI":
+		case "COMMIT":
 			fields := strings.Fields(message)
 
 			if len(fields) != 2 {
