@@ -112,6 +112,7 @@ func (pr *ParseResult) parse(preludeOnly bool) error {
 		switch message[0:5] {
 		case "BEGIN":
 			fallthrough
+		// we are only fetching the first 5 characters so this "misspelling" is intended
 		case "COMMI":
 			fields := strings.Fields(message)
 
