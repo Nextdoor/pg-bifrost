@@ -1,9 +1,9 @@
 # Download CA root certificates
-FROM alpine:latest as certs
+FROM public.ecr.aws/docker/library/alpine:latest as certs
 RUN apk --update add ca-certificates
 
 # Test and build binary
-FROM golang:1.20.4-buster as intermediate
+FROM public.ecr.aws/docker/library/golang:1.20.4-buster as intermediate
 
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf

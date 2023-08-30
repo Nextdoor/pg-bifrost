@@ -1,4 +1,4 @@
-FROM postgres:14.7
+FROM public.ecr.aws/docker/library/postgres:14.7
 
 RUN apt-get update && apt-get install -y postgresql-14-pglogical && rm -rf /var/lib/apt/lists/*
 
