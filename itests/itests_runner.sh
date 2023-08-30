@@ -23,9 +23,9 @@ get_testfiles() {
     _transport_sink=$1
 
     if [ "$CI" == "true" ]; then
-        _base_testfiles=$(cd tests/base && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e 's/^/base\//')
+        _base_testfiles=$(cd tests && circleci tests glob "base/*" | circleci tests split --split-by=timings)
         if [ -d "tests/${_transport_sink}" ]; then
-            _specific_testfiles=$(cd tests/${_transport_sink} && circleci tests glob "*" | circleci tests split --split-by=timings | sed -e "s/^/${_transport_sink}\//")
+            _specific_testfiles=$(cd tests && circleci tests glob "${_transport_sink}/*" | circleci tests split --split-by=timings)
         fi
     else
         _base_testfiles=$(cd tests/base && ls -d */ | sed 's#/##' | sed -e 's/^/base\//')
