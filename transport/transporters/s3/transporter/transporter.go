@@ -312,6 +312,8 @@ func (t *S3Transporter) StartTransporting() {
 
 		// Begin timer
 		start := ts.UnixNano()
+		timeSinceClose := (start - genericBatch.CloseTime()) / int64(time.Millisecond)
+		t.statsChan <- stats.NewStatHistogram("s3_transport", "batch_waited", timeSinceClose, start, "ms")
 
 		// send to S3
 		err, cancelled := t.transportWithRetry(t.shutdownHandler.TerminateCtx, messagesSlice)
@@ -332,9 +334,7 @@ func (t *S3Transporter) StartTransporting() {
 		}
 
 		t.log.Debug("successfully wrote batch")
-		timeSinceClose := (now - genericBatch.CloseTime()) / int64(time.Millisecond)
 		t.statsChan <- stats.NewStatCount("s3_transport", "written", int64(genericBatch.NumMessages()), now)
-		t.statsChan <- stats.NewStatHistogram("s3_transport", "batch_waited", timeSinceClose, now, "ms")
 
 		// report transactions written in this batch
 		t.txnsWritten <- genericBatch.GetTransactions()
