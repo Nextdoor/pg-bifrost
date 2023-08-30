@@ -18,12 +18,12 @@ package transporter
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"time"
+
+	"golang.org/x/build/pargzip"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -186,7 +186,7 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 	var cancelled bool
 	var buf bytes.Buffer
 	var ts = TimeSource
-	gz := gzip.NewWriter(&buf)
+	gz := pargzip.NewWriter(&buf)
 
 	select {
 	case <-ctx.Done():
@@ -205,22 +205,14 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 		}
 	}
 
-	if err := gz.Flush(); err != nil {
-		return err, cancelled
-	}
 	if err := gz.Close(); err != nil {
 		return err, cancelled
 	}
 
-	gz.Reset(io.Discard)
-
 	firstWalStart := messagesSlice[0].WalStart
 
-	// Clear out every allocation in the conversion
-	byteArray := buf.Bytes()
-	buf.Reset()
-
-	byteReader := bytes.NewReader(byteArray)
+	// Convert gzipped buffer into a reader
+	byteReader := bytes.NewReader(buf.Bytes())
 
 	// Partition the S3 keys into days
 	year, month, day, hour, full := ts.DateString()

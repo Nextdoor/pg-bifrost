@@ -18,12 +18,13 @@ package transporter
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"testing"
 	"time"
+
+	"golang.org/x/build/pargzip"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -63,14 +64,13 @@ func streamSeekToBytes(stream io.ReadSeeker) string {
 // gzipAsReadSeeker converts []*marshaller.MarshalledMessage to an io.ReadSeeker with newlines between each message
 func gzipAsReadSeeker(messagesSlice []*marshaller.MarshalledMessage) io.ReadSeeker {
 	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
+	gz := pargzip.NewWriter(&buf)
 
 	for _, msg := range messagesSlice {
 		_, _ = gz.Write(msg.Json)
 		_, _ = gz.Write([]byte("\n"))
 	}
 
-	_ = gz.Flush()
 	_ = gz.Close()
 
 	byteArray := buf.Bytes()
