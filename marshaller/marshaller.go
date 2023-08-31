@@ -18,6 +18,7 @@ package marshaller
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -35,9 +36,57 @@ var (
 	log    = logger.WithField("package", "marshaller")
 )
 
+const epochFormatted = "1970-01-01T00:00:00Z"
+
 func init() {
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.InfoLevel)
+}
+
+var colValuesPool = sync.Pool{
+	New: func() interface{} {
+		return map[string]string{}
+	},
+}
+
+var usedColValues []map[string]string
+
+func getColValue() map[string]string {
+	v := colValuesPool.Get().(map[string]string)
+	usedColValues = append(usedColValues, v)
+	return v
+}
+
+func clearColValues() {
+	for _, m := range usedColValues {
+		colValuesPool.Put(m)
+	}
+
+	usedColValues = usedColValues[0:0]
+}
+
+var colValuePairPool = sync.Pool{
+	New: func() interface{} {
+		return map[string]map[string]string{}
+	},
+}
+
+var usedColValueParis []map[string]map[string]string
+
+func getColValuePair() map[string]map[string]string {
+	v := colValuePairPool.Get().(map[string]map[string]string)
+	usedColValueParis = append(usedColValueParis, v)
+	return v
+}
+
+func clearColValuePairs() {
+	for _, m := range usedColValueParis {
+		delete(m, "old")
+		delete(m, "new")
+		colValuePairPool.Put(m)
+	}
+
+	usedColValueParis = usedColValueParis[0:0]
 }
 
 type Marshaller struct {
@@ -158,24 +207,30 @@ func marshalColumnValue(cv *parselogical.ColumnValue) map[string]string {
 	if cv.Quoted {
 		quoted = "true"
 	}
-	return map[string]string{"v": cv.Value, "t": cv.Type, "q": quoted}
+
+	mp := getColValue()
+	mp["v"] = cv.Value
+	mp["t"] = cv.Type
+	mp["q"] = quoted
+
+	return mp
 }
 
 // marshalColumnValuePair marshals the column value pairs which shows the old and new columns
 func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parselogical.ColumnValue) map[string]map[string]string {
 	if oldValue != nil && newValue != nil {
-		return map[string]map[string]string{
-			"old": marshalColumnValue(oldValue),
-			"new": marshalColumnValue(newValue),
-		}
+		cvp := getColValuePair()
+		cvp["old"] = marshalColumnValue(oldValue)
+		cvp["new"] = marshalColumnValue(newValue)
+		return cvp
 	} else if newValue != nil {
-		return map[string]map[string]string{
-			"new": marshalColumnValue(newValue),
-		}
+		cvp := getColValuePair()
+		cvp["new"] = marshalColumnValue(newValue)
+		return cvp
 	} else if oldValue != nil {
-		return map[string]map[string]string{
-			"old": marshalColumnValue(oldValue),
-		}
+		cvp := getColValuePair()
+		cvp["old"] = marshalColumnValue(oldValue)
+		return cvp
 	}
 
 	return nil
@@ -185,8 +240,13 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
 	lsn := pglogrepl.LSN(msg.WalStart).String()
 
-	// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
-	t := time.Unix(0, int64(msg.ServerTime)*1000000).UTC().Format(time.RFC3339)
+	var t string
+	if msg.ServerTime != 0 {
+		// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
+		t = time.Unix(0, int64(msg.ServerTime)*1000000).UTC().Format(time.RFC3339)
+	} else {
+		t = epochFormatted
+	}
 	columns := make(map[string]map[string]map[string]string)
 
 	for k, v := range msg.Pr.Columns {
@@ -218,11 +278,16 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 		}
 	}
 
-	return gojson.Marshal(&jsonWalEntry{
+	ret, err := gojson.Marshal(&jsonWalEntry{
 		Time:      &t,
 		Lsn:       &lsn,
 		Table:     &msg.Pr.Relation,
 		Operation: &msg.Pr.Operation,
 		Columns:   &columns,
 	})
+
+	clearColValues()
+	clearColValuePairs()
+
+	return ret, err
 }
