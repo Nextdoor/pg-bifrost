@@ -14,6 +14,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/jackc/pglogrepl v0.0.0-20230428004623-0c5b98f52784
 	github.com/jackc/pgx/v5 v5.3.1
+	github.com/klauspost/pgzip v1.2.6
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/sirupsen/logrus v1.9.0

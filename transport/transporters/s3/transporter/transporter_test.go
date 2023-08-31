@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/build/pargzip"
+	"github.com/klauspost/pgzip"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -64,7 +64,7 @@ func streamSeekToBytes(stream io.ReadSeeker) string {
 // gzipAsReadSeeker converts []*marshaller.MarshalledMessage to an io.ReadSeeker with newlines between each message
 func gzipAsReadSeeker(messagesSlice []*marshaller.MarshalledMessage) io.ReadSeeker {
 	var buf bytes.Buffer
-	gz := pargzip.NewWriter(&buf)
+	gz := pgzip.NewWriter(&buf)
 
 	for _, msg := range messagesSlice {
 		_, _ = gz.Write(msg.Json)
@@ -141,7 +141,7 @@ func TestSinglePutOk(t *testing.T) {
 	batchSize := 1
 
 	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy, 0)
 	b := batch.NewGenericBatch("", batchSize)
 
 	marshalledMessage := marshaller.MarshalledMessage{
@@ -206,7 +206,7 @@ func TestSinglePutMultipleRecordsOk(t *testing.T) {
 	batchSize := 2
 
 	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy, 0)
 	b := batch.NewGenericBatch("", batchSize)
 
 	firstMarshalledMessage := marshaller.MarshalledMessage{
@@ -280,7 +280,7 @@ func TestSingleRecordSinglePutWithFailuresNoError(t *testing.T) {
 	batchSize := 1
 
 	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 5)
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy, 0)
 	b := batch.NewGenericBatch("", batchSize)
 
 	marshalledMessage := marshaller.MarshalledMessage{
@@ -356,7 +356,7 @@ func TestSingleRecordDoublePutRetriesExhaustedWithError(t *testing.T) {
 	batchSize := 1
 
 	retryPolicy := backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 1)
-	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy)
+	transport := NewTransporterWithInterface(sh, in, txns, statsChan, *log, 0, bucketName, keySpace, mockClient, retryPolicy, 0)
 	b := batch.NewGenericBatch("", batchSize)
 
 	marshalledMessage := marshaller.MarshalledMessage{

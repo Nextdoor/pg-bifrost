@@ -29,6 +29,7 @@ const (
 	ConfVarAwsSecretAccessKey = "aws-secret-access-key"
 	ConfVarAwsRegion          = "aws-region"
 	ConfVarEndpoint           = "endpoint"
+	ConfVarBufMaxRuse         = "buf-max-reuse"
 )
 
 var Flags = []cli.Flag{
@@ -78,5 +79,14 @@ var Flags = []cli.Flag{
 		EnvVar: "ENDPOINT",
 		Value:  "",
 		Hidden: true,
+	}),
+	altsrc.NewIntFlag(cli.IntFlag{
+		Name: ConfVarBufMaxRuse,
+		Usage: "How many times to reuse per worker compression " +
+			"buffer before discarding. This helps reduce memory " +
+			"allocations when non-zero. Increase value to re-use " +
+			"buffer more at the expense of not freeing up memory.",
+		EnvVar: "BIFROST_S3_BUF_MAX_REUSE",
+		Value:  32,
 	}),
 }
