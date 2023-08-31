@@ -248,7 +248,7 @@ var lnsWriter = bufio.NewWriter(&lsnBuffer)
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
 func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
 	// clear last used
-	for k, _ := range colsTemp {
+	for k := range colsTemp {
 		delete(colsTemp, k)
 	}
 	var columns = colsTemp
