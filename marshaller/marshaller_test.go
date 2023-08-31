@@ -442,3 +442,11 @@ func TestTerminationContextOutput(t *testing.T) {
 		assert.Fail(t, "output channel not properly closed")
 	}
 }
+
+func BenchmarkMarshalWalToJson(b *testing.B) {
+	msg := _basicInsertMessage()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, _ = marshalWalToJson(msg, true)
+	}
+}

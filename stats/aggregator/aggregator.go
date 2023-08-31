@@ -277,8 +277,10 @@ func computeAggregateKey(s stats.Stat) string {
 // isBtimeExpired returns true if the current time is past the bucket time with a grace period
 func (a *Aggregator) isBtimeExpired(bucketTime int64) bool {
 	timeNow := a.timeNow().UnixNano()
-	log.Debugf(`%s > %s ?`, strconv.FormatInt(timeNow, 10),
-		strconv.FormatInt(bucketTime+a.aggregateTimeNano+reportGraceNano, 10))
+	if log.Level == logrus.DebugLevel {
+		log.Debugf(`%s > %s ?`, strconv.FormatInt(timeNow, 10),
+			strconv.FormatInt(bucketTime+a.aggregateTimeNano+reportGraceNano, 10))
+	}
 	return timeNow > bucketTime+a.aggregateTimeNano+reportGraceNano
 }
 
