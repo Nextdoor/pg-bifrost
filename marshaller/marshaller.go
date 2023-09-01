@@ -109,7 +109,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	statsChan chan stats.Stat,
 	noMarshalOldValue bool) Marshaller {
 
-	outputChan := make(chan *MarshalledMessage)
+	outputChan := make(chan *MarshalledMessage, 1000)
 
 	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan, noMarshalOldValue}
 }
@@ -172,35 +172,43 @@ func (m Marshaller) Start() {
 			return
 		}
 
-		byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
-
-		if err != nil {
-			m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
-			log.Error("error in marshalWalToJson")
-			continue
-		}
-
-		marshalledMessage := MarshalledMessage{
+		marshalledMessage := &MarshalledMessage{
 			walMessage.Pr.Operation,
 			walMessage.Pr.Relation,
-			byteMessage,
+			nil,
 			walMessage.TimeBasedKey,
 			walMessage.WalStart,
 			walMessage.Pr.Transaction,
 			walMessage.PartitionKey,
 		}
 
-		stat := stats.NewStatCount("marshaller", "success", 1, time.Now().UnixNano())
+		if walMessage.Pr.Operation == "BEGIN" || walMessage.Pr.Operation == "COMMIT" {
+			// don't marshall begin or commit messages because they aren't put in batches anyway
+		} else {
+			byteMessage, err := marshalWalToJson(walMessage, m.noMarshalOldValue)
+
+			if err != nil {
+				m.statsChan <- stats.NewStatCount("marshaller", "failure", 1, time.Now().UnixNano())
+				log.Error("error in marshalWalToJson")
+				continue
+			}
+
+			marshalledMessage.Json = byteMessage
+		}
 
 		select {
-		case m.OutputChan <- &marshalledMessage:
+		case m.OutputChan <- marshalledMessage:
 			// pass
 		case <-m.shutdownHandler.TerminateCtx.Done():
 			log.Debug("received terminateCtx cancellation")
 			return
 		}
 
-		m.statsChan <- stat
+		// Only record stat if we did something
+		if marshalledMessage.Json != nil {
+			stat := stats.NewStatCount("marshaller", "success", 1, time.Now().UnixNano())
+			m.statsChan <- stat
+		}
 	}
 }
 
