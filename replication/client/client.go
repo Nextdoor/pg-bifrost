@@ -41,11 +41,7 @@ var (
 	logger              = logrus.New()
 	log                 = logger.WithField("package", "client")
 	logProgressInterval = int64(30 * time.Second)
-
-	// Settings for exponential sleep time. This prevents spinning when
-	// there is a backlog.
-	initialSleep = 10 * time.Millisecond
-	maxSleep     = 2 * time.Second
+	DefaultProgressFreq = 10 * time.Second
 )
 
 func init() {
@@ -62,6 +58,7 @@ type Replicator struct {
 	outputChan       chan *replication.WalMessage
 	progressLastSent int64
 	stoppedChan      chan struct{}
+	progressFreq     time.Duration
 
 	// handlePrimaryKeepaliveMessage
 	lastClientHeartbeatRequestTime time.Time
@@ -80,7 +77,8 @@ type Replicator struct {
 func New(shutdownHandler shutdown.ShutdownHandler,
 	statsChan chan stats.Stat,
 	connManager conn.ManagerInterface,
-	clientBufferSize int) Replicator {
+	clientBufferSize int,
+	progressFreq time.Duration) Replicator {
 
 	return Replicator{
 		shutdownHandler:  shutdownHandler,
@@ -90,6 +88,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 		outputChan:       make(chan *replication.WalMessage, clientBufferSize),
 		progressLastSent: int64(0),
 		stoppedChan:      make(chan struct{}),
+		progressFreq:     progressFreq,
 
 		// handlePrimaryKeepaliveMessage
 		lastClientHeartbeatRequestTime: time.Now(),
@@ -271,7 +270,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 	c.overallProgress = uint64(pkm.ServerWALEnd)
 
 	// Ticker to force update of progress
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(c.progressFreq)
 	defer ticker.Stop()
 
 	// Loop reading replication messages
@@ -350,7 +349,7 @@ func (c *Replicator) Start(progressChan <-chan uint64) {
 			case pglogrepl.PrimaryKeepaliveMessageByteID:
 				err = c.handlePrimaryKeepaliveMessage(t.Data[1:])
 			case pglogrepl.XLogDataByteID:
-				err = c.handleXLogData(t.Data[1:])
+				err = c.handleXLogData(t.Data[1:], ticker)
 			default:
 				continue
 			}
@@ -468,7 +467,7 @@ func (c *Replicator) handlePrimaryKeepaliveMessage(data []byte) error {
 	return nil
 }
 
-func (c *Replicator) handleXLogData(data []byte) error {
+func (c *Replicator) handleXLogData(data []byte, progressTicker *time.Ticker) error {
 	xld, err := pglogrepl.ParseXLogData(data)
 	if err != nil {
 		log.Error(err)
@@ -545,48 +544,24 @@ func (c *Replicator) handleXLogData(data []byte) error {
 	wal.Pr.Transaction = c.transaction
 	wal.TimeBasedKey = c.timeBasedKey
 
-	// Attempt to write to channel. If full then send a keepalive and attempt
-	// to write to channel again.
-	var sleepTotal time.Duration
-	err = func() error {
-		var curSleep = initialSleep
+	// Write to output channel and handle updating progress if we're blocked
+WriteLoop:
+	for {
+		select {
+		case c.outputChan <- wal:
 
-		for {
-			select {
-			case c.outputChan <- wal:
-				// Break out to read the next message
-				return nil
-			default:
-				// Send keepalive if channel is full
-				if err := c.handleProgress(true); err != nil {
-					// propagate error
-					return err
-				}
+			// Break out to read the next message
+			break WriteLoop
 
-				if curSleep > maxSleep {
-					curSleep = initialSleep
-				}
-
-				sleepTotal += curSleep
-
-				// Sleep here to prevent spinning.
-				time.Sleep(curSleep)
-				curSleep = curSleep * 2
+		case <-progressTicker.C:
+			if errP := c.handleProgress(true); errP != nil {
+				// propagate error
+				return errP
 			}
 		}
-	}()
-
-	if err != nil {
-		return err
 	}
 
-	now := time.Now().UnixNano()
-	c.statsChan <- stats.NewStatCount("replication", "received", 1, now)
-
-	if sleepTotal > 0 {
-		c.statsChan <- stats.NewStatHistogram("replication", "blocked", sleepTotal.Milliseconds(), now, "ms")
-	}
-
+	c.statsChan <- stats.NewStatCount("replication", "received", 1, time.Now().UnixNano())
 	return nil
 }
 

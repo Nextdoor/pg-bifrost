@@ -95,7 +95,7 @@ func getBasicTestSetup(test *testing.T) (*gomock.Controller, Replicator, chan ui
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 2)
+	replicator := New(sh, statsChan, mockManager, 2, DefaultProgressFreq)
 
 	// Setup return
 	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), uint64(0)).Return(mockConn, nil).Times(1)
@@ -161,7 +161,7 @@ func TestWalMessage(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	// Setup return
@@ -221,7 +221,7 @@ func TestReplicationError(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	// Setup return
@@ -263,7 +263,7 @@ func TestMsgNotCopyData(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 
 	// Setup return
 	serverWalEnd := uint64(111)
@@ -308,7 +308,7 @@ func TestNilMessage(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	// Setup return
@@ -347,7 +347,7 @@ func TestStartValidMessage(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -400,7 +400,7 @@ func TestTxnsMessage(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -485,7 +485,7 @@ func TestNoCommit(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -556,7 +556,7 @@ func TestDupWalStart(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -621,7 +621,7 @@ func TestStartInvalidWalString(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 
 	// walData.WalString:
@@ -673,7 +673,7 @@ func TestStartNilWalMessage(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -753,7 +753,7 @@ func TestStartWithSendStandbyStatus(t *testing.T) {
 	expectChan := make(chan interface{}, 100)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	mockConn.EXPECT().ReceiveMessage(gomock.Any()).Return(getPrimaryKeepaliveMessage(uint64(10)), nil).Times(1)
@@ -805,7 +805,7 @@ func TestClosedProgressChan(t *testing.T) {
 
 	sh := shutdown.NewShutdownHandler()
 
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	out := replicator.GetOutputChan()
 
 	go replicator.Start(progChan)
@@ -853,7 +853,7 @@ func TestStartOutputChannelFull(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 1)
+	replicator := New(sh, statsChan, mockManager, 1, 70*time.Millisecond)
 	out := replicator.GetOutputChan()
 	stoppedChan := replicator.GetStoppedChan()
 
@@ -879,7 +879,7 @@ func TestStartOutputChannelFull(t *testing.T) {
 	go replicator.Start(progChan)
 
 	// Wait for replicator to run
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 
 	select {
 	case _, ok := <-out:
@@ -908,7 +908,7 @@ func TestDeadlineExceededTwice(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	// Setup return
@@ -953,7 +953,7 @@ func TestWithMultipleProgress(t *testing.T) {
 
 	sh := shutdown.NewShutdownHandler()
 
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 	stoppedChan := replicator.GetStoppedChan()
 
 	// CommitWalStart from server
@@ -1035,7 +1035,7 @@ func TestDeadlineExceeded(t *testing.T) {
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 
 	go replicator.Start(progChan)
 
@@ -1099,7 +1099,7 @@ func TestGetConnectionError(t *testing.T) {
 	mockManager.EXPECT().Close().Times(1)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 
 	go replicator.Start(progChan)
 
@@ -1170,7 +1170,7 @@ func TestProgressChanClosed(t *testing.T) {
 	statsChan := make(chan stats.Stat, 1000)
 
 	sh := shutdown.NewShutdownHandler()
-	replicator := New(sh, statsChan, mockManager, 10)
+	replicator := New(sh, statsChan, mockManager, 10, DefaultProgressFreq)
 
 	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).MinTimes(1)
 
@@ -1335,6 +1335,7 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	sh := replicator.shutdownHandler
+	replicator.progressFreq = 70 * time.Millisecond
 	stoppedChan := replicator.GetStoppedChan()
 	defer mockCtrl.Finish()
 	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(4)
@@ -1366,7 +1367,7 @@ func TestSendKeepaliveChanFull(t *testing.T) {
 
 	// Wait for expect
 	select {
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		assert.Fail(t, "did not pass test in time")
 	case <-expectChan:
 		// pass
@@ -1380,6 +1381,8 @@ func TestSendKeepaliveChanFullError(t *testing.T) {
 	// Setup mock
 	mockCtrl, replicator, progChan, mockManager, mockConn := getBasicTestSetup(t)
 	defer mockCtrl.Finish()
+
+	replicator.progressFreq = 70 * time.Millisecond
 
 	expectChan := make(chan interface{}, 1)
 
@@ -1551,6 +1554,7 @@ func TestRecoveryFailed(t *testing.T) {
 	defer mockCtrl.Finish()
 	sh := replicator.shutdownHandler
 	stoppedChan := replicator.GetStoppedChan()
+	replicator.progressFreq = 70 * time.Millisecond
 
 	mockManager.EXPECT().GetConnWithStartLsn(gomock.Any(), gomock.Any()).Return(mockConn, nil).Times(1)
 
@@ -1565,17 +1569,17 @@ func TestRecoveryFailed(t *testing.T) {
 		}).Times(1)
 	err := errors.New("expected error")
 	mockManager.EXPECT().GetConn(gomock.Any()).Return(nil, err).Times(1)
+	mockManager.EXPECT().Close().Times(1)
 
 	// Run
 	go replicator.Start(progChan)
 	time.Sleep(5 * time.Millisecond)
 
 	// Wait for closing cleanup
-	mockManager.EXPECT().Close().Times(1)
 	sh.CancelFunc()
 
 	// Add a little delay to ensure shutdown ran
-	var timeout = time.NewTimer(100 * time.Millisecond)
+	var timeout = time.NewTimer(1 * time.Second)
 
 	// Check to see if shutdown closed output channel
 	select {
