@@ -437,7 +437,7 @@ func TestTerminationContextOutput(t *testing.T) {
 	m.shutdownHandler.CancelFunc()
 
 	time.Sleep(10 * time.Millisecond)
-	_, _ = <-m.OutputChan   // first message
+	<-m.OutputChan          // first message
 	_, ok := <-m.OutputChan // now channel is empty
 	if ok {
 		assert.Fail(t, "output channel not properly closed")
