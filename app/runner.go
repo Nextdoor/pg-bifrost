@@ -175,7 +175,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	txnsWritten := make(chan *ordered_map.OrderedMap, clientBufferSize*5)
 
 	// Initialize in reverse order
-	replicationClient := client.New(shutdownHandler, statsChan, connManager, clientBufferSize)
+	replicationClient := client.New(shutdownHandler, statsChan, connManager, clientBufferSize, client.DefaultProgressFreq)
 
 	filterInstance := filter.New(
 		shutdownHandler,
