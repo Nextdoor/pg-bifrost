@@ -105,6 +105,13 @@ func New(
 		endpointVarPtr = &endpointVar
 	}
 
+	bufMaxReuseVar := transportConfig[ConfVarBufMaxRuse]
+	bufMaxReuse, ok := bufMaxReuseVar.(int)
+
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarBufMaxRuse, "string")
+	}
+
 	transports := make([]*transport.Transporter, workers)
 
 	// Make and link transporters to the batcher's output channels
@@ -133,6 +140,7 @@ func New(
 			&awsAccessKeyIdVar,
 			&awsSecretAccessKeyVar,
 			endpointVarPtr,
+			bufMaxReuse,
 		)
 		transports[i] = &t
 	}

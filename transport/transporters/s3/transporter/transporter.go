@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/build/pargzip"
+	"github.com/klauspost/pgzip"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
@@ -48,6 +48,8 @@ import (
 var (
 	TimeSource utils.TimeSource = &utils.RealTime{}
 )
+
+var newLineBytes = []byte("\n")
 
 // key_join is a helper to concatenate strings to form an S3 key
 func key_join(strs ...string) string {
@@ -87,6 +89,11 @@ type S3Transporter struct {
 	bucketName  string
 	keySpace    string
 	retryPolicy backoff.BackOff
+
+	bufMaxReuse  int
+	bufUsedCount int
+	gz           *pgzip.Writer
+	gzBuf        *bytes.Buffer
 }
 
 func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
@@ -98,10 +105,12 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 	bucketName string,
 	keySpace string,
 	client s3iface.S3API,
-	retryPolicy backoff.BackOff) transport.Transporter {
+	retryPolicy backoff.BackOff,
+	bufMaxReuse int) transport.Transporter {
 
 	log = *log.WithField("routine", "transporter").WithField("id", id)
 
+	gzBuf := bytes.NewBuffer(nil)
 	return &S3Transporter{
 		shutdownHandler,
 		inputChan,
@@ -112,6 +121,10 @@ func NewTransporterWithInterface(shutdownHandler shutdown.ShutdownHandler,
 		bucketName,
 		keySpace,
 		retryPolicy,
+		bufMaxReuse,
+		0,
+		pgzip.NewWriter(gzBuf),
+		gzBuf,
 	}
 }
 
@@ -128,7 +141,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 	awsRegion *string,
 	awsAccessKeyId *string,
 	awsSecretAccessKey *string,
-	endpointPtr *string) transport.Transporter {
+	endpointPtr *string,
+	bufMaxReuse int) transport.Transporter {
 
 	awsConfig := &aws.Config{
 		Region:     aws.String(*awsRegion),
@@ -160,7 +174,8 @@ func NewTransporter(shutdownHandler shutdown.ShutdownHandler,
 		bucketName,
 		keySpace,
 		client,
-		retryPolicy)
+		retryPolicy,
+		bufMaxReuse)
 }
 
 // shutdown idempotently closes the output channel
@@ -184,9 +199,22 @@ func (t *S3Transporter) shutdown() {
 // transportWithRetry does a PUT on a full batch as a single key/file to S3
 func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []*marshaller.MarshalledMessage) (error, bool) {
 	var cancelled bool
-	var buf bytes.Buffer
 	var ts = TimeSource
-	gz := pargzip.NewWriter(&buf)
+
+	// Keep track of number of times we use the buffers
+	// so that we can periodically make new ones to release
+	// underlying memory every so often.
+	t.bufUsedCount += 1
+
+	if t.bufUsedCount > t.bufMaxReuse {
+		t.bufUsedCount = 0
+		t.gzBuf = bytes.NewBuffer(nil)
+		t.gz = pgzip.NewWriter(t.gzBuf)
+	} else {
+		// Reset buffers used for compression
+		t.gzBuf.Reset()
+		t.gz.Reset(t.gzBuf)
+	}
 
 	select {
 	case <-ctx.Done():
@@ -197,22 +225,22 @@ func (t *S3Transporter) transportWithRetry(ctx context.Context, messagesSlice []
 
 	// add all messages into a gzipped buffer
 	for _, msg := range messagesSlice {
-		if _, err := gz.Write(msg.Json); err != nil {
+		if _, err := t.gz.Write(msg.Json); err != nil {
 			return err, cancelled
 		}
-		if _, err := gz.Write([]byte("\n")); err != nil {
+		if _, err := t.gz.Write(newLineBytes); err != nil {
 			return err, cancelled
 		}
 	}
 
-	if err := gz.Close(); err != nil {
+	if err := t.gz.Close(); err != nil {
 		return err, cancelled
 	}
 
 	firstWalStart := messagesSlice[0].WalStart
 
 	// Convert gzipped buffer into a reader
-	byteReader := bytes.NewReader(buf.Bytes())
+	byteReader := bytes.NewReader(t.gzBuf.Bytes())
 
 	// Partition the S3 keys into days
 	year, month, day, hour, full := ts.DateString()
