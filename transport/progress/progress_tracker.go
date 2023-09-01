@@ -39,11 +39,6 @@ var (
 
 const (
 	outputChanSize = 1000
-
-	// Settings for exponential sleep time when there have been no seen or
-	// written transactions. This prevents a spinning.
-	initialSleep = 100 * time.Microsecond
-	maxSleep     = 50 * time.Millisecond
 )
 
 func init() {
@@ -186,69 +181,51 @@ func (p *ProgressTracker) emitProgress() {
 }
 
 // readProgress reads everything from the txnSeenChan and txnsWritten channel and updates the ledger
-func (p *ProgressTracker) readProgress(tickerDuration time.Duration) (bool, error) {
-	var updated = false
+func (p *ProgressTracker) readProgress(tickerDuration time.Duration) error {
 	var deadline = time.After(tickerDuration)
 
-	// First handle Seen
-HandleSeen:
 	for {
 		select {
 		case txnSeen, ok := <-p.txnSeenChan:
 			// Update entries from the Batcher as "seen"
 			if !ok {
-				return updated, errors.New("txnSeenChan input channel is closed")
+				return errors.New("txnSeenChan input channel is closed")
 			}
 
 			err := p.updateSeen(txnSeen)
 			if err != nil {
 				panic(err.Error())
 			}
-			updated = true
 
 			// Ensure we do check for deadline
 			select {
 			case <-deadline:
-				break HandleSeen
+				return nil
 			default:
 				continue
 			}
-		case <-deadline:
-			break HandleSeen
-		}
-	}
-
-	deadline = time.After(tickerDuration)
-
-	// Now handle written
-HandleWritten:
-	for {
-		select {
 		case batchTransactions, ok := <-p.txnsWritten:
 			// Update entries from the Batcher as successfully written
 			if !ok {
-				return updated, errors.New("txnsWritten input channel is closed")
+				return errors.New("txnsWritten input channel is closed")
 			}
 
 			err := p.updateWritten(batchTransactions)
 			if err != nil {
 				panic(err.Error())
 			}
-			updated = true
 
 			// Ensure we do check for deadline
 			select {
 			case <-deadline:
-				break HandleWritten
+				return nil
 			default:
 				continue
 			}
 		case <-deadline:
-			break HandleWritten
+			return nil
 		}
 	}
-
-	return updated, nil
 }
 
 // Start begins progress tracking which emits progress on a timer or otherwise updates the ledger
@@ -282,14 +259,6 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 			// Prioritize emitProgress if the timer has ticked
 			log.Debug("ticker ticked in progress tracker")
 
-			// Flush seen and written channel so the ledger is up to date before emitting
-			_, err := p.readProgress(tickerDuration)
-
-			if err != nil {
-				log.Warn(err.Error())
-				return
-			}
-
 			// Emit progress of the updated ledger
 			initialLedgerSize := p.ledger.items.Len()
 			p.emitProgress()
@@ -315,9 +284,7 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 			}
 		default:
 			// Flush seen and written channel so the ledger is up to date before emitting
-			_, err := p.readProgress(tickerDuration)
-
-			if err != nil {
+			if err := p.readProgress(tickerDuration); err != nil {
 				log.Warn(err.Error())
 				return
 			}
