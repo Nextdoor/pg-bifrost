@@ -17,9 +17,13 @@
 package marshaller
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	"os"
 	"sync"
 	"time"
+	"unsafe"
 
 	gojson "github.com/goccy/go-json"
 
@@ -27,7 +31,6 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/replication"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/jackc/pglogrepl"
 	"github.com/sirupsen/logrus"
 )
 
@@ -113,11 +116,11 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 
 // jsonWalEntry is a helper struct which has json field tags
 type jsonWalEntry struct {
-	Time      *string                                  `json:"time"`
-	Lsn       *string                                  `json:"lsn"` // Log Sequence Number that determines position in WAL
-	Table     *string                                  `json:"table"`
-	Operation *string                                  `json:"operation"`
-	Columns   *map[string]map[string]map[string]string `json:"columns"`
+	Time      string                                  `json:"time"`
+	Lsn       string                                  `json:"lsn"` // Log Sequence Number that determines position in WAL
+	Table     string                                  `json:"table"`
+	Operation string                                  `json:"operation"`
+	Columns   map[string]map[string]map[string]string `json:"columns"`
 }
 
 // shutdown idempotently closes the output channels and cancels the termination context
@@ -236,18 +239,19 @@ func marshalColumnValuePair(newValue *parselogical.ColumnValue, oldValue *parsel
 	return nil
 }
 
+// Vars reused across executions of marshalWalToJson in order to avoid allocations
+var colsTemp = map[string]map[string]map[string]string{}
+var reusedWalEntry = &jsonWalEntry{}
+var lsnBuffer bytes.Buffer
+var lnsWriter = bufio.NewWriter(&lsnBuffer)
+
 // marshalWalToJson marshals a WalMessage using parselogical to parse the columns and returns a byte slice
 func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]byte, error) {
-	lsn := pglogrepl.LSN(msg.WalStart).String()
-
-	var t string
-	if msg.ServerTime != 0 {
-		// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
-		t = time.Unix(0, int64(msg.ServerTime)*1000000).UTC().Format(time.RFC3339)
-	} else {
-		t = epochFormatted
+	// clear last used
+	for k := range colsTemp {
+		delete(colsTemp, k)
 	}
-	columns := make(map[string]map[string]map[string]string)
+	var columns = colsTemp
 
 	for k, v := range msg.Pr.Columns {
 		oldV, ok := msg.Pr.OldColumns[k]
@@ -278,13 +282,29 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 		}
 	}
 
-	ret, err := gojson.Marshal(&jsonWalEntry{
-		Time:      &t,
-		Lsn:       &lsn,
-		Table:     &msg.Pr.Relation,
-		Operation: &msg.Pr.Operation,
-		Columns:   &columns,
-	})
+	var t string
+	if msg.ServerTime != 0 {
+		// ServerTime * 1,000,000 to convert from milliseconds to nanoseconds
+		t = time.Unix(0, int64(msg.ServerTime)*1000000).UTC().Format(time.RFC3339)
+	} else {
+		t = epochFormatted
+	}
+
+	// Write LSN to string without additional memory allocations
+	lnsWriter.Reset(&lsnBuffer)
+	lsnBuffer.Reset()
+	_, _ = fmt.Fprintf(lnsWriter, "%X/%X", uint32(msg.WalStart>>32), uint32(msg.WalStart))
+	_ = lnsWriter.Flush()
+	lsnBytes := lsnBuffer.Bytes()
+
+	// Construct WalEntry
+	reusedWalEntry.Time = t
+	reusedWalEntry.Lsn = *(*string)(unsafe.Pointer(&lsnBytes))
+	reusedWalEntry.Table = msg.Pr.Relation
+	reusedWalEntry.Operation = msg.Pr.Operation
+	reusedWalEntry.Columns = columns
+
+	ret, err := gojson.Marshal(reusedWalEntry)
 
 	clearColValues()
 	clearColValuePairs()
