@@ -27,7 +27,7 @@ import (
 
 type TransportManager struct {
 	inputChan   <-chan *marshaller.MarshalledMessage
-	txnsSeen    chan *progress.Seen
+	txnsSeen    chan []*progress.Seen
 	txnsWritten chan *ordered_map.OrderedMap
 	statsChan   chan stats.Stat
 
@@ -43,7 +43,7 @@ type TransportManager struct {
 // returns a TransportManager which can start the Batcher and Transporters as go routines.
 func New(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *marshaller.MarshalledMessage,
-	txnsSeen chan *progress.Seen,
+	txnsSeen chan []*progress.Seen,
 	txnsWritten chan *ordered_map.OrderedMap, // Map of <transaction:progress.Written>
 	statsChan chan stats.Stat,
 	transportType transport.TransportType,

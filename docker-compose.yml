@@ -8,3 +8,25 @@ services:
     - POSTGRES_PASSWORD=pgbifrost
     ports:
     - 5432:5432
+    networks:
+      - net
+
+  bifrost:
+    container_name: bifrost
+    image: pg-bifrost:fastest
+    depends_on:
+      - postgres
+    ports:
+      - 6060:6060
+    environment:
+      - BATCH_FLUSH_MAX_AGE=120000
+      - BATCH_FLUSH_UPDATE_AGE=1000
+      - NO_MARSHAL_OLD_VALUE=true
+      - WORKERS=1
+      - BATCHER_MEMORY_SOFT_LIMIT=104857600
+    networks:
+      - net
+    command: /pg-bifrost --host postgres --password pgbifrost replicate -s stdout
+
+networks:
+  net:

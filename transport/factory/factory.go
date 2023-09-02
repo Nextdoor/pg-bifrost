@@ -35,7 +35,7 @@ func NewTransport(shutdownHandler shutdown.ShutdownHandler,
 	transportType transport.TransportType,
 	transportConfig map[string]interface{},
 	inputChan <-chan *marshaller.MarshalledMessage,
-	txnsSeen chan<- *progress.Seen,
+	txnsSeen chan<- []*progress.Seen,
 	txnsWritten chan<- *ordered_map.OrderedMap, // Map of <transaction:progress.Written>
 	statsChan chan stats.Stat,
 	workers int,

@@ -62,7 +62,7 @@ type Batcher struct {
 
 	inputChan    <-chan *marshaller.MarshalledMessage // receive single MarshalledMessages
 	outputChans  []chan transport.Batch               // one output channel per Transporter worker
-	txnsSeenChan chan<- *progress.Seen                // channel to report transactions seen to ProgressTracker
+	txnsSeenChan chan<- []*progress.Seen              // channel to report transactions seen to ProgressTracker
 	statsChan    chan stats.Stat
 
 	tickRate               time.Duration              // controls frequency that batcher looks for input. This should be non-zero to avoid CPU spin.
@@ -75,6 +75,7 @@ type Batcher struct {
 	routingMethod          BatchRouting               // method to use when routing a batch to an output channel/worker
 	roundRobinPosition     int                        // in Round-robin routing mode this keeps track of the position
 	txnsSeenTimeout        time.Duration              // timeout to wait on writing seen transactions. If this limit is reached then batcher errors out.
+	seenList               []*progress.Seen
 }
 
 // NewBatcher returns a new Batcher with output channels to use as inputs for Transporters. Note the caller must
@@ -82,7 +83,7 @@ type Batcher struct {
 // check compatibility.
 func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *marshaller.MarshalledMessage,
-	txnsSeenChan chan<- *progress.Seen,
+	txnsSeenChan chan<- []*progress.Seen,
 	statsChan chan stats.Stat,
 
 	tickRate int, // number of milliseconds that batcher will wait to check for input.
@@ -120,6 +121,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 		routingMethod,
 		0,
 		time.Second * 12, // max time to wait for sending transactions to ProgressTracker via txnsSeenChan
+		[]*progress.Seen{},
 	}
 }
 
@@ -206,18 +208,11 @@ func (b *Batcher) StartBatching() {
 
 		// Update ledger when a COMMIT is seen
 		if msg.Operation == "COMMIT" {
-			s := &progress.Seen{
+			b.seenList = append(b.seenList, &progress.Seen{
 				Transaction:    msg.Transaction,
 				TimeBasedKey:   msg.TimeBasedKey,
 				TotalMsgs:      totalMsgsInTxn,
-				CommitWalStart: msg.WalStart}
-			select {
-			case b.txnsSeenChan <- s:
-				log.Debug("seen a BatchTransaction")
-			case <-time.After(b.txnsSeenTimeout):
-				log.Error("fatal time out sending a BatchTransaction to the ProgressTracker")
-				return
-			}
+				CommitWalStart: msg.WalStart})
 		}
 
 		// Reset counter for number of messages in transaction when
@@ -369,6 +364,16 @@ func (b *Batcher) handleTicker() bool {
 }
 
 func (b *Batcher) sendBatch(batch transport.Batch) bool {
+
+	// First flush out seen list
+	select {
+	case b.txnsSeenChan <- b.seenList:
+		b.seenList = []*progress.Seen{}
+		log.Debug("seen a BatchTransaction")
+	case <-time.After(b.txnsSeenTimeout):
+		log.Panic("fatal time out sending a BatchTransaction to the ProgressTracker")
+	}
+
 	ok, err := batch.Close()
 	if !ok {
 		log.Error(err)

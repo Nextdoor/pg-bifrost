@@ -67,7 +67,7 @@ type Written struct {
 type ProgressTracker struct {
 	shutdownHandler shutdown.ShutdownHandler
 
-	txnSeenChan <-chan *Seen
+	txnSeenChan <-chan []*Seen
 	txnsWritten <-chan *ordered_map.OrderedMap // <transaction:progress.written>
 	statsChan   chan stats.Stat
 	OutputChan  chan uint64 // channel to send overall (youngest) progress on
@@ -80,7 +80,7 @@ type ProgressTracker struct {
 // New creates a progress "table" based on the number of workers (inputChans) and returns a ProgressTracker
 // txnsSeen MUST be an unbuffered channel
 func New(shutdownHandler shutdown.ShutdownHandler,
-	txnSeenChan <-chan *Seen,
+	txnSeenChan <-chan []*Seen,
 	txnsWritten <-chan *ordered_map.OrderedMap,
 	statsChan chan stats.Stat) ProgressTracker {
 
@@ -110,11 +110,13 @@ func (p ProgressTracker) shutdown() {
 }
 
 // updateSeen adds an entire transaction that was seen by the batcher to the ledger
-func (p *ProgressTracker) updateSeen(seen *Seen) error {
-	err := p.ledger.updateSeen(seen)
+func (p *ProgressTracker) updateSeen(seen []*Seen) error {
+	for _, s := range seen {
+		err := p.ledger.updateSeen(s)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
