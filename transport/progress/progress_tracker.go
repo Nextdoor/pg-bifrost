@@ -39,11 +39,6 @@ var (
 
 const (
 	outputChanSize = 1000
-
-	// Settings for exponential sleep time when there have been no seen or
-	// written transactions. This prevents a spinning.
-	initialSleep = 100 * time.Microsecond
-	maxSleep     = 50 * time.Millisecond
 )
 
 func init() {
@@ -186,49 +181,70 @@ func (p *ProgressTracker) emitProgress() {
 }
 
 // readProgress reads everything from the txnSeenChan and txnsWritten channel and updates the ledger
-func (p *ProgressTracker) readProgress(tickerDuration time.Duration) (bool, error) {
-	var updated bool = false
+func (p *ProgressTracker) readProgress(tickerDuration time.Duration) error {
+	var deadline = time.After(tickerDuration)
 
-	// Set a deadline for reading progress to a tick. This will ensure we never get stuck
-	// in reading a constant stream of progress and never emit progress.
-	var deadline = time.Now().UnixNano() + tickerDuration.Nanoseconds()
-
+ReadProgressLoop:
 	for {
 		select {
 		case txnSeen, ok := <-p.txnSeenChan:
 			// Update entries from the Batcher as "seen"
 			if !ok {
-				return updated, errors.New("txnSeenChan input channel is closed")
+				return errors.New("txnSeenChan input channel is closed")
 			}
 
 			err := p.updateSeen(txnSeen)
 			if err != nil {
 				panic(err.Error())
 			}
-			updated = true
 
-			if time.Now().UnixNano() > deadline {
-				return updated, nil
+			// Ensure we do check for deadline
+			select {
+			case <-deadline:
+				break ReadProgressLoop
+			default:
+				continue
 			}
 		case batchTransactions, ok := <-p.txnsWritten:
 			// Update entries from the Batcher as successfully written
 			if !ok {
-				return updated, errors.New("txnsWritten input channel is closed")
+				return errors.New("txnsWritten input channel is closed")
 			}
 
 			err := p.updateWritten(batchTransactions)
 			if err != nil {
 				panic(err.Error())
 			}
-			updated = true
 
-			if time.Now().UnixNano() > deadline {
-				return updated, nil
+			// Ensure we do check for deadline
+			select {
+			case <-deadline:
+				break ReadProgressLoop
+			default:
+				continue
 			}
-		default:
-			return updated, nil
+		case <-deadline:
+			break ReadProgressLoop
 		}
 	}
+
+	// Ensure we've read txnsWritten since the above loop does not guarantee
+	// we do so since "select" is non-deterministic
+	select {
+	case batchTransactions, ok := <-p.txnsWritten:
+		if !ok {
+			return errors.New("txnsWritten input channel is closed")
+		}
+
+		err := p.updateWritten(batchTransactions)
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		break
+	}
+
+	return nil
 }
 
 // Start begins progress tracking which emits progress on a timer or otherwise updates the ledger
@@ -249,8 +265,6 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGIO)
 
-	var curSleep = initialSleep
-
 	defer p.shutdown()
 	for {
 		select {
@@ -263,18 +277,6 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 		case <-ticker.C:
 			// Prioritize emitProgress if the timer has ticked
 			log.Debug("ticker ticked in progress tracker")
-
-			// Flush seen and written channel so the ledger is up to date before emitting
-			updated, err := p.readProgress(tickerDuration)
-
-			if err != nil {
-				log.Warn(err.Error())
-				return
-			}
-
-			if updated {
-				curSleep = initialSleep
-			}
 
 			// Emit progress of the updated ledger
 			initialLedgerSize := p.ledger.items.Len()
@@ -301,24 +303,9 @@ func (p *ProgressTracker) Start(tickerDuration time.Duration) {
 			}
 		default:
 			// Flush seen and written channel so the ledger is up to date before emitting
-			updated, err := p.readProgress(tickerDuration)
-
-			if err != nil {
+			if err := p.readProgress(tickerDuration); err != nil {
 				log.Warn(err.Error())
 				return
-			}
-
-			// Exponential sleep if nothing updated
-			if updated {
-				curSleep = initialSleep
-			} else {
-				if curSleep > maxSleep {
-					curSleep = initialSleep
-				}
-
-				// Sleep here to prevent spinning.
-				time.Sleep(curSleep)
-				curSleep = curSleep * 2
 			}
 		}
 	}
