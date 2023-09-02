@@ -184,6 +184,7 @@ func (p *ProgressTracker) emitProgress() {
 func (p *ProgressTracker) readProgress(tickerDuration time.Duration) error {
 	var deadline = time.After(tickerDuration)
 
+ReadProgressLoop:
 	for {
 		select {
 		case txnSeen, ok := <-p.txnSeenChan:
@@ -200,7 +201,7 @@ func (p *ProgressTracker) readProgress(tickerDuration time.Duration) error {
 			// Ensure we do check for deadline
 			select {
 			case <-deadline:
-				return nil
+				break ReadProgressLoop
 			default:
 				continue
 			}
@@ -218,14 +219,32 @@ func (p *ProgressTracker) readProgress(tickerDuration time.Duration) error {
 			// Ensure we do check for deadline
 			select {
 			case <-deadline:
-				return nil
+				break ReadProgressLoop
 			default:
 				continue
 			}
 		case <-deadline:
-			return nil
+			break ReadProgressLoop
 		}
 	}
+
+	// Ensure we've read txnsWritten since the above loop does not guarantee
+	// we do so since "select" is non-deterministic
+	select {
+	case batchTransactions, ok := <-p.txnsWritten:
+		if !ok {
+			return errors.New("txnsWritten input channel is closed")
+		}
+
+		err := p.updateWritten(batchTransactions)
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		break
+	}
+
+	return nil
 }
 
 // Start begins progress tracking which emits progress on a timer or otherwise updates the ledger
