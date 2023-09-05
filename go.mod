@@ -20,7 +20,6 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/streadway/amqp v0.0.0-20181205114330-a314942b2fd9
 	github.com/stretchr/testify v1.8.3
-	golang.org/x/build v0.0.0-20230830140924-762ea3306f82
 	gopkg.in/DataDog/dd-trace-go.v1 v1.53.0
 	gopkg.in/Nextdoor/cli.v1 v1.20.2
 )
@@ -71,6 +70,8 @@ require (
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.11.0 // indirect
+	google.golang.org/grpc v1.57.0 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	inet.af/netaddr v0.0.0-20220811202034-502d2d690317 // indirect
