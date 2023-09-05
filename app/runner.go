@@ -171,7 +171,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	statsChan := make(chan stats.Stat, clientBufferSize*5)
 
 	// Transactions channels for progress reporting to the progress tracker
-	txnsSeen := make(chan *progress.Seen) // Must be unbuffered to maintain seen -> written ordering
+	txnsSeen := make(chan []*progress.Seen) // Must be unbuffered to maintain seen -> written ordering
 	txnsWritten := make(chan *ordered_map.OrderedMap, clientBufferSize*5)
 
 	// Initialize in reverse order

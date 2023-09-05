@@ -1,20 +1,21 @@
 package batcher
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
-	"fmt"
+	"github.com/Nextdoor/pg-bifrost.git/transport"
+	"github.com/Nextdoor/pg-bifrost.git/transport/mocks"
+	"github.com/golang/mock/gomock"
+
 	"time"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/batch"
-	"github.com/Nextdoor/pg-bifrost.git/transport/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
-	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,7 @@ func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 	batchSize := 1
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
@@ -61,11 +62,13 @@ func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 		Transaction:  transaction,
 	}
 
-	expectedSeen := &progress.Seen{
-		Transaction:    transaction,
-		TimeBasedKey:   timeBasedKey,
-		CommitWalStart: commit.WalStart,
-		TotalMsgs:      1,
+	expectedSeen := []*progress.Seen{
+		{
+			Transaction:    transaction,
+			TimeBasedKey:   timeBasedKey,
+			CommitWalStart: commit.WalStart,
+			TotalMsgs:      1,
+		},
 	}
 
 	in <- begin
@@ -115,7 +118,7 @@ func TestBatchSizeOneOneTxnTwoData(t *testing.T) {
 	transaction := "1"
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
@@ -158,11 +161,13 @@ func TestBatchSizeOneOneTxnTwoData(t *testing.T) {
 		Transaction:  transaction,
 	}
 
-	expectedSeen := &progress.Seen{
-		Transaction:    transaction,
-		TimeBasedKey:   timeBasedKey,
-		CommitWalStart: commit.WalStart,
-		TotalMsgs:      2,
+	expectedSeen := []*progress.Seen{
+		{
+			Transaction:    transaction,
+			TimeBasedKey:   timeBasedKey,
+			CommitWalStart: commit.WalStart,
+			TotalMsgs:      2,
+		},
 	}
 
 	in <- begin
@@ -217,7 +222,7 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 	batchSize := 3
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
@@ -260,11 +265,13 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 		Transaction:  transactionA,
 	}
 
-	expectedSeenA := &progress.Seen{
-		Transaction:    transactionA,
-		TimeBasedKey:   timeBasedKeyA,
-		CommitWalStart: commitA.WalStart,
-		TotalMsgs:      2,
+	expectedSeenA := []*progress.Seen{
+		{
+			Transaction:    transactionA,
+			TimeBasedKey:   timeBasedKeyA,
+			CommitWalStart: commitA.WalStart,
+			TotalMsgs:      2,
+		},
 	}
 
 	// Transaction 2
@@ -300,11 +307,13 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 		Transaction:  transactionB,
 	}
 
-	expectedSeenB := &progress.Seen{
-		Transaction:    transactionB,
-		TimeBasedKey:   timeBasedKeyB,
-		CommitWalStart: commitB.WalStart,
-		TotalMsgs:      2,
+	expectedSeenB := []*progress.Seen{
+		{
+			Transaction:    transactionB,
+			TimeBasedKey:   timeBasedKeyB,
+			CommitWalStart: commitB.WalStart,
+			TotalMsgs:      2,
+		},
 	}
 
 	in <- beginA
@@ -390,7 +399,7 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 	batchSize := 1
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
@@ -424,11 +433,13 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 		Transaction:  transactionA,
 	}
 
-	expectedSeenA := &progress.Seen{
-		Transaction:    transactionA,
-		TimeBasedKey:   timeBasedKeyA,
-		CommitWalStart: commitA.WalStart,
-		TotalMsgs:      1,
+	expectedSeenA := []*progress.Seen{
+		{
+			Transaction:    transactionA,
+			TimeBasedKey:   timeBasedKeyA,
+			CommitWalStart: commitA.WalStart,
+			TotalMsgs:      1,
+		},
 	}
 
 	// Transaction 2
@@ -454,11 +465,13 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 		Transaction:  transactionB,
 	}
 
-	expectedSeenB := &progress.Seen{
-		Transaction:    transactionB,
-		TimeBasedKey:   timeBasedKeyB,
-		CommitWalStart: commitB.WalStart,
-		TotalMsgs:      1,
+	expectedSeenB := []*progress.Seen{
+		{
+			Transaction:    transactionB,
+			TimeBasedKey:   timeBasedKeyB,
+			CommitWalStart: commitB.WalStart,
+			TotalMsgs:      1,
+		},
 	}
 
 	in <- beginA
@@ -513,7 +526,7 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 func TestInputChannelClose(t *testing.T) {
 	// Setup
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
@@ -556,7 +569,7 @@ func TestErrMsgTooBig(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -607,7 +620,7 @@ func TestErrCantFit(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -665,7 +678,7 @@ func TestErrMsgInvalid(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -716,7 +729,7 @@ func TestErrUnknown(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -771,7 +784,7 @@ func TestFlushBatchTimeoutUpdate(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -823,7 +836,7 @@ func TestFlushBatchTimeoutMaxAge(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -875,7 +888,7 @@ func TestFlushFullBatch(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -940,7 +953,7 @@ func TestFlushEmptyBatchTimeout(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -981,7 +994,7 @@ func TestTxnsSeenTimeout(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen) // unbuffered channel which will block (this is the test)
+	txnSeen := make(chan []*progress.Seen) // unbuffered channel which will block (this is the test)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -990,9 +1003,8 @@ func TestTxnsSeenTimeout(t *testing.T) {
 	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	b.txnsSeenTimeout = time.Millisecond * 50
 
-	commit := &marshaller.MarshalledMessage{
+	commitA := &marshaller.MarshalledMessage{
 		Operation:    "COMMIT",
-		Json:         []byte("{MSG1}"),
 		TimeBasedKey: "1-1",
 		WalStart:     901,
 		PartitionKey: "foo",
@@ -1000,10 +1012,11 @@ func TestTxnsSeenTimeout(t *testing.T) {
 	}
 
 	// Expects
+	mockBatch.EXPECT().IsFull().Return(true)
 	mockBatchFactory.EXPECT().NewBatch("foo").Return(mockBatch).Times(1)
 
 	// Loop iteration 1 - add commit
-	in <- commit
+	in <- commitA
 
 	go b.StartBatching()
 
@@ -1025,7 +1038,7 @@ func TestTxnsSeenTimeout(t *testing.T) {
 	}
 }
 
-func getBasicSetup(t *testing.T) (*gomock.Controller, chan *marshaller.MarshalledMessage, chan *progress.Seen, *Batcher, *mocks.MockBatchFactory, *mocks.MockBatch) {
+func getBasicSetup(t *testing.T) (*gomock.Controller, chan *marshaller.MarshalledMessage, chan []*progress.Seen, *Batcher, *mocks.MockBatchFactory, *mocks.MockBatch) {
 	// Setup mock
 	mockCtrl := gomock.NewController(t)
 
@@ -1034,7 +1047,7 @@ func getBasicSetup(t *testing.T) (*gomock.Controller, chan *marshaller.Marshalle
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
@@ -1090,7 +1103,7 @@ func TestAddToBatchSendFatal(t *testing.T) {
 
 	in <- commit
 
-	txnSeen := make(chan *progress.Seen)
+	txnSeen := make(chan []*progress.Seen)
 	b.txnsSeenChan = txnSeen
 
 	mockBatch.EXPECT().IsFull().Return(false)
@@ -1362,7 +1375,7 @@ func TestPartitionRouting(t *testing.T) {
 
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
-	txnSeen := make(chan *progress.Seen, 1000)
+	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 

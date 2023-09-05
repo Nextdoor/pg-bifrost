@@ -109,7 +109,7 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 	statsChan chan stats.Stat,
 	noMarshalOldValue bool) Marshaller {
 
-	outputChan := make(chan *MarshalledMessage, 1000)
+	outputChan := make(chan *MarshalledMessage)
 
 	return Marshaller{shutdownHandler, inputChan, outputChan, statsChan, noMarshalOldValue}
 }

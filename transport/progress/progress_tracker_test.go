@@ -37,7 +37,7 @@ func init() {
 type testCase struct {
 	action     string
 	writtenMap *ordered_map.OrderedMap
-	seen       *Seen
+	seen       []*Seen
 }
 
 type testExpected struct {
@@ -79,8 +79,8 @@ func compareLedger(a Ledger, b Ledger) bool {
 	return true
 }
 
-func getProgressTracker() (ProgressTracker, chan *Seen, chan *ordered_map.OrderedMap) {
-	seen := make(chan *Seen)
+func getProgressTracker() (ProgressTracker, chan []*Seen, chan *ordered_map.OrderedMap) {
+	seen := make(chan []*Seen)
 	written := make(chan *ordered_map.OrderedMap, 1000)
 	sh := shutdown.NewShutdownHandler()
 	statsChan := make(chan stats.Stat, 100)
@@ -153,7 +153,7 @@ func TestSingleSeenEntry(t *testing.T) {
 	omap.Set("1-1", &LedgerEntry{"1", "1-1", uint64(111), 0, 1})
 
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 1, 111}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 1, 111}}},
 	}
 	entries := []testExpected{
 		testExpected{"1", "1-1", 111, 0, 1},
@@ -188,8 +188,8 @@ func TestSingleSeenEntry(t *testing.T) {
 
 func TestTwoDistinctSeenEntry(t *testing.T) {
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 1, 111}},
-		testCase{"seen", nil, &Seen{"2", "2-1", 1, 222}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 1, 111}}},
+		testCase{"seen", nil, []*Seen{{"2", "2-1", 1, 222}}},
 	}
 	entries := []testExpected{
 		testExpected{"1", "1-1", 111, 0, 1},
@@ -207,7 +207,7 @@ func TestSingleSeenAndWrittenEntryWithoutTicker(t *testing.T) {
 	omap2.Set("1-1", &Written{"1", "1-1", 1})
 
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 1, 111}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 1, 111}}},
 		testCase{"written", omap2, nil},
 	}
 
@@ -226,7 +226,7 @@ func TestSingleSeenAndWrittenEmitted(t *testing.T) {
 	omap2.Set("1-1", &Written{"1", "1-1", 1})
 
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 1, 999}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 1, 999}}},
 		testCase{"written", omap2, nil},
 	}
 
@@ -249,8 +249,8 @@ func TestMultipleSeenAndWrittenEmitted(t *testing.T) {
 	omap4.Set("1-1", &Written{"1", "1-1", 2})
 
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 5, 888}},
-		testCase{"seen", nil, &Seen{"2", "2-1", 2, 999}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 5, 888}}},
+		testCase{"seen", nil, []*Seen{{"2", "2-1", 2, 999}}},
 		testCase{"written", omap1, nil},
 		testCase{"written", omap2, nil},
 		testCase{"written", omap3, nil},
@@ -269,8 +269,8 @@ func TestMultipleSeenAndWrittenEmitted(t *testing.T) {
 
 func TestSeenAndSeenAgain(t *testing.T) {
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 1, 999}},
-		testCase{"seen", nil, &Seen{"1", "1-2", 1, 999}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 1, 999}}},
+		testCase{"seen", nil, []*Seen{{"1", "1-2", 1, 999}}},
 	}
 	entries := []testExpected{
 		testExpected{"1", "1-2", 999, 0, 1},
@@ -296,10 +296,10 @@ func TestSeenAndSeenAgainThenWritten(t *testing.T) {
 	omap4.Set("1-2", &Written{"1", "1-2", 3})
 
 	cases := []testCase{
-		testCase{"seen", nil, &Seen{"1", "1-1", 10, 999}},
+		testCase{"seen", nil, []*Seen{{"1", "1-1", 10, 999}}},
 		testCase{"written", omap1, nil},
 
-		testCase{"seen", nil, &Seen{"1", "1-2", 10, 999}},
+		testCase{"seen", nil, []*Seen{{"1", "1-2", 10, 999}}},
 		testCase{"written", omap2, nil},
 		testCase{"written", omap3, nil},
 		testCase{"written", omap4, nil},
