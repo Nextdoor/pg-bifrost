@@ -366,12 +366,14 @@ func (b *Batcher) handleTicker() bool {
 func (b *Batcher) sendBatch(batch transport.Batch) bool {
 
 	// First flush out seen list
-	select {
-	case b.txnsSeenChan <- b.seenList:
-		b.seenList = []*progress.Seen{}
-		log.Debug("seen a BatchTransaction")
-	case <-time.After(b.txnsSeenTimeout):
-		log.Panic("fatal time out sending a BatchTransaction to the ProgressTracker")
+	if len(b.seenList) > 0 {
+		select {
+		case b.txnsSeenChan <- b.seenList:
+			b.seenList = []*progress.Seen{}
+			log.Debug("seen a BatchTransaction")
+		case <-time.After(b.txnsSeenTimeout):
+			log.Panic("fatal time out sending a BatchTransaction to the ProgressTracker")
+		}
 	}
 
 	ok, err := batch.Close()
