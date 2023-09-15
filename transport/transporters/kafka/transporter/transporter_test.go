@@ -48,7 +48,7 @@ func TestSendOk(t *testing.T) {
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
-	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes, 0)
 
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -115,7 +115,7 @@ func TestSendMultipleInBatchOk(t *testing.T) {
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
-	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes, 0)
 
 	for i := 0; i < 5; i++ {
 		marshalledMessage := &marshaller.MarshalledMessage{
@@ -286,7 +286,7 @@ func TestPanicHandling(t *testing.T) {
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
-	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes, 0)
 
 	marshalledMessage := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -348,7 +348,7 @@ func TestFailedSend(t *testing.T) {
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
-	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes, 0)
 
 	marshalledMessageOne := marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -430,7 +430,7 @@ func TestSucceedAndFailSend(t *testing.T) {
 	maxMessageBytes := 1000000
 
 	tp := NewTransporter(sh, in, statsChan, txns, *log, mockProducer, topic)
-	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes)
+	b := batch.NewKafkaBatch(topic, "", batchSize, maxMessageBytes, 0)
 
 	marshalledMessageOne := marshaller.MarshalledMessage{
 		Operation:    "INSERT",

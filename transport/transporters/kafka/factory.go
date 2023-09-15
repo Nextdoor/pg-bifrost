@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
+
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -155,6 +157,7 @@ type KafkaBatchFactory struct {
 	topic           string
 	maxMessageBytes int
 	batchSize       int
+	kafkaPartMethod utils.KafkaPartitionMethod
 }
 
 func verifySend(producer *sarama.SyncProducer, topic string) error {
@@ -189,9 +192,20 @@ func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFact
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
 	}
 
-	return KafkaBatchFactory{topic, maxMessageBytes, batchSize}
+	partMethodVar := transportConfig[ConfVarKafkaPartitionMethod]
+	partMethodStr, ok := partMethodVar.(string)
+	if !ok {
+		log.Fatalf("Expected type for %s is %s", ConfVarKafkaPartitionMethod, "string")
+	}
+
+	partMethod, ok := utils.NameToPartitionMethod[partMethodStr]
+	if !ok {
+		log.Fatalf("Invalid kafka partition method '%s'", partMethodStr)
+	}
+
+	return KafkaBatchFactory{topic, maxMessageBytes, batchSize, partMethod}
 }
 
 func (f KafkaBatchFactory) NewBatch(partitionKey string) transport.Batch {
-	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes)
+	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes, f.kafkaPartMethod)
 }

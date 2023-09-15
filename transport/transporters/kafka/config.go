@@ -35,6 +35,7 @@ const (
 	ConfVarKafkaPrivateKey      = "kafka-private-key"
 	ConfVarKafkaPublicKey       = "kafka-public-key"
 	ConfVarKafkaVerifyProducer  = "kafka-verify-producer"
+	ConfVarKafkaPartitionMethod = "kafka-partition-method"
 )
 
 var Flags = []cli.Flag{
@@ -112,5 +113,16 @@ var Flags = []cli.Flag{
 		Name:   ConfVarKafkaVerifyProducer,
 		Usage:  "Whether or not to verify producer upon startup",
 		EnvVar: "KAFKA_VERIFY_PRODUCER",
+	}),
+	altsrc.NewStringFlag(cli.StringFlag{
+		Name: ConfVarKafkaPartitionMethod,
+		Usage: "Controls which kafka partition a message will be written to. Options " +
+			"are 'batch', 'transaction', 'random', and 'tablename'. In batch mode all message in a " +
+			"batch will be sent to the same partition. In transaction mode the transaction " +
+			"of a message dictates which partition the message will be sent to. In random " +
+			"mode a message is sent to a partition at random. In tablename mode the table " +
+			"associated with the message will be used for partition selection.",
+		EnvVar: "KAFKA_PARTITION_METHOD",
+		Value:  "random",
 	}),
 }
