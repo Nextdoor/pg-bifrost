@@ -19,6 +19,19 @@ package utils
 type KafkaPartitionMethod int
 
 const (
-	KAFKA_PART_TXN   KafkaPartitionMethod = iota // Uses each msgs's txn to select kafka partition
-	KAFKA_PART_BATCH                             // All messages in a batch go to the same random partition
+	KAFKA_PART_TXN        KafkaPartitionMethod = iota // Uses each msgs's txn to select kafka partition
+	KAFKA_PART_BATCH                                  // All messages in a batch go to the same random partition
+	KAFKA_PART_RANDOM                                 // Messages are randomly assigned a partition by Sarama
+	KAFKA_PART_TXN_CONST                              // Similar to KAFKA_PART_TXN but should only be used for testing
+	KAFKA_PART_TABLE_NAME                             // Partitions by message table name
+)
+
+var (
+	NameToPartitionMethod = map[string]KafkaPartitionMethod{
+		"random":               KAFKA_PART_RANDOM,
+		"batch":                KAFKA_PART_BATCH,
+		"transaction":          KAFKA_PART_TXN,
+		"transaction-constant": KAFKA_PART_TXN_CONST,
+		"tablename":            KAFKA_PART_TABLE_NAME,
+	}
 )

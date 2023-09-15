@@ -19,11 +19,11 @@ package batch
 import (
 	"time"
 
-	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
 	"github.com/google/uuid"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
 	"github.com/Shopify/sarama"
 
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -49,7 +49,7 @@ func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageByt
 	messages := []*sarama.ProducerMessage{}
 	transactions := ordered_map.NewOrderedMap()
 
-	// random kafka partition key
+	// random kafka partition key when using batch partitioning
 	kafkaPartitionKey := ""
 	if kafkaPartMethod == utils.KAFKA_PART_BATCH {
 		kafkaPartitionKey = uuid.NewString()
@@ -86,12 +86,24 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 	}
 
 	// Set partition key
-	if b.kafkaPartMethod == utils.KAFKA_PART_TXN {
-		// Use the time based key which is a composit of the txn + time because it adds more entropy
+	switch b.kafkaPartMethod {
+	case utils.KAFKA_PART_TXN:
+		// Use the time based key which is a composite of the txn + time because it adds more entropy
 		// when the sarama hasher picks a partition based on hashing this value.
 		kafkaMsg.Key = sarama.StringEncoder(msg.TimeBasedKey)
-	} else {
+	case utils.KAFKA_PART_TXN_CONST:
+		// Similar to above but low entry so that it's consistent for testing
+		kafkaMsg.Key = sarama.StringEncoder(msg.Transaction)
+	case utils.KAFKA_PART_BATCH:
 		kafkaMsg.Key = sarama.StringEncoder(b.kafkaPartitionKey)
+		break
+	case utils.KAFKA_PART_TABLE_NAME:
+		kafkaMsg.Key = sarama.StringEncoder(msg.Table)
+		break
+	case utils.KAFKA_PART_RANDOM:
+		// causes Sarama to use random partitioning
+		kafkaMsg.Key = nil
+		break
 	}
 
 	// Sarama client only permits messages up to size `MaxMessageBytes`
