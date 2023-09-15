@@ -123,5 +123,6 @@ var Flags = []cli.Flag{
 			"mode a message is sent to a partition at random. In tablename mode the table " +
 			"associated with the message will be used for partition selection.",
 		EnvVar: "KAFKA_PARTITION_METHOD",
+		Value:  "random",
 	}),
 }
