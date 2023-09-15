@@ -19,6 +19,9 @@ package batch
 import (
 	"time"
 
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
+	"github.com/google/uuid"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
 	"github.com/Shopify/sarama"
@@ -29,20 +32,28 @@ import (
 )
 
 type KafkaBatch struct {
-	maxBatchSize    int
-	maxMessageBytes int
-	kafkaMessages   []*sarama.ProducerMessage
-	transactions    *ordered_map.OrderedMap
-	byteSize        int64
-	mtime           int64
-	ctime           int64
-	partitionKey    string
-	topic           string
+	maxBatchSize      int
+	maxMessageBytes   int
+	kafkaMessages     []*sarama.ProducerMessage
+	transactions      *ordered_map.OrderedMap
+	byteSize          int64
+	mtime             int64
+	ctime             int64
+	partitionKey      string // this is the partition key for bifrost not kafka
+	topic             string
+	kafkaPartMethod   utils.KafkaPartitionMethod
+	kafkaPartitionKey string
 }
 
-func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageBytes int) transport.Batch {
+func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageBytes int, kafkaPartMethod utils.KafkaPartitionMethod) transport.Batch {
 	messages := []*sarama.ProducerMessage{}
 	transactions := ordered_map.NewOrderedMap()
+
+	// random kafka partition key
+	kafkaPartitionKey := ""
+	if kafkaPartMethod == utils.KAFKA_PART_BATCH {
+		kafkaPartitionKey = uuid.NewString()
+	}
 
 	return &KafkaBatch{
 		maxBathSize,
@@ -54,6 +65,8 @@ func NewKafkaBatch(topic string, partitionKey string, maxBathSize, maxMessageByt
 		time.Now().UnixNano(),
 		partitionKey,
 		topic,
+		kafkaPartMethod,
+		kafkaPartitionKey,
 	}
 }
 
@@ -70,7 +83,15 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 	kafkaMsg := &sarama.ProducerMessage{
 		Topic: b.topic,
 		Value: sarama.ByteEncoder(msg.Json),
-		Key:   sarama.StringEncoder(msg.PartitionKey),
+	}
+
+	// Set partition key
+	if b.kafkaPartMethod == utils.KAFKA_PART_TXN {
+		// Use the time based key which is a composit of the txn + time because it adds more entropy
+		// when the sarama hasher picks a partition based on hashing this value.
+		kafkaMsg.Key = sarama.StringEncoder(msg.TimeBasedKey)
+	} else {
+		kafkaMsg.Key = sarama.StringEncoder(b.kafkaPartitionKey)
 	}
 
 	// Sarama client only permits messages up to size `MaxMessageBytes`

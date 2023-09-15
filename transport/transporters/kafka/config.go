@@ -35,6 +35,7 @@ const (
 	ConfVarKafkaPrivateKey      = "kafka-private-key"
 	ConfVarKafkaPublicKey       = "kafka-public-key"
 	ConfVarKafkaVerifyProducer  = "kafka-verify-producer"
+	ConfVarKafkaPartitionMethod = "kafka-partition-method"
 )
 
 var Flags = []cli.Flag{

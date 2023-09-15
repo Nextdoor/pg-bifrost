@@ -3,6 +3,8 @@ package batch
 import (
 	"testing"
 
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
@@ -12,7 +14,7 @@ import (
 )
 
 func TestAddTransaction(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 1, 1000000)
+	b := NewKafkaBatch("test-topic", "", 1, 1000000, utils.KAFKA_PART_TXN)
 
 	begin := &marshaller.MarshalledMessage{
 		Operation:    "BEGIN",
@@ -60,7 +62,7 @@ func TestAddTransaction(t *testing.T) {
 }
 
 func TestFullBatch(t *testing.T) {
-	batch := NewKafkaBatch("test-topic", "", 1, 1000000)
+	batch := NewKafkaBatch("test-topic", "", 1, 1000000, utils.KAFKA_PART_TXN)
 
 	insert1 := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -89,7 +91,7 @@ func TestFullBatch(t *testing.T) {
 }
 
 func TestMessageTooBig(t *testing.T) {
-	batch := NewKafkaBatch("test-topic", "", 1, 0)
+	batch := NewKafkaBatch("test-topic", "", 1, 0, utils.KAFKA_PART_TXN)
 
 	data := make([]byte, 10)
 
@@ -113,7 +115,7 @@ func TestMessageTooBig(t *testing.T) {
 }
 
 func TestPartialTransaction(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 2, 1000000)
+	b := NewKafkaBatch("test-topic", "", 2, 1000000, utils.KAFKA_PART_TXN)
 
 	begin1 := &marshaller.MarshalledMessage{
 		Operation:    "BEGIN",
@@ -182,7 +184,7 @@ func TestPartialTransaction(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 2, 1000000)
+	b := NewKafkaBatch("test-topic", "", 2, 1000000, utils.KAFKA_PART_TXN)
 	success, err := b.Close()
 
 	assert.Equal(t, true, success)
@@ -190,19 +192,19 @@ func TestClose(t *testing.T) {
 }
 
 func TestIsFullFalse(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 2, 1000000)
+	b := NewKafkaBatch("test-topic", "", 2, 1000000, utils.KAFKA_PART_TXN)
 	assert.Equal(t, false, b.IsFull())
 }
 
 func TestIsEmptyTrue(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 2, 1000000)
+	b := NewKafkaBatch("test-topic", "", 2, 1000000, utils.KAFKA_PART_TXN)
 	assert.Equal(t, true, b.IsEmpty())
 	assert.Equal(t, 0, b.NumMessages())
 	assert.Equal(t, int64(0), b.GetPayloadByteSize())
 }
 
 func TestIsEmptyFalse(t *testing.T) {
-	b := NewKafkaBatch("test-topic", "", 2, 1000000)
+	b := NewKafkaBatch("test-topic", "", 2, 1000000, utils.KAFKA_PART_TXN)
 
 	insert := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",

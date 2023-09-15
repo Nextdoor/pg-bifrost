@@ -20,6 +20,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Nextdoor/pg-bifrost.git/app/config"
+	"github.com/Nextdoor/pg-bifrost.git/partitioner"
+	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
+
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
@@ -155,6 +159,7 @@ type KafkaBatchFactory struct {
 	topic           string
 	maxMessageBytes int
 	batchSize       int
+	kafkaPartMethod utils.KafkaPartitionMethod
 }
 
 func verifySend(producer *sarama.SyncProducer, topic string) error {
@@ -189,9 +194,23 @@ func NewBatchFactory(transportConfig map[string]interface{}) transport.BatchFact
 		log.Fatalf("Expected type for %s is %s", ConfVarKafkaBatchSize, "int")
 	}
 
-	return KafkaBatchFactory{topic, maxMessageBytes, batchSize}
+	partMethod, ok := transportConfig[config.VAR_NAME_PARTITION_METHOD]
+	if !ok {
+		log.Fatal("Expected ", config.VAR_NAME_PARTITION_METHOD, " to be in config")
+	}
+
+	// If partitioning is not set then use wal-start. Otherwise the user wants each
+	// batch to go to the same shard.
+	var kafkaPartMethod utils.KafkaPartitionMethod
+	if partMethod == partitioner.PART_METHOD_NONE {
+		kafkaPartMethod = utils.KAFKA_PART_TXN
+	} else {
+		kafkaPartMethod = utils.KAFKA_PART_BATCH
+	}
+
+	return KafkaBatchFactory{topic, maxMessageBytes, batchSize, kafkaPartMethod}
 }
 
 func (f KafkaBatchFactory) NewBatch(partitionKey string) transport.Batch {
-	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes)
+	return batch.NewKafkaBatch(f.topic, partitionKey, f.batchSize, f.maxMessageBytes, f.kafkaPartMethod)
 }
