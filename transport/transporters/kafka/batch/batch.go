@@ -92,7 +92,7 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 		// when the sarama hasher picks a partition based on hashing this value.
 		kafkaMsg.Key = sarama.StringEncoder(msg.TimeBasedKey)
 	case utils.KAFKA_PART_TXN_CONST:
-		// Similar to above but low entry so that it's consistent for testing
+		// Similar to above but low entropy so that it's consistent for testing
 		kafkaMsg.Key = sarama.StringEncoder(msg.Transaction)
 	case utils.KAFKA_PART_BATCH:
 		kafkaMsg.Key = sarama.StringEncoder(b.kafkaPartitionKey)
