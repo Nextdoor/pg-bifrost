@@ -96,14 +96,11 @@ func (b *KafkaBatch) Add(msg *marshaller.MarshalledMessage) (bool, error) {
 		kafkaMsg.Key = sarama.StringEncoder(msg.Transaction)
 	case utils.KAFKA_PART_BATCH:
 		kafkaMsg.Key = sarama.StringEncoder(b.kafkaPartitionKey)
-		break
 	case utils.KAFKA_PART_TABLE_NAME:
 		kafkaMsg.Key = sarama.StringEncoder(msg.Table)
-		break
 	case utils.KAFKA_PART_RANDOM:
 		// causes Sarama to use random partitioning
 		kafkaMsg.Key = nil
-		break
 	}
 
 	// Sarama client only permits messages up to size `MaxMessageBytes`
