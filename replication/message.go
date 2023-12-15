@@ -53,7 +53,7 @@ func XLogDataToWalMessage(xld pglogrepl.XLogData) (*WalMessage, error) {
 		uint64(xld.WALStart),
 		uint64(xld.ServerWALEnd),
 		// Note that in current postgres versions (9,10,11) ServerTime is unset and comes through as 0
-		int64(xld.ServerTime.Second()),
+		xld.ServerTime.UnixMilli(),
 		"",
 		pr,
 		"",
