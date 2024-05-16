@@ -1,6 +1,6 @@
 module github.com/Nextdoor/pg-bifrost.git
 
-go 1.20
+go 1.22
 
 require (
 	github.com/DataDog/datadog-go/v5 v5.3.0
