@@ -3,7 +3,7 @@ module github.com/Nextdoor/pg-bifrost.git
 go 1.22
 
 require (
-	github.com/DataDog/datadog-go/v5 v5.3.0
+	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/NeowayLabs/wabbit v0.0.0-20190108150251-e762dd02f7f2
 	github.com/Shopify/sarama v1.38.1
 	github.com/aws/aws-sdk-go v1.44.258
