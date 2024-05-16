@@ -1,6 +1,6 @@
 module github.com/Nextdoor/pg-bifrost.git
 
-go 1.20
+go 1.22
 
 require (
 	github.com/DataDog/datadog-go/v5 v5.3.0
@@ -12,6 +12,7 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pglogrepl v0.0.0-20230428004623-0c5b98f52784
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/klauspost/pgzip v1.2.6
@@ -40,7 +41,6 @@ require (
 	github.com/fsouza/go-dockerclient v1.9.7 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20230509042627-b1315fad0c5a // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
