@@ -8,6 +8,7 @@ GIT_TAG_VERSION := $(shell git tag -l --points-at HEAD | grep -v latest)
 ifeq ($(CI),true)
 	GO_TEST_EXTRAS ?= "-coverprofile=c.out"
 	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(GIT_TAG_VERSION)
+	GO_PGOFLAGS ?= "-pgo=profiles/merged.pprof"
 endif
 
 vendor: go.sum go.mod
@@ -52,7 +53,7 @@ clean:
 build: generate
 	@echo "Creating GO binary"
 	mkdir -p target
-	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
+	CGO_ENABLED=0 GOOS=linux go build -ldflags "$(GO_LDFLAGS)" ${GO_PGOFLAGS} -o target/pg-bifrost github.com/Nextdoor/pg-bifrost.git/main
 
 build_mac: generate
 	@echo "Creating GO binary"
