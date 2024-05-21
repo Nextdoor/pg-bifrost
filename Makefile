@@ -2,12 +2,13 @@
 
 GO_LDFLAGS ?= -w -extldflags "-static"
 
+GIT_REVISION_SHORT := $(shell git rev-parse --short HEAD)
 GIT_REVISION := $(shell git rev-parse --short HEAD)
 GIT_TAG_VERSION := $(shell git tag -l --points-at HEAD | grep -v latest)
 
 ifeq ($(CI),true)
 	GO_TEST_EXTRAS ?= "-coverprofile=c.out"
-	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION) -X main.Version=$(GIT_TAG_VERSION)
+	GO_LDFLAGS += -X main.GitRevision=$(GIT_REVISION_SHORT) -X main.Version=$(GIT_TAG_VERSION)
 	GO_PGOFLAGS ?= "-pgo=profiles/merged.pprof"
 endif
 
@@ -65,7 +66,7 @@ DOCKER := $(shell which docker)
 
 docker_build:
 	@echo "Building pg-bifrost docker image"
-	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" .
+	@$(DOCKER) build -t "pg-bifrost:latest" --build-arg is_ci="${CI}" --build-arg GIT_REVISION="${GIT_REVISION}" .
 
 docker_get_binary:
 	@echo "Copying binary from docker image"

@@ -37,6 +37,12 @@ RUN make build
 
 # Package binary & certs in a scratch container
 FROM scratch
+
+# Setup DataDog source code linking
+ARG GIT_REVISION
+ENV DD_GIT_REPOSITORY_URL="github.com/Nextdoor/pg-bifrost"
+ENV DD_GIT_COMMIT_SHA=${GIT_REVISION}
+
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=intermediate /perf /perf
 COPY --from=intermediate /go/src/github.com/Nextdoor/pg-bifrost.git/target/pg-bifrost /
