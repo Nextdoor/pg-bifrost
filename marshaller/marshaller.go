@@ -117,7 +117,9 @@ func New(shutdownHandler shutdown.ShutdownHandler,
 // jsonWalEntry is a helper struct which has json field tags
 type jsonWalEntry struct {
 	Time      string                                  `json:"time"`
-	Lsn       string                                  `json:"lsn"` // Log Sequence Number that determines position in WAL
+	TimeMs    int64                                   `json:"time_ms"` // epoch ms
+	Txn       string                                  `json:"txn"`     // txn id + time key
+	Lsn       string                                  `json:"lsn"`     // Log Sequence Number that determines position in WAL
 	Table     string                                  `json:"table"`
 	Operation string                                  `json:"operation"`
 	Columns   map[string]map[string]map[string]string `json:"columns"`
@@ -307,6 +309,8 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 
 	// Construct WalEntry
 	reusedWalEntry.Time = t
+	reusedWalEntry.TimeMs = msg.ServerTime
+	reusedWalEntry.Txn = msg.TimeBasedKey
 	reusedWalEntry.Lsn = *(*string)(unsafe.Pointer(&lsnBytes))
 	reusedWalEntry.Table = msg.Pr.Relation
 	reusedWalEntry.Operation = msg.Pr.Operation
