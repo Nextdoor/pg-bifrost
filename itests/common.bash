@@ -198,9 +198,9 @@ _verify() {
     log "Checking ./tests/$BATS_TEST_DESCRIPTION/golden/$file against ./tests/$BATS_TEST_DESCRIPTION/output/$file"
 
     if [ "$SORT" == "false" ]; then
-        output=$(diff <(cat "./tests/$BATS_TEST_DESCRIPTION/golden/$file") <(cat "./tests/$BATS_TEST_DESCRIPTION/output/$file" | jq 'del(.lsn, .time .time_ms .txn)' -c -M) || true)
+        output=$(diff <(cat "./tests/$BATS_TEST_DESCRIPTION/golden/$file") <(cat "./tests/$BATS_TEST_DESCRIPTION/output/$file" | jq 'del(.lsn, .time, .time_ms, .txn)' -c -M) || true)
     else
-        output=$(diff <(cat "./tests/$BATS_TEST_DESCRIPTION/golden/$file") <(sort "./tests/$BATS_TEST_DESCRIPTION/output/$file" | jq 'del(.lsn, .time .time_ms .txn)' -c -M) || true)
+        output=$(diff <(cat "./tests/$BATS_TEST_DESCRIPTION/golden/$file") <(sort "./tests/$BATS_TEST_DESCRIPTION/output/$file" | jq 'del(.lsn, .time, .time_ms, .txn)' -c -M) || true)
     fi
 
     if ! $output; then
