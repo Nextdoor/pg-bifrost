@@ -172,7 +172,7 @@ func TestBasicInsertMessage(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
+	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"time_ms\":0,\"txn\":\"0-0\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
@@ -208,7 +208,7 @@ func TestBasicUpdateMessage(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"time_ms\":0,\"txn\":\"0-0\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
@@ -244,7 +244,7 @@ func TestBasicUpdateNoOldMessage(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
+	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"time_ms\":0,\"txn\":\"0-0\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Foo\"}}}}"
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
@@ -289,7 +289,7 @@ func TestToastValue(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"time_ms\":0,\"txn\":\"0-0\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"},\"old\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
@@ -334,7 +334,7 @@ func TestToastNoOldValue(t *testing.T) {
 	assert.Equal(t, "test.users", marshalled.Table)
 	assert.Equal(t, "0", marshalled.Transaction)
 
-	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
+	expectedJson := "{\"time\":\"1970-01-01T00:00:00Z\",\"time_ms\":0,\"txn\":\"0-0\",\"lsn\":\"0/1\",\"table\":\"test.users\",\"operation\":\"INSERT\",\"columns\":{\"first_name\":{\"new\":{\"q\":\"true\",\"t\":\"string\",\"v\":\"Bar\"}}}}"
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
