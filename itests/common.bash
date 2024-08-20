@@ -166,6 +166,35 @@ _check_lsn() {
   return 0
 }
 
+_wait_for_ledger_signal() {
+  bifrost_logs=$(docker logs bifrost 2>&1)
+
+  if ! echo "${bifrost_logs}" | grep -q 'Got a signal 29'; then
+    return 1
+  fi
+
+  return 0
+}
+
+_check_ledger() {
+    docker kill -s SIGIO bifrost # dump ledger to stdout
+    _retry _wait_for_ledger_signal
+    bifrost_logs=$(docker logs bifrost 2>&1)
+
+    if ! echo "${bifrost_logs}" | grep -q 'No ledger entries to dump'; then
+      if ! echo "${bifrost_logs}" | grep -q 'entry:'; then
+        log "ledger did not dump as expected"
+        return 1
+      else
+        log "ledger had entries in it"
+        return 2
+      fi
+    fi
+
+    log "ledger was empty"
+    return 0
+}
+
 _gather_test_output() {
   log "Exporting messages test output from containers"
   # Copy output directories from the containers to the host
@@ -215,6 +244,11 @@ _verify() {
   log "Verifying replication slot status"
   FAILED=1
   _retry _check_lsn
+  FAILED=0
+
+  log "Verifying ledger is empty"
+  FAILED=1
+  _retry _check_ledger
   FAILED=0
 }
 
@@ -269,7 +303,6 @@ teardown() {
   _end_timer
 
   # Print current state of the ledger for debugging
-  TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose kill -s IO bifrost # dump ledger to stdout
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs bifrost
   TEST_NAME=$BATS_TEST_DESCRIPTION docker-compose logs data-poller
 

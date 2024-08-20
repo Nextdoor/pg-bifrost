@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/cevaris/ordered_map"
+
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -63,6 +65,7 @@ type Batcher struct {
 	inputChan    <-chan *marshaller.MarshalledMessage // receive single MarshalledMessages
 	outputChans  []chan transport.Batch               // one output channel per Transporter worker
 	txnsSeenChan chan<- []*progress.Seen              // channel to report transactions seen to ProgressTracker
+	txnsWritten  chan<- *ordered_map.OrderedMap       // channel to report empty batches with commit messages
 	statsChan    chan stats.Stat
 
 	tickRate               time.Duration              // controls frequency that batcher looks for input. This should be non-zero to avoid CPU spin.
@@ -84,6 +87,7 @@ type Batcher struct {
 func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 	inputChan <-chan *marshaller.MarshalledMessage,
 	txnsSeenChan chan<- []*progress.Seen,
+	txnsWritten chan<- *ordered_map.OrderedMap,
 	statsChan chan stats.Stat,
 
 	tickRate int, // number of milliseconds that batcher will wait to check for input.
@@ -110,6 +114,7 @@ func NewBatcher(shutdownHandler shutdown.ShutdownHandler,
 		inputChan,
 		outputChans,
 		txnsSeenChan,
+		txnsWritten,
 		statsChan,
 		time.Duration(tickRate) * time.Millisecond,
 		batchFactory,
@@ -345,14 +350,9 @@ func (b *Batcher) handleTicker() bool {
 		log.Debugf("flushing %s", key)
 		curBatch := b.batches[key]
 
-		// If the batch is empty then don't send it. This could be the case
-		// when a new batch was created but nothing added to it.
-		if !curBatch.IsEmpty() {
-			ok := b.sendBatch(curBatch)
-
-			if !ok {
-				return false
-			}
+		ok := b.sendBatch(curBatch)
+		if !ok {
+			return false
 		}
 
 		b.statsChan <- stats.NewStatCount("batcher", "batch_closed_early", 1, time.Now().UnixNano())
@@ -374,6 +374,12 @@ func (b *Batcher) sendBatch(batch transport.Batch) bool {
 		case <-time.After(b.txnsSeenTimeout):
 			log.Panic("fatal time out sending a BatchTransaction to the ProgressTracker")
 		}
+	}
+
+	// On empty batches report their transactions as written because they may contain COMMITTs
+	if batch.IsEmpty() {
+		b.txnsWritten <- batch.GetTransactions()
+		return true
 	}
 
 	ok, err := batch.Close()

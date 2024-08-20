@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cevaris/ordered_map"
+
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/mocks"
 	"github.com/golang/mock/gomock"
@@ -28,12 +30,13 @@ func TestBatchSizeOneOneTxnOneData(t *testing.T) {
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -119,12 +122,13 @@ func TestBatchSizeOneOneTxnTwoData(t *testing.T) {
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
 
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -223,11 +227,13 @@ func TestBatchSizeThreeTwoTxnTwoData(t *testing.T) {
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(batchSize)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -400,11 +406,13 @@ func TestBatchSizeOneTwoTxnTwoWorkers(t *testing.T) {
 
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 2, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, batchFactory, 2, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -527,11 +535,13 @@ func TestInputChannelClose(t *testing.T) {
 	// Setup
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	batchFactory := batch.NewGenericBatchFactory(1)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, batchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	outs := b.GetOutputChans()
 
 	go b.StartBatching()
@@ -570,43 +580,82 @@ func TestErrMsgTooBig(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	omap1 := ordered_map.NewOrderedMap()
+	omap1.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count: 1})
+
+	flushMaxAge := 100
+
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushMaxAge, flushMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+
+	begin := &marshaller.MarshalledMessage{
+		Operation:    "BEGIN",
+		TimeBasedKey: "1-1",
+		Transaction:  "1",
+		WalStart:     900,
+	}
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
 		Json:         []byte("{MSG1}"),
-		TimeBasedKey: "1",
+		TimeBasedKey: "1-1",
+		Transaction:  "1",
 		WalStart:     901,
-		PartitionKey: "foo",
+	}
+
+	commit := &marshaller.MarshalledMessage{
+		Operation:    "COMMIT",
+		TimeBasedKey: "1-1",
+		Transaction:  "1",
+		WalStart:     902,
 	}
 
 	// Expects
-	mockBatchFactory.EXPECT().NewBatch("foo").Return(mockBatch)
+	mockBatchFactory.EXPECT().NewBatch("").Return(mockBatch)
+	mockBatch.EXPECT().IsFull().Return(false)
+	in <- begin
 
-	// Loop iteration 1 - add a message that is too big
-	in <- message
+	// add a message that is too big
 	mockBatch.EXPECT().IsFull().Return(false)
 	mockBatch.EXPECT().Add(message).Return(false, errors.New(transport.ERR_MSG_TOOBIG))
-
-	// Loop iteration 2 - add a normal message
 	in <- message
+
 	mockBatch.EXPECT().IsFull().Return(false)
-	mockBatch.EXPECT().Add(message).Return(true, nil)
+	in <- commit
+
+	// On batcher tick
+	mockBatch.EXPECT().IsEmpty().Return(true)
+	mockBatch.EXPECT().ModifyTime().Return(int64(0))
+	mockBatch.EXPECT().CreateTime().Return(int64(0))
+	mockBatch.EXPECT().IsEmpty().Return(true)
+	mockBatch.EXPECT().IsFull().Return(false)
+	mockBatch.EXPECT().GetTransactions().Return(omap1)
 
 	go b.StartBatching()
 
 	// Let test run
 	time.Sleep(time.Millisecond * 5)
 
+	// Expect to see batch produced
+	select {
+	case w := <-txnsWritten:
+		assert.Equal(t, omap1, w)
+	case <-time.After(DEFAULT_TICK_RATE*time.Millisecond + time.Millisecond*time.Duration(flushMaxAge)):
+		assert.Fail(t, "expected an update to txnsWritten")
+	}
+
 	// Shutdown test
 	close(in)
 	time.Sleep(time.Millisecond * 5)
 
 	// Verify stats
-	expected := []stats.Stat{stats.NewStatCount("batcher", "dropped_too_big", 1, time.Now().UnixNano())}
+	expected := []stats.Stat{
+		stats.NewStatCount("batcher", "dropped_too_big", 1, time.Now().UnixNano()),
+		stats.NewStatCount("batcher", "batch_closed_early", 1, time.Now().UnixNano()),
+	}
 	stats.VerifyStats(t, statsChan, expected)
 }
 
@@ -621,10 +670,12 @@ func TestErrCantFit(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -636,6 +687,7 @@ func TestErrCantFit(t *testing.T) {
 
 	// Expects
 	mockBatchFactory.EXPECT().NewBatch("foo").Return(mockBatch)
+	mockBatch.EXPECT().IsEmpty().Return(false)
 
 	// Loop iteration 1 - add a message that can't fit into existing batch
 	in <- message
@@ -679,10 +731,11 @@ func TestErrMsgInvalid(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	message := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -730,10 +783,12 @@ func TestErrUnknown(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, 500, 1000, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	outs := b.GetOutputChans()
 
@@ -785,13 +840,15 @@ func TestFlushBatchTimeoutUpdate(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	insert := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -837,13 +894,15 @@ func TestFlushBatchTimeoutMaxAge(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 9000
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	insert := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -889,13 +948,15 @@ func TestFlushFullBatch(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	commit := &marshaller.MarshalledMessage{
 		Operation:    "INSERT",
@@ -955,12 +1016,14 @@ func TestFlushEmptyBatchTimeout(t *testing.T) {
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
 	statsChan := make(chan stats.Stat, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
 
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	go b.StartBatching()
 
@@ -995,12 +1058,14 @@ func TestTxnsSeenTimeout(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen) // unbuffered channel which will block (this is the test)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 	b.txnsSeenTimeout = time.Millisecond * 50
 
 	commitA := &marshaller.MarshalledMessage{
@@ -1048,12 +1113,14 @@ func getBasicSetup(t *testing.T) (*gomock.Controller, chan *marshaller.Marshalle
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 1, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_ROUND_ROBIN)
 
 	return mockCtrl, in, txnSeen, b, mockBatchFactory, mockBatch
 }
@@ -1106,6 +1173,7 @@ func TestAddToBatchSendFatal(t *testing.T) {
 	txnSeen := make(chan []*progress.Seen)
 	b.txnsSeenChan = txnSeen
 
+	mockBatch.EXPECT().IsEmpty().Return(false)
 	mockBatch.EXPECT().IsFull().Return(false)
 	mockBatch.EXPECT().Add(commit).Return(false, errors.New(transport.ERR_CANT_FIT))
 	mockBatch.EXPECT().Close().Return(false, errors.New("expected error"))
@@ -1376,12 +1444,14 @@ func TestPartitionRouting(t *testing.T) {
 	// Setup IO
 	in := make(chan *marshaller.MarshalledMessage, 1000)
 	txnSeen := make(chan []*progress.Seen, 1000)
+	txnsWritten := make(chan *ordered_map.OrderedMap, 1000)
+
 	statsChan := make(chan stats.Stat, 1000)
 	sh := shutdown.NewShutdownHandler()
 
 	flushBatchUpdateAge := 500
 	flushBatchMaxAge := 1000
-	b := NewBatcher(sh, in, txnSeen, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 2, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_PARTITION)
+	b := NewBatcher(sh, in, txnSeen, txnsWritten, statsChan, DEFAULT_TICK_RATE, mockBatchFactory, 2, flushBatchUpdateAge, flushBatchMaxAge, 1, DEFAULT_MAX_MEMORY_BYTES, BATCH_ROUTING_PARTITION)
 
 	defer mockCtrl.Finish()
 
