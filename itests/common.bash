@@ -248,7 +248,7 @@ _verify() {
 
   log "Verifying ledger is empty"
   FAILED=1
-  _check_ledger
+  _retry _check_ledger
   FAILED=0
 }
 
