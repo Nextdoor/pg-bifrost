@@ -3,8 +3,9 @@ package batcher
 import (
 	"errors"
 	"fmt"
-	"github.com/cevaris/ordered_map"
 	"testing"
+
+	"github.com/cevaris/ordered_map"
 
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/mocks"

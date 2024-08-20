@@ -2,9 +2,10 @@ package batcher
 
 import (
 	"container/heap"
-	"github.com/cevaris/ordered_map"
 	"os"
 	"time"
+
+	"github.com/cevaris/ordered_map"
 
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
