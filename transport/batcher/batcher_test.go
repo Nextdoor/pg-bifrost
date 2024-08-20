@@ -585,7 +585,7 @@ func TestErrMsgTooBig(t *testing.T) {
 	sh := shutdown.NewShutdownHandler()
 
 	omap1 := ordered_map.NewOrderedMap()
-	omap1.Set("1-1", &progress.Written{"1", "1-1", 1})
+	omap1.Set("1-1", &progress.Written{Transaction: "1", TimeBasedKey: "1-1", Count: 1})
 
 	flushMaxAge := 100
 
