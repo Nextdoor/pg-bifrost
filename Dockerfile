@@ -3,7 +3,7 @@ FROM public.ecr.aws/docker/library/alpine:latest as certs
 RUN apk --update add ca-certificates
 
 # Test and build binary
-FROM public.ecr.aws/docker/library/golang:1.22.3-bookworm as intermediate
+FROM public.ecr.aws/docker/library/golang:1.24.3-bookworm as intermediate
 
 # Make a directory to place pprof files in. Typically used for itests.
 RUN mkdir /perf

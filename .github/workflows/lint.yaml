@@ -1,8 +1,8 @@
 name: Lint
 
 env:
-  GO_VERSION: '1.22.3'
-  LINTER_VERSION: 'v1.58.1'
+  GO_VERSION: '1.24.3'
+  LINTER_VERSION: 'v1.64.6'
 
 on: push
 

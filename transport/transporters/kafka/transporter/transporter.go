@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/IBM/sarama"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/batch"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
-	"github.com/Shopify/sarama"
 	"github.com/cevaris/ordered_map"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

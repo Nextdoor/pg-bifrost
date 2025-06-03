@@ -22,12 +22,12 @@ import (
 
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
 
+	"github.com/IBM/sarama"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/batch"
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/transporter"
-	"github.com/Shopify/sarama"
 	"github.com/cevaris/ordered_map"
 	"github.com/sirupsen/logrus"
 )
