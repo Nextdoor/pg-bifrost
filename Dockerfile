@@ -9,7 +9,7 @@ FROM public.ecr.aws/docker/library/golang:1.24.3-bookworm as intermediate
 RUN mkdir /perf
 
 # Build/test dependencies
-RUN go install github.com/golang/mock/mockgen@v1.6.0
+RUN go install go.uber.org/mock/mockgen@latest
 RUN go install golang.org/x/tools/cmd/goimports@latest
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/

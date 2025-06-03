@@ -63,6 +63,7 @@ require (
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.opentelemetry.io/collector/pdata v1.33.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.0 // indirect
+	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect

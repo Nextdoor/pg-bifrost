@@ -9,7 +9,7 @@ import (
 
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"time"
 

@@ -35,10 +35,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
-	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 var (
