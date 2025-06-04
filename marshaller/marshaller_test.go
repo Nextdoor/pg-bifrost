@@ -212,6 +212,99 @@ func TestBasicUpdateMessage(t *testing.T) {
 	assert.Equal(t, expectedJson, string(marshalled.Json))
 }
 
+func TestUpdateWithNull(t *testing.T) {
+	// Setup test
+	m, in, _, _ := _setupMarshaller(false)
+	go m.Start()
+
+	// Construct message
+	columns := map[string]parselogical.ColumnValue{}
+
+	columns["first_name"] = parselogical.ColumnValue{
+		Value:  "Foo",
+		Type:   "string",
+		Quoted: true,
+	}
+
+	columns["middle_name"] = parselogical.ColumnValue{
+		Value:  "null",
+		Type:   "string",
+		Quoted: false,
+	}
+
+	columns["last_name"] = parselogical.ColumnValue{
+		Value:  "Last",
+		Type:   "string",
+		Quoted: true,
+	}
+
+	oldColumns := map[string]parselogical.ColumnValue{}
+	oldColumns["first_name"] = parselogical.ColumnValue{
+		Value:  "Bar",
+		Type:   "string",
+		Quoted: true,
+	}
+
+	msg := string("test")
+	ps := parselogical.ParseState{
+		Msg:           &msg,
+		Current:       1,
+		Prev:          1,
+		TokenStart:    1,
+		OldKey:        false,
+		CurColumnName: "username",
+		CurColumnType: "string",
+	}
+
+	pr := parselogical.ParseResult{
+		State:       ps,
+		Transaction: "0",
+		Relation:    "test.users",
+		Operation:   "UPDATE",
+		NoTupleData: false,
+		Columns:     columns,
+		OldColumns:  oldColumns,
+	}
+
+	walMessage := replication.WalMessage{
+		WalStart:     1,
+		ServerWalEnd: 0,
+		ServerTime:   0,
+		TimeBasedKey: "0-0",
+		Pr:           &pr,
+	}
+
+	// Send data in to marshaller
+	in <- &walMessage
+
+	// Setup timer to catch issues with Marshaller reading from channel
+	timeout := time.NewTimer(25 * time.Millisecond)
+
+	var marshalled *MarshalledMessage
+	var ok bool
+
+	select {
+	case <-timeout.C:
+		assert.Fail(t, "did not get marshalled message in time")
+	case m, okay := <-m.OutputChan:
+		marshalled = m
+		ok = okay
+		break
+	}
+
+	if !ok {
+		assert.Fail(t, "something went wrong.. the output channel is closed.")
+	}
+
+	assert.Equal(t, uint64(1), marshalled.WalStart)
+	assert.Equal(t, "UPDATE", marshalled.Operation)
+	assert.Equal(t, "test.users", marshalled.Table)
+	assert.Equal(t, "0", marshalled.Transaction)
+
+	expectedJson := `{"time":"1970-01-01T00:00:00Z","time_ms":0,"txn":"0-0","lsn":"0/1","table":"test.users","operation":"UPDATE","columns":{"first_name":{"new":{"q":"true","t":"string","v":"Foo"},"old":{"q":"true","t":"string","v":"Bar"}},"last_name":{"new":{"q":"true","t":"string","v":"Last"},"old":{"q":"false","t":"string","v":"null"}},"middle_name":{"new":{"q":"false","t":"string","v":"null"}}}}`
+	assert.Equal(t, expectedJson, string(marshalled.Json))
+}
+
 func TestBasicUpdateNoOldMessage(t *testing.T) {
 	// Setup test
 	m, in, _, _ := _setupMarshaller(true)
