@@ -5,10 +5,10 @@ import (
 
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/utils"
 
+	"github.com/IBM/sarama"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/transport"
 	"github.com/Nextdoor/pg-bifrost.git/transport/progress"
-	"github.com/Shopify/sarama"
 	"github.com/cevaris/ordered_map"
 	"github.com/stretchr/testify/assert"
 )

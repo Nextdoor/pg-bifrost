@@ -28,10 +28,10 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/replication/client/conn/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
-	"github.com/golang/mock/gomock"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"testing"
 )

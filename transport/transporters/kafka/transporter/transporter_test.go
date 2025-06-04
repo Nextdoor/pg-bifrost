@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
+
+	"github.com/IBM/sarama"
 	"github.com/Nextdoor/pg-bifrost.git/marshaller"
 	"github.com/Nextdoor/pg-bifrost.git/shutdown"
 	"github.com/Nextdoor/pg-bifrost.git/stats"
@@ -15,9 +18,7 @@ import (
 	"github.com/Nextdoor/pg-bifrost.git/transport/transporters/kafka/mocks"
 	"github.com/Nextdoor/pg-bifrost.git/utils"
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
-	"github.com/Shopify/sarama"
 	"github.com/cevaris/ordered_map"
-	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )

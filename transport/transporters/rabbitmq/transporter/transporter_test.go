@@ -38,9 +38,9 @@ import (
 	utils_mocks "github.com/Nextdoor/pg-bifrost.git/utils/mocks"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/cevaris/ordered_map"
-	"github.com/golang/mock/gomock"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
+	"go.uber.org/mock/gomock"
 )
 
 var (
