@@ -10,17 +10,18 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cevaris/ordered_map v0.0.0-20220813181356-34664b69742b
 	github.com/goccy/go-json v0.10.5
-	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pglogrepl v0.0.0-20250509230407-a9884f6bd75a
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/klauspost/pgzip v1.2.6
 	github.com/pkg/errors v0.9.1
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/streadway/amqp v1.1.0
 	github.com/stretchr/testify v1.10.0
+	go.uber.org/mock v0.5.2
 	gopkg.in/DataDog/dd-trace-go.v1 v1.73.1
 	gopkg.in/Nextdoor/cli.v1 v1.20.2
 )
@@ -57,13 +58,11 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.opentelemetry.io/collector/pdata v1.33.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.0 // indirect
-	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
