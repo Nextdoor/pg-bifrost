@@ -264,14 +264,14 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 	var columns = colsTemp
 
 	for k, v := range msg.Pr.Columns {
-		oldV, ok := msg.Pr.OldColumns[k]
+		oldV, oldFound := msg.Pr.OldColumns[k]
 
 		if msg.Pr.Operation == "DELETE" {
 			columns[k] = marshalColumnValuePair(nil, &v)
 			continue
 		}
 
-		if ok && v.Value != oldV.Value {
+		if oldFound && v.Value != oldV.Value {
 			// When column is TOAST-ed use the previous value instead of "unchanged-toast-datum"
 			if v.Value == "unchanged-toast-datum" {
 				if noMarshalOldValue {
@@ -287,6 +287,15 @@ func marshalWalToJson(msg *replication.WalMessage, noMarshalOldValue bool) ([]by
 			} else {
 				columns[k] = marshalColumnValuePair(&v, &oldV)
 			}
+		} else if !noMarshalOldValue && !oldFound && !(v.Value == "null" && !v.Quoted) && msg.Pr.Operation == "UPDATE" {
+			// When a column value goes from a NULL to non-NULL value, the OldColumns simply do not contain
+			// the column. We must detect this case and artificially inject an old NULL value. This allows
+			// the downstream consumers to understand this transition in the same way as regular value changes.
+			columns[k] = marshalColumnValuePair(&v, &parselogical.ColumnValue{
+				Value:  "null",
+				Type:   v.Type,
+				Quoted: false,
+			})
 		} else {
 			columns[k] = marshalColumnValuePair(&v, nil)
 		}
