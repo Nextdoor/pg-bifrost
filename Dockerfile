@@ -10,7 +10,7 @@ RUN mkdir /perf
 
 # Build/test dependencies
 RUN go install go.uber.org/mock/mockgen@latest
-RUN go install golang.org/x/tools/cmd/goimports@latest
+RUN go install golang.org/x/tools/cmd/goimports@v0.34.0
 
 WORKDIR /go/src/github.com/Nextdoor/pg-bifrost.git/
 
